@@ -390,7 +390,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center">Jarvis v14 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center">Jarvis v15 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -626,7 +626,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 14;
+const TEMPO_BUILD = 15;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -2061,6 +2061,7 @@ async function processInbox(){
   q = q.filter(e => Date.parse(e.at) > old);
   const seen = new Set();   // même notification reçue deux fois (WhatsApp la met souvent à jour) : une seule
   q = q.filter(e => { const k = [e.kind, e.who, e.num, e.body].join("|"); if (seen.has(k)) return false; seen.add(k); return true; });
+  try { if (typeof jvHisto === "function") jvHisto(q); } catch (er) {}   // Jarvis : 3 jours d'historique, dans le téléphone, pour « fais un check »
   const calls = q.filter(e => e.kind === "appel"), ends = q.filter(e => e.kind === "fin_appel");
   let msgs = q.filter(e => ["sms", "whatsapp", "notif", "chat"].includes(e.kind));
   let nCalls = 0; const callNames = [];
@@ -4322,6 +4323,7 @@ Anticiper sa vie : c'est ton rôle principal
 - Ce qui s'ajoute tout seul, sans lui demander (il peut annuler d'un geste) : rappels, rendez-vous (qui partent dans son agenda), rappels de lieu et listes de courses. N'écris donc pas « tu veux que je… ? » pour ça : fais-le et dis-le en une phrase. Seuls les souvenirs, les oublis et les nouveaux lieux habituels attendent sa validation.
 - Quand un rendez-vous dicté depuis le rond cite un de ses lieux habituels (golf, médecin…), l'appli pose seule le rappel « Pars à … » en voiture avec Waze : s'il est déjà dans ses tâches datées, ne le refais pas.
 - La météo (outil meteo) seulement quand elle change quelque chose : pluie, froid, vent pour une sortie.
+- Quand il demande un point, un check, ce qu'il a raté, ses messages, ses mails, son agenda ou ses tâches : utilise derniers_messages, mails (puis lire_mail si l'extrait ne suffit pas), agenda et taches. Fais une synthèse courte : d'abord ce qui demande une action de sa part, le reste en une ligne. Ne recopie pas les messages, n'invente rien de ce qui n'y est pas.
 - N'invente jamais un horaire de bus ni une météo : uniquement ce que renvoient les outils. Si un outil échoue, dis-le simplement.
 - Ses lieux habituels (maison, arrêt, golf, médecin, magasins, relais colis…) sont dans ses souvenirs, marqués « Lieu habituel ». S'il t'en donne un nouveau, propose-le avec proposer_lieu (avec l'adresse la plus précise possible) ; s'il en manque un dont tu as besoin, demande-le une fois.
 - En voiture : appelle trajet_voiture pour estimer le temps de route (c'est une estimation sans trafic, Waze donnera le temps réel), puis propose le rappel « pars à … » et le rendez-vous avec son lieu : la carte lui offrira d'ouvrir Waze.
@@ -4396,6 +4398,25 @@ const CV_TOOLS = [
         rayon: { type: "string", enum: ["fruits et légumes", "boulangerie", "boucherie / poissonnerie", "frais", "surgelés", "épicerie", "boissons", "hygiène / beauté", "entretien / maison", "autre"] } },
         required: ["article", "rayon"] } } },
       required: ["articles"] } },
+  { name: "derniers_messages", description: "Ce qu'il a reçu sur son téléphone ces derniers jours (SMS, WhatsApp, appels manqués, notifications des applis qu'il a choisies), gardé uniquement dans son téléphone.",
+    input_schema: { type: "object", properties: {
+      heures: { type: "number", description: "Combien d'heures en arrière (24 par défaut, 72 au plus)." },
+      de: { type: "string", description: "Facultatif : un prénom, un nom ou une appli pour filtrer." },
+      type: { type: "string", enum: ["tout", "sms", "whatsapp", "appel", "autre"] } } } },
+  { name: "mails", description: "Cherche dans sa boîte Gmail (lecture seule) : renvoie expéditeur, objet, date et un extrait. La recherche suit la syntaxe Gmail (ex. « is:unread », « from:orange », « newer_than:2d »).",
+    input_schema: { type: "object", properties: {
+      recherche: { type: "string", description: "Requête Gmail ; vide = les mails des 2 derniers jours." },
+      max: { type: "number", description: "10 au plus." } } } },
+  { name: "lire_mail", description: "Lit le texte complet d'un mail trouvé avec l'outil mails.",
+    input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+  { name: "agenda", description: "Les événements de son Google Agenda entre deux dates (31 jours au plus).",
+    input_schema: { type: "object", properties: { du: { type: "string", description: "AAAA-MM-JJ" }, au: { type: "string", description: "AAAA-MM-JJ" } }, required: ["du"] } },
+  { name: "taches", description: "Cherche dans ses tâches, pro et perso (titre, note, chantier), avec dates facultatives. Par défaut seulement celles qui ne sont pas faites.",
+    input_schema: { type: "object", properties: {
+      recherche: { type: "string", description: "Mots à chercher, ex. « Arvato », « Sacha »." },
+      du: { type: "string", description: "AAAA-MM-JJ" }, au: { type: "string", description: "AAAA-MM-JJ" },
+      espace: { type: "string", enum: ["tous", "pro", "perso"] },
+      faites: { type: "boolean", description: "true pour inclure celles déjà faites." } } } },
   { name: "proposer_vtc", description: "Seulement s'il te demande explicitement un Uber ou un Bolt : propose d'ouvrir l'appli vers une destination. Il commande lui-même.",
     input_schema: { type: "object", properties: {
       destination: { type: "string", description: "Adresse ou lieu de destination." },
@@ -4488,7 +4509,7 @@ async function cvSend(text, opt){
       const results = [];
       for (const t of uses) {
         let out;
-        if (JV_LOCAL[t.name]) { cvStatus(t.name === "horaires_bus" ? "je regarde les bus…" : t.name === "meteo" ? "je regarde la météo…" : "je calcule le trajet…"); try { out = await JV_LOCAL[t.name](t.input || {}); } catch (e) { out = { erreur: "indisponible pour l'instant" }; } }
+        if (JV_LOCAL[t.name]) { cvStatus(JV_ATTENTE[t.name] || "je regarde…"); try { out = await JV_LOCAL[t.name](t.input || {}); } catch (e) { out = { erreur: "indisponible pour l'instant" }; } }
         else out = /^proposer_(rappel|rappel_lieu|courses)$/.test(t.name) ? { ok: "ajouté tout de suite (il peut annuler)" } : { ok: "proposé à l'utilisateur : il validera lui-même" };
         results.push({ type: "tool_result", tool_use_id: t.id, content: JSON.stringify(out).slice(0, 8000) });
       }
@@ -4656,6 +4677,83 @@ async function toolBus(x){
     o.tard ? { attention: "arrive après l'heure voulue" } : {});
   return Object.assign({ date: day, trajets: pick.map(f), dernier_du_jour: last ? f(last) : null, source: `horaires théoriques Stan (données du ${D.maj || "?"})` }, pick.length ? {} : { remarque: "aucun bus à partir de l'heure demandée ; " + nuit });
 }
+/* ---------- lot 13 : ce qui t'arrive (messages, mails, agenda, tâches), lu à la demande ---------- */
+/* historique des messages reçus : 3 jours, dans le téléphone seulement */
+function jvHisto(list){
+  const H = LS.get("copilote_histo", []) || [], seen = new Set(H.map(h => h.k)), lim = Date.now() - 72 * 3600e3;
+  for (const e of list || []) {
+    if (!e || !["sms", "whatsapp", "notif", "chat", "appel"].includes(e.kind)) continue;
+    const at = Date.parse(e.at) || Date.now(), k = [e.kind, e.who, e.num, String(e.body || "").slice(0, 80), Math.round(at / 60000)].join("|");
+    if (seen.has(k)) continue; seen.add(k);
+    H.push({ k, kind: e.kind, who: e.who || "", num: e.num || "", app: e.app || "", body: String(e.body || "").slice(0, 600), at });
+  }
+  LS.set("copilote_histo", H.filter(h => h.at > lim).sort((a, b) => a.at - b.at).slice(-300));
+}
+const jvQuandMsg = at => { const d = new Date(at), t = ymd(new Date()), j = ymd(d), h = pad(d.getHours()) + ":" + pad(d.getMinutes()); return j === t ? h : j === ymd(addDays(-1)) ? "hier " + h : d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" }) + " " + h; };
+async function toolMessages(x){
+  const h = Math.min(72, Math.max(1, +x.heures || 24)), lim = Date.now() - h * 3600e3, de = busKey(x.de || ""), ty = x.type || "tout";
+  const L = (LS.get("copilote_histo", []) || []).slice();
+  for (const e of LS.get("tempo_iq", []) || []) L.push({ kind: e.kind, who: e.who || "", num: e.num || "", app: e.app || "", body: String(e.body || "").slice(0, 600), at: Date.parse(e.at) || Date.now() });
+  const vu = new Set(), out = [];
+  L.sort((a, b) => b.at - a.at).forEach(m => {
+    if (m.at < lim) return;
+    const kind = m.kind === "chat" || m.kind === "notif" ? "autre" : m.kind;
+    if (ty !== "tout" && ty !== kind) return;
+    if (de && !busKey([m.who, m.app, m.num].join(" ")).includes(de)) return;
+    const k = [m.kind, m.who, m.body].join("|"); if (vu.has(k)) return; vu.add(k);
+    const lab = m.kind === "sms" ? "SMS" : m.kind === "whatsapp" ? "WhatsApp" : m.kind === "appel" ? "Appel manqué" : (m.app || "Notification");
+    out.push(`${jvQuandMsg(m.at)} · ${lab} · ${m.who || m.num || "?"}${m.body && m.kind !== "appel" ? " : " + m.body.slice(0, 300) : ""}`);
+  });
+  return { periode: `${h} dernières heures`, messages: out.slice(0, 40), remarque: out.length ? undefined : "rien reçu sur cette période (ou l'accès aux notifications de Jarvis est coupé)" };
+}
+async function jvGmail(path){
+  if (!gMailOk()) return { erreur: "Gmail n'est pas autorisé : réglages > Colis > autoriser Gmail" };
+  const t = await gToken(); if (!t) return { erreur: "Google injoignable" };
+  const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/" + path, { headers: { Authorization: "Bearer " + t } });
+  if (!r.ok) return { erreur: "Gmail refuse (" + r.status + ")" };
+  return r.json();
+}
+const jvHd = (m, k) => (((m.payload && m.payload.headers) || []).find(h => h.name.toLowerCase() === k) || {}).value || "";
+async function toolMails(x){
+  const q = String(x.recherche || "").trim() || "newer_than:2d", max = Math.min(10, Math.max(1, +x.max || 8));
+  const l = await jvGmail("messages?maxResults=" + max + "&q=" + encodeURIComponent(q + " -in:spam -in:trash")); if (l.erreur) return l;
+  const out = [];
+  for (const { id } of l.messages || []) {
+    const m = await jvGmail(`messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`); if (m.erreur) continue;
+    out.push({ id, de: jvHd(m, "from").replace(/<[^>]*>/, "").replace(/"/g, "").trim(), objet: jvHd(m, "subject"), date: jvQuandMsg(+m.internalDate || Date.now()), non_lu: (m.labelIds || []).includes("UNREAD"), extrait: String(m.snippet || "").slice(0, 240) });
+  }
+  return { recherche: q, mails: out, remarque: out.length ? undefined : "aucun mail trouvé" };
+}
+async function toolLireMail(x){
+  const id = String(x.id || ""); if (!/^[0-9a-f]{8,32}$/i.test(id)) return { erreur: "identifiant de mail inconnu" };
+  const m = await jvGmail(`messages/${id}?format=full`); if (m.erreur) return m;
+  return { de: jvHd(m, "from"), objet: jvHd(m, "subject"), date: jvQuandMsg(+m.internalDate || Date.now()), texte: String(gmText(m.payload) || m.snippet || "").slice(0, 5000) };
+}
+async function toolAgenda(x){
+  if (!gOn()) return { erreur: "Google Agenda n'est pas connecté" };
+  const du = /^\d{4}-\d{2}-\d{2}$/.test(x.du || "") ? x.du : ymd(new Date());
+  let au = /^\d{4}-\d{2}-\d{2}$/.test(x.au || "") ? x.au : jvAjoute(du, 7); if (jvEcart(du, au) > 31) au = jvAjoute(du, 31); if (au < du) au = du;
+  const t = await gToken(); if (!t) return { erreur: "Google injoignable" };
+  const u = "https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=100&timeMin=" + encodeURIComponent(new Date(du + "T00:00:00").toISOString()) + "&timeMax=" + encodeURIComponent(new Date(au + "T23:59:59").toISOString());
+  const r = await fetch(u, { headers: { Authorization: "Bearer " + t } }); if (!r.ok) return { erreur: "Google Agenda refuse (" + r.status + ")" };
+  const ev = ((await r.json()).items || []).filter(e => e.status !== "cancelled").map(e => {
+    const s = e.start || {}, d = s.date || String(s.dateTime || "").slice(0, 10), h = s.dateTime ? new Date(s.dateTime) : null;
+    return `${jvJourTxt(d)}${h ? " " + pad(h.getHours()) + ":" + pad(h.getMinutes()) : " (journée)"} · ${e.summary || "(sans titre)"}${e.location ? " (" + e.location + ")" : ""}`;
+  });
+  return { du, au, evenements: ev, remarque: ev.length ? undefined : "rien dans l'agenda sur cette période" };
+}
+async function toolTaches(x){
+  const q = busKey(x.recherche || ""), du = /^\d{4}-\d{2}-\d{2}$/.test(x.du || "") ? x.du : "", au = /^\d{4}-\d{2}-\d{2}$/.test(x.au || "") ? x.au : "";
+  const sps = x.espace === "pro" ? ["pro"] : x.espace === "perso" ? ["perso"] : ["perso", "pro"], out = [];
+  for (const sp of sps) for (const i of spaceState(sp).items || []) {
+    if (!x.faites && i.done) continue;
+    if (q && !busKey([i.title, i.note, i.ch].join(" ")).includes(q)) continue;
+    if ((du || au) && (!i.due || (du && i.due < du) || (au && i.due > au))) continue;
+    out.push({ i, sp });
+  }
+  out.sort((a, b) => (a.i.due || "9999").localeCompare(b.i.due || "9999") || (a.i.time || "").localeCompare(b.i.time || "") || (b.i.created || 0) - (a.i.created || 0));
+  return { nombre: out.length, taches: out.slice(0, 40).map(({ i, sp }) => `${i.due ? jvJourTxt(i.due) + (i.time ? " " + i.time : "") : "sans date"} · ${sp} · ${i.title}${i.ch ? " [" + i.ch + "]" : ""}${i.done ? " (fait)" : ""}`) };
+}
 const METEO_CODE = c => c === 0 ? "ciel clair" : c <= 3 ? "nuageux" : c <= 48 ? "brouillard" : c <= 57 ? "bruine" : c <= 67 ? "pluie" : c <= 77 ? "neige" : c <= 82 ? "averses" : c <= 86 ? "averses de neige" : "orage";
 async function toolMeteo(x){
   const lieu = String(x.lieu || "Nancy").trim(), day = /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") ? x.date : ymd(new Date());
@@ -4673,7 +4771,8 @@ async function toolMeteo(x){
   H.time.forEach((t, i) => { const h = +t.slice(11, 13); if (h >= lo && h <= hi) heures.push(`${h}h : ${Math.round(H.temperature_2m[i])}°C, ${METEO_CODE(H.weather_code[i])}, pluie ${H.precipitation_probability[i] ?? "?"} % (${H.precipitation[i]} mm), vent ${Math.round(H.wind_speed_10m[i])} km/h`); });
   return { lieu: p.nom, date: day, heures, source: "Open-Meteo" };
 }
-const JV_LOCAL = { horaires_bus: toolBus, meteo: toolMeteo, trajet_voiture: toolVoiture };
+const JV_LOCAL = { horaires_bus: toolBus, meteo: toolMeteo, trajet_voiture: toolVoiture, derniers_messages: toolMessages, mails: toolMails, lire_mail: toolLireMail, agenda: toolAgenda, taches: toolTaches };
+const JV_ATTENTE = { horaires_bus: "je regarde les bus…", meteo: "je regarde la météo…", trajet_voiture: "je calcule le trajet…", derniers_messages: "je regarde tes messages…", mails: "je regarde tes mails…", lire_mail: "je lis le mail…", agenda: "je regarde ton agenda…", taches: "je regarde tes tâches…" };
 function jvAddTask(p){
   const sp = p.sp === "pro" ? "pro" : "perso";
   const it = { id: uid(), created: Date.now(), done: false, doneAt: null, src: "jarvis", raw: "", title: p.t, cat: p.rdv ? "rdv" : (sp === "pro" ? "remarque" : "tache"), ch: "", u: 2, due: p.date || null, time: p.heure || null, note: p.note || "", place: p.lieu || "" };
