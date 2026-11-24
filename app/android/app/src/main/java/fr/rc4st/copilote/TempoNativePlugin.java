@@ -2,6 +2,7 @@ package fr.rc4st.copilote;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -28,6 +29,7 @@ import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import androidx.activity.result.ActivityResult;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -39,6 +41,12 @@ import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.GeofencingClient;
+import com.google.android.gms.location.GeofencingRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -69,13 +77,14 @@ import org.json.JSONObject;
     name = "TempoNative",
     permissions = {
         @Permission(strings = { Manifest.permission.RECORD_AUDIO }, alias = "mic"),
-        @Permission(strings = { Manifest.permission.READ_CONTACTS }, alias = "contacts")
+        @Permission(strings = { Manifest.permission.READ_CONTACTS }, alias = "contacts"),
+        @Permission(strings = { Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION }, alias = "loc")
     }
 )
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 5;
+    static final int NATIVE_BUILD = 6;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -243,6 +252,162 @@ public class TempoNativePlugin extends Plugin {
     @PluginMethod
     public void openAppSettings(PluginCall call) {
         startSafely(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getContext().getPackageName())), call);
+    }
+
+    // ------------------------------------------------------------------ position et alertes de lieu (Jarvis)
+
+    private boolean bgGranted() {
+        if (Build.VERSION.SDK_INT < 29) return getPermissionState("loc") == PermissionState.GRANTED;
+        return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private JSObject locJs() {
+        JSObject r = new JSObject();
+        boolean fine = getPermissionState("loc") == PermissionState.GRANTED;
+        r.put("fine", fine);
+        r.put("bg", fine && bgGranted());
+        return r;
+    }
+
+    @PluginMethod
+    public void locState(PluginCall call) {
+        call.resolve(locJs());
+    }
+
+    @PluginMethod
+    public void locAsk(PluginCall call) {
+        if (getPermissionState("loc") != PermissionState.GRANTED) {
+            requestPermissionForAlias("loc", call, "locPerm");
+            return;
+        }
+        if (!bgGranted()) openLocSettings();
+        call.resolve(locJs());
+    }
+
+    @PermissionCallback
+    private void locPerm(PluginCall call) {
+        if (getPermissionState("loc") == PermissionState.GRANTED && !bgGranted()) openLocSettings();
+        call.resolve(locJs());
+    }
+
+    /** Android ne propose « Toujours autoriser » que depuis les réglages de l'appli. */
+    private void openLocSettings() {
+        try {
+            Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getContext().getPackageName()));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(i);
+        } catch (Exception e) {
+            // rien
+        }
+    }
+
+    @PluginMethod
+    public void position(PluginCall call) {
+        if (getPermissionState("loc") != PermissionState.GRANTED) {
+            call.reject("perm");
+            return;
+        }
+        final FusedLocationProviderClient c = LocationServices.getFusedLocationProviderClient(getContext());
+        try {
+            c.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
+                .addOnSuccessListener(loc -> {
+                    if (loc != null) {
+                        call.resolve(posJs(loc));
+                        return;
+                    }
+                    try {
+                        c.getLastLocation()
+                            .addOnSuccessListener(l2 -> {
+                                if (l2 != null) call.resolve(posJs(l2));
+                                else call.reject("none");
+                            })
+                            .addOnFailureListener(e -> call.reject("none"));
+                    } catch (SecurityException e) {
+                        call.reject("perm");
+                    }
+                })
+                .addOnFailureListener(e -> call.reject("none"));
+        } catch (SecurityException e) {
+            call.reject("perm");
+        }
+    }
+
+    private JSObject posJs(android.location.Location l) {
+        JSObject r = new JSObject();
+        r.put("lat", l.getLatitude());
+        r.put("lon", l.getLongitude());
+        r.put("acc", l.getAccuracy());
+        r.put("at", l.getTime());
+        return r;
+    }
+
+    private PendingIntent geoIntent() {
+        Intent i = new Intent(getContext(), GeoReceiver.class);
+        int fl = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0);
+        return PendingIntent.getBroadcast(getContext(), 7301, i, fl);
+    }
+
+    /** Zones surveillées : [{id, lat, lon, r, until, dep, title, body, url}] — remplace les précédentes. */
+    @PluginMethod
+    public void geoSet(PluginCall call) {
+        JSArray fences = call.getArray("fences");
+        if (fences == null) fences = new JSArray();
+        prefs().edit().putString("geo_fences", fences.toString()).apply();
+        final GeofencingClient gc = LocationServices.getGeofencingClient(getContext());
+        final PendingIntent pi = geoIntent();
+        if (getPermissionState("loc") != PermissionState.GRANTED || !bgGranted()) {
+            gc.removeGeofences(pi);
+            JSObject r = new JSObject();
+            r.put("ok", false);
+            r.put("why", "perm");
+            call.resolve(r);
+            return;
+        }
+        final List<Geofence> list = new ArrayList<>();
+        long now = System.currentTimeMillis();
+        for (int i = 0; i < fences.length() && list.size() < 90; i++) {
+            JSONObject f = fences.optJSONObject(i);
+            if (f == null || !f.has("lat") || !f.has("lon")) continue;
+            long until = f.optLong("until", 0);
+            if (until > 0 && until <= now) continue;
+            float rad = (float) Math.max(100, Math.min(1000, f.optDouble("r", 200)));
+            list.add(
+                new Geofence.Builder()
+                    .setRequestId(f.optString("id", "f" + i))
+                    .setCircularRegion(f.optDouble("lat"), f.optDouble("lon"), rad)
+                    .setExpirationDuration(until > 0 ? until - now : Geofence.NEVER_EXPIRE)
+                    .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+                    .build()
+            );
+        }
+        final int n = list.size();
+        gc.removeGeofences(pi).addOnCompleteListener(t -> {
+            JSObject r = new JSObject();
+            if (n == 0) {
+                r.put("ok", true);
+                r.put("n", 0);
+                call.resolve(r);
+                return;
+            }
+            GeofencingRequest req = new GeofencingRequest.Builder().setInitialTrigger(0).addGeofences(list).build();
+            try {
+                gc.addGeofences(req, pi)
+                    .addOnSuccessListener(v -> {
+                        r.put("ok", true);
+                        r.put("n", n);
+                        call.resolve(r);
+                    })
+                    .addOnFailureListener(e -> {
+                        r.put("ok", false);
+                        r.put("why", String.valueOf(e.getMessage()));
+                        call.resolve(r);
+                    });
+            } catch (SecurityException e) {
+                r.put("ok", false);
+                r.put("why", "perm");
+                call.resolve(r);
+            }
+        });
     }
 
     // ------------------------------------------------------------------ synthèse vocale

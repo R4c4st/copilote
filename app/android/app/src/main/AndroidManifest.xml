@@ -54,6 +54,8 @@
         </service>
 
         <!-- widget constellation -->
+        <receiver android:name=".GeoReceiver" android:exported="false" />
+
         <receiver android:name=".TempoWidget" android:exported="true" android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -83,6 +85,10 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+    <!-- Jarvis : alertes de lieu (arrêt de bus, relais colis, lieux habituels) -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- Android 11+ : déclarer ce qu'on ouvre ou utilise -->
     <queries>

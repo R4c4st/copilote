@@ -390,7 +390,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center">Jarvis v3 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center">Jarvis v4 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -465,7 +465,16 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <p class="small" id="cvCost"></p>
   </div>
   <div id="cvMem" style="display:none">
-    <input id="cvQ" placeholder="chercher dans ma mémoire…" style="margin-top:14px">
+    <div class="lab" style="margin-top:18px">Mes lieux</div>
+    <div id="cvLieux"></div>
+    <input id="cvLieuNom" placeholder="nom : maison, golf, médecin, Intermarché…">
+    <input id="cvLieuAdr" placeholder="adresse (vide = l'endroit où je suis)">
+    <div class="foot" style="margin-top:12px"><select id="cvLieuType" style="width:auto"><option value="maison">maison</option><option value="arret">arrêt de bus</option><option value="golf">golf</option><option value="medecin">médecin</option><option value="magasin">magasin</option><option value="relais">relais colis</option><option value="autre" selected>autre</option></select><button class="ok" id="cvLieuGo">ajouter</button></div>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:16px"><input type="checkbox" id="cvAlChk" style="width:auto"> me prévenir quand j'arrive à un lieu (bus, colis, choses à faire)</label>
+    <p class="small" id="cvAlSt" style="margin-top:4px"></p>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvProChk" style="width:auto"> Jarvis anticipe aussi le pro</label>
+    <div class="lab">Mes souvenirs</div>
+    <input id="cvQ" placeholder="chercher dans ma mémoire…" style="margin-top:4px">
     <div id="cvMemList" style="margin-top:6px"></div>
     <div class="lab">Ajouter à la main</div>
     <textarea id="cvAdd" rows="2" placeholder="une chose à retenir, en une phrase"></textarea>
@@ -591,7 +600,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 3;
+const TEMPO_BUILD = 4;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -2453,7 +2462,7 @@ async function openFiche(it){
       ${sec("Ce qui a déjà été fait", done.map(i => row(fdt(i.doneAt || i.created), i.title, i.note || "")).join(""))}
       ${sec("Infos notées", infos.map(i => row(fdt(i.created), i.title, i.note || "")).join(""))}
       ${!rel.length ? `<p class="empty" style="margin-top:30px">rien d'autre dans Jarvis sur ce sujet pour l'instant.</p>` : ""}
-      <div class="rpBtns">${c && c.phone ? `<button id="fiCall" class="ok">appeler ${esc(c.name.split(" ")[0])}</button>` : ""}<button id="fiEdit">ouvrir la tâche</button><button id="fiClose">fermer</button></div>`;
+      <div class="rpBtns">${c && c.phone ? `<button id="fiCall" class="ok">appeler ${esc(c.name.split(" ")[0])}</button>` : ""}${it.place ? `<button id="fiWaze" class="ok">y aller (Waze)</button>` : ""}<button id="fiEdit">ouvrir la tâche</button><button id="fiClose">fermer</button></div>`;
   };
   paint(); show("fiche");
   if (CFG.key && rel.length) {
@@ -4006,6 +4015,7 @@ function appUrl(url){
   else if (what === "transfert") transferIn(u.searchParams.get("id"), u.searchParams.get("k"));
   else if (what === "gauth") gFinish(u.searchParams);
   else if (what === "msauth") msFinish(u.searchParams);
+  else if (what === "ouvrir") openInternal(u.searchParams.get("u") || "./");
 }
 if (NATIVE) {
   document.body.classList.add("native");
@@ -4159,6 +4169,7 @@ async function memRememberMany(list, src, onStep){
   const now = new Date().toISOString(), rows = [], ids = [];
   for (let i = 0; i < list.length; i++) {
     const x = list[i], id = uuid4(), o = { t: String(x.t).trim().slice(0, 2000), d: x.d === "pro" ? "pro" : "perso", p: !!x.pin, q: now, s: src || "import" };
+    if (x.g) o.g = x.g;
     rows.push(await memSeal(id, o)); MEM.items.set(id, Object.assign(o, { id })); ids.push(id);
     if (onStep && (i % 10 === 9 || i === list.length - 1)) onStep(i + 1);
   }
@@ -4196,7 +4207,7 @@ async function memForget(ids){
 }
 async function memPin(id){
   const it = MEM.items.get(id); if (!it) return;
-  const o = { t: it.t, d: it.d, p: !it.p, q: it.q, s: it.s };
+  const o = { t: it.t, d: it.d, p: !it.p, q: it.q, s: it.s }; if (it.g) o.g = it.g;
   await rowsPut([await memSeal(id, o)]);
   MEM.items.set(id, Object.assign(o, { id }));
   await memQ(q => { if (!q.w.includes(id)) q.w.push(id); });
@@ -4266,7 +4277,10 @@ Anticiper sa vie : c'est ton rôle principal
 - Propose les rappels utiles avec proposer_rappel : l'heure de partir pour attraper le bus en comptant son temps de marche jusqu'à l'arrêt (s'il est inconnu, compte 5 minutes et demande-le), et le rendez-vous lui-même s'il n'est pas déjà dans ses tâches ou son agenda. Un rappel par moment clé, pas plus.
 - La météo (outil meteo) seulement quand elle change quelque chose : pluie, froid, vent pour une sortie.
 - N'invente jamais un horaire de bus ni une météo : uniquement ce que renvoient les outils. Si un outil échoue, dis-le simplement.
-- Si tu ne connais pas un lieu habituel dont tu as besoin (son arrêt, son magasin, son relais colis), demande-le une fois et propose de le retenir.
+- Ses lieux habituels (maison, arrêt, golf, médecin, magasins, relais colis…) sont dans ses souvenirs, marqués « Lieu habituel ». S'il t'en donne un nouveau, propose-le avec proposer_lieu (avec l'adresse la plus précise possible) ; s'il en manque un dont tu as besoin, demande-le une fois.
+- En voiture : appelle trajet_voiture pour estimer le temps de route (c'est une estimation sans trafic, Waze donnera le temps réel), puis propose le rappel « pars à … » et le rendez-vous avec son lieu : la carte lui offrira d'ouvrir Waze.
+- Pour une chose à faire quelque part sans heure précise (« quand je passe à Intermarché »), utilise proposer_rappel_lieu : il sera prévenu en arrivant.
+- Le <contexte> te dit si son mode pro est activé. S'il est désactivé, ne propose rien côté pro de ta propre initiative (ni rappel, ni trajet, ni alerte) : réponds seulement à ce qu'il demande.
 
 Les balises <souvenirs>, <contexte> et <validations> sont ajoutées par l'appli : ce ne sont pas ses mots. <validations> te dit ce qu'il a accepté ou refusé parmi tes propositions précédentes.`;
 const CV_TOOLS = [
@@ -4302,9 +4316,30 @@ const CV_TOOLS = [
       heure: { type: "string", description: "HH:MM, l'heure où ça doit sonner." },
       espace: { type: "string", enum: ["pro", "perso"] },
       rendez_vous: { type: "boolean", description: "true pour un rendez-vous (il est aussi prévenu 30 min avant et il va dans l'agenda)." },
-      lieu: { type: "string" },
+      lieu: { type: "string", description: "Adresse ou nom d'un lieu habituel : la carte proposera Waze." },
+      bus_arret: { type: "string", description: "Si c'est le rappel d'un bus : l'arrêt de montée (il sera prévenu en arrivant à l'arrêt)." },
+      bus_depart: { type: "string", description: "Si c'est le rappel d'un bus : l'heure de passage HH:MM." },
+      bus_ligne: { type: "string" },
       note: { type: "string" } },
       required: ["titre", "date", "heure", "espace"] } },
+  { name: "trajet_voiture", description: "Estime la distance et le temps de route en voiture entre deux lieux (lieux habituels ou adresses). Estimation sans trafic.",
+    input_schema: { type: "object", properties: {
+      depart: { type: "string", description: "Nom d'un lieu habituel (ex. maison) ou adresse." },
+      arrivee: { type: "string", description: "Nom d'un lieu habituel ou adresse." } },
+      required: ["depart", "arrivee"] } },
+  { name: "proposer_lieu", description: "Propose d'ajouter un lieu habituel (il valide). Sert ensuite aux trajets, à Waze et aux alertes quand il passe à proximité.",
+    input_schema: { type: "object", properties: {
+      nom: { type: "string", description: "Comme il l'appelle : « maison », « golf », « mon médecin », « Intermarché »…" },
+      adresse: { type: "string", description: "Adresse complète ou nom précis + ville. Pour un arrêt de bus : le nom de l'arrêt Stan." },
+      type: { type: "string", enum: ["maison", "arret", "golf", "medecin", "magasin", "relais", "travail", "autre"] },
+      espace: { type: "string", enum: ["pro", "perso"] } },
+      required: ["nom", "adresse", "type"] } },
+  { name: "proposer_rappel_lieu", description: "Propose une chose à faire en passant par un lieu habituel, sans heure : il sera prévenu en arrivant sur place.",
+    input_schema: { type: "object", properties: {
+      titre: { type: "string" },
+      lieu: { type: "string", description: "Nom d'un de ses lieux habituels." },
+      espace: { type: "string", enum: ["pro", "perso"] } },
+      required: ["titre", "lieu"] } },
   { name: "proposer_vtc", description: "Propose d'ouvrir Uber ou Bolt vers une destination, en solution de secours. Il commande lui-même.",
     input_schema: { type: "object", properties: {
       destination: { type: "string", description: "Adresse ou lieu de destination." },
@@ -4328,10 +4363,12 @@ function cvNew(silent){ JV.msgs = []; JV.view = []; JV.notes = []; JV.at = 0; cv
 async function cvContexte(){
   const now = new Date();
   const d = now.toLocaleString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
-  const L = [`Nous sommes le ${d} (heure de Paris, date ${ymd(now)}). Espace ouvert dans l'appli : ${typeof SPACE !== "undefined" ? SPACE : "pro"}.`];
+  const pro = !!CFG.jvPro;
+  const L = [`Nous sommes le ${d} (heure de Paris, date ${ymd(now)}). Espace ouvert dans l'appli : ${typeof SPACE !== "undefined" ? SPACE : "pro"}. Mode pro de Jarvis : ${pro ? "activé" : "désactivé (perso seulement)"}.`];
+  try { const ici = await jvIci(); if (ici) L.push(ici); } catch (e) {}
   try {
     const td = ymd(now), tm = ymd(addDays(1)), out = [];
-    for (const sp of ["pro", "perso"]) for (const i of (spaceState(sp).items || [])) {
+    for (const sp of (pro ? ["pro", "perso"] : ["perso"])) for (const i of (spaceState(sp).items || [])) {
       if (i.done || isMemo(i) || (i.due !== td && i.due !== tm)) continue;
       out.push(`${i.due === td ? "aujourd'hui" : "demain"}${i.time ? " " + i.time : ""} · ${sp} · ${i.title}${i.place ? " (" + i.place + ")" : ""}`);
     }
@@ -4392,7 +4429,7 @@ async function cvSend(text){
       const results = [];
       for (const t of uses) {
         let out;
-        if (JV_LOCAL[t.name]) { cvStatus(t.name === "horaires_bus" ? "je regarde les bus…" : "je regarde la météo…"); try { out = await JV_LOCAL[t.name](t.input || {}); } catch (e) { out = { erreur: "indisponible pour l'instant" }; } }
+        if (JV_LOCAL[t.name]) { cvStatus(t.name === "horaires_bus" ? "je regarde les bus…" : t.name === "meteo" ? "je regarde la météo…" : "je calcule le trajet…"); try { out = await JV_LOCAL[t.name](t.input || {}); } catch (e) { out = { erreur: "indisponible pour l'instant" }; } }
         else out = { ok: "proposé à l'utilisateur : il validera lui-même" };
         results.push({ type: "tool_result", tool_use_id: t.id, content: JSON.stringify(out).slice(0, 8000) });
       }
@@ -4407,7 +4444,9 @@ async function cvSend(text){
     for (const t of tools) {
       const x = t.input || {};
       if (t.name === "proposer_souvenir" && x.texte) JV.view.push({ r: "p", k: "retenir", t: String(x.texte).slice(0, 2000), d: x.domaine === "pro" ? "pro" : "perso", pin: !!x.epingle, st: "" });
-      if (t.name === "proposer_rappel" && x.titre && /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") && /^\d{1,2}:\d{2}$/.test(x.heure || "")) JV.view.push({ r: "p", k: "rappel", t: String(x.titre).slice(0, 200), date: x.date, heure: x.heure.padStart(5, "0"), sp: x.espace === "pro" ? "pro" : "perso", rdv: !!x.rendez_vous, lieu: x.lieu || "", note: x.note || "", st: "" });
+      if (t.name === "proposer_rappel" && x.titre && /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") && /^\d{1,2}:\d{2}$/.test(x.heure || "")) JV.view.push({ r: "p", k: "rappel", t: String(x.titre).slice(0, 200), date: x.date, heure: x.heure.padStart(5, "0"), sp: x.espace === "pro" ? "pro" : "perso", rdv: !!x.rendez_vous, lieu: x.lieu || "", note: x.note || "", bus: x.bus_arret && /^\d{1,2}:\d{2}$/.test(x.bus_depart || "") ? { arret: x.bus_arret, dep: x.bus_depart.padStart(5, "0"), ligne: x.bus_ligne || "" } : null, st: "" });
+      if (t.name === "proposer_lieu" && x.nom && x.adresse) JV.view.push({ r: "p", k: "lieu", t: String(x.nom).slice(0, 80), adresse: String(x.adresse).slice(0, 200), type: JV_TYPES[x.type] ? x.type : "autre", sp: x.espace === "pro" ? "pro" : "perso", st: "" });
+      if (t.name === "proposer_rappel_lieu" && x.titre && x.lieu) JV.view.push({ r: "p", k: "ici", t: String(x.titre).slice(0, 200), lieu: String(x.lieu).slice(0, 80), sp: x.espace === "pro" ? "pro" : "perso", st: "" });
       if (t.name === "proposer_vtc" && x.destination) JV.view.push({ r: "p", k: "vtc", t: String(x.destination).slice(0, 200), quand: x.quand || "", st: "" });
       if (t.name === "proposer_oubli") {
         const ids = (Array.isArray(x.ids) ? x.ids : []).map(cvFull).filter(Boolean);
@@ -4427,7 +4466,17 @@ async function cvDecide(i, ok){
   const p = JV.view[i]; if (!p || p.r !== "p" || p.st) return;
   if (ok && p.k === "retenir") { await memRemember(p.t, p.d, p.pin, "conversation"); JV.notes.push(`retenu : « ${p.t} »`); }
   if (ok && p.k === "oublier") { await memForget(p.ids); JV.notes.push(`oublié : « ${p.t} »`); }
-  if (ok && p.k === "rappel") { jvAddTask(p); JV.notes.push(`rappel ajouté : « ${p.t} » le ${p.date} à ${p.heure}`); }
+  if (ok && p.k === "rappel") { jvAddTask(p); if (p.bus) await jvBusWatch(p); JV.notes.push(`rappel ajouté : « ${p.t} » le ${p.date} à ${p.heure}`); }
+  if (ok && p.k === "lieu") {
+    const l = await jvAddLieu(p.t, p.adresse, p.type, p.sp);
+    if (!l) { p.st = ""; await cvSave(); cvPaint(); toast("adresse introuvable : précise-la (rue, ville)"); return; }
+    p.label = l.label; JV.notes.push(`lieu habituel ajouté : « ${p.t} » (${l.label})`);
+  }
+  if (ok && p.k === "ici") {
+    const l = jvLieu(p.lieu);
+    if (!l) { toast("ce lieu n'est pas encore dans tes lieux habituels"); return; }
+    jvAddTask({ t: p.t, sp: p.sp, lieuId: l.id, lieu: l.g.nom }); JV.notes.push(`rappel de lieu ajouté : « ${p.t} » à ${l.g.nom}`);
+  }
   if (ok && p.k === "vtc") { jvVtc(ok, p.t); JV.notes.push(`VTC ouvert (${ok}) vers « ${p.t} »`); }
   if (!ok) JV.notes.push(`refusé (${p.k}) : « ${p.t} »`);
   p.st = ok ? (p.k === "vtc" ? ok : "ok") : "non";
@@ -4542,13 +4591,15 @@ async function toolMeteo(x){
   H.time.forEach((t, i) => { const h = +t.slice(11, 13); if (h >= lo && h <= hi) heures.push(`${h}h : ${Math.round(H.temperature_2m[i])}°C, ${METEO_CODE(H.weather_code[i])}, pluie ${H.precipitation_probability[i] ?? "?"} % (${H.precipitation[i]} mm), vent ${Math.round(H.wind_speed_10m[i])} km/h`); });
   return { lieu: p.nom, date: day, heures, source: "Open-Meteo" };
 }
-const JV_LOCAL = { horaires_bus: toolBus, meteo: toolMeteo };
+const JV_LOCAL = { horaires_bus: toolBus, meteo: toolMeteo, trajet_voiture: toolVoiture };
 function jvAddTask(p){
   const sp = p.sp === "pro" ? "pro" : "perso";
-  const it = { id: uid(), created: Date.now(), done: false, doneAt: null, src: "jarvis", raw: "", title: p.t, cat: p.rdv ? "rdv" : (sp === "pro" ? "remarque" : "tache"), ch: "", u: 2, due: p.date, time: p.heure, note: p.note || "", place: p.lieu || "" };
+  const it = { id: uid(), created: Date.now(), done: false, doneAt: null, src: "jarvis", raw: "", title: p.t, cat: p.rdv ? "rdv" : (sp === "pro" ? "remarque" : "tache"), ch: "", u: 2, due: p.date || null, time: p.heure || null, note: p.note || "", place: p.lieu || "" };
+  if (p.lieuId) it.lieuId = p.lieuId;
   try { it.orig = { cat: it.cat, ch: "", u: 2, slot: bucket(it) }; } catch (e) {}
   if (sp === SPACE) { S.items.unshift(it); save(); try { render([it.id]); } catch (e) {} if (p.rdv) calSync(it); }
   else { const st = spaceState(sp); st.items = st.items || []; st.items.unshift(it); LS.set(SKEY(sp), st); schedulePushSync(); }
+  if (p.lieuId) jvGeoSync();
   return it;
 }
 function jvVtc(app, dest){
@@ -4557,6 +4608,116 @@ function jvVtc(app, dest){
   if (NATIVE) tn("openApp", { pkg: "ee.mtakso.client" }).then(r => { if (r === null) tn("openUrl", { url: "https://bolt.eu/fr-fr/" }); });
   else window.open("https://bolt.eu/fr-fr/", "_blank");
   toast("adresse copiée : colle-la dans Bolt");
+}
+
+/* ---------- lieux habituels, voiture, Waze, alertes de lieu ---------- */
+const JV_TYPES = { maison: "maison", arret: "arrêt de bus", golf: "golf", medecin: "médecin", magasin: "magasin", relais: "relais colis", travail: "travail", autre: "lieu" };
+const jvLieux = () => [...MEM.items.values()].filter(i => i.g && typeof i.g.lat === "number");
+function jvLieu(q){
+  const k = busKey(q || ""); if (!k) return null;
+  const L = jvLieux(), n = l => busKey(l.g.nom);
+  return L.find(l => n(l) === k) || L.find(l => l.g.type === k || busKey(JV_TYPES[l.g.type] || "") === k) || L.find(l => n(l).includes(k) || k.includes(n(l))) || null;
+}
+async function jvGeocode(adr){
+  const one = async idx => {
+    const r = await fetch(`https://data.geopf.fr/geocodage/search?limit=1${idx ? "&index=" + idx : ""}&q=` + encodeURIComponent(adr));
+    const j = await r.json(), f = j.features && j.features[0]; if (!f) return null;
+    const pr = f.properties || {};
+    return { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], label: pr.label || [].concat(pr.toponym || pr.name || []).join(" ") || adr, city: [].concat(pr.city || [])[0] || "", score: +pr.score || 0 };
+  };
+  let a = null; try { a = await one(""); } catch (e) {}
+  if (!a || a.score < 0.5) { try { const b = await one("poi"); if (b && (!a || b.score >= a.score)) a = b; } catch (e) {} }
+  return a;
+}
+async function jvAddLieu(nom, adresse, type, sp){
+  let g = null;
+  if (type === "arret") {
+    const D = await busData(), A = D ? busResolve(D, adresse) : [];
+    if (A.length) { const s = D.arrets[A[0].ids[0]]; g = { lat: s[1], lon: s[2], label: "arrêt Stan " + A[0].nom }; }
+  }
+  if (!g) g = await jvGeocode(adresse);
+  if (!g) return null;
+  // l'adresse exacte de la maison reste dans le téléphone : Claude ne reçoit que la ville
+  const vu = type === "maison" ? (g.city || "adresse enregistrée dans le téléphone") : g.label;
+  await memRememberMany([{ t: `Lieu habituel (${JV_TYPES[type] || "lieu"}) : ${nom} — ${vu}`, d: sp === "pro" ? "pro" : "perso", pin: type === "maison" || type === "arret", g: { nom, type, lat: g.lat, lon: g.lon, label: g.label } }], "lieu");
+  jvGeoSync();
+  return g;
+}
+const jvKm = (a, b) => { const R = 6371, r = x => x * Math.PI / 180, dl = r(b.lat - a.lat), dn = r(b.lon - a.lon); const h = Math.sin(dl / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dn / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+async function jvPoint(q){
+  const l = jvLieu(q); if (l) return { lat: l.g.lat, lon: l.g.lon, nom: l.g.nom, label: l.g.label };
+  const g = await jvGeocode(q); return g ? { lat: g.lat, lon: g.lon, nom: q, label: g.label } : null;
+}
+async function toolVoiture(x){
+  const a = await jvPoint(x.depart || "maison"), b = await jvPoint(x.arrivee || "");
+  if (!a) return { erreur: `je ne trouve pas « ${x.depart || "maison"} » (lieu habituel ou adresse)` };
+  if (!b) return { erreur: `je ne trouve pas « ${x.arrivee} »` };
+  const km = jvKm(a, b) * 1.3, vit = km < 8 ? 25 : km < 30 ? 45 : 75, min = Math.round(km / vit * 60 + 5);
+  return { depart: a.label, arrivee: b.label, km_route: Math.round(km), minutes: min, remarque: "estimation à vol d'oiseau corrigée, sans trafic ; Waze donnera le temps réel" };
+}
+function jvWaze(q){
+  const l = jvLieu(q);
+  const url = l ? `https://waze.com/ul?ll=${l.g.lat},${l.g.lon}&navigate=yes` : "https://waze.com/ul?navigate=yes&q=" + encodeURIComponent(q || "");
+  if (NATIVE) tn("openUrl", { url }); else window.open(url, "_blank");
+}
+/* position : demandée au téléphone (appli v6), jamais envoyée telle quelle à Claude */
+const jvNative = async () => { if (!NATIVE) return 0; try { const i = await tn("info"); return (i && i.native) || 0; } catch (e) { return 0; } };
+async function jvPos(){
+  if ((await jvNative()) >= 6) { const p = await tn("position"); if (p && typeof p.lat === "number") return p; return null; }
+  if (!NATIVE && navigator.geolocation) return new Promise(res => navigator.geolocation.getCurrentPosition(p => res({ lat: p.coords.latitude, lon: p.coords.longitude }), () => res(null), { timeout: 4000, maximumAge: 300000 }));
+  return null;
+}
+async function jvIci(){
+  const L = jvLieux().filter(l => CFG.jvPro || l.d !== "pro"); if (!L.length) return "";
+  const st = (await jvNative()) >= 6 ? await tn("locState") : null; if (NATIVE && !(st && st.fine)) return "";
+  const p = await jvPos(); if (!p) return "";
+  const near = L.map(l => ({ l, km: jvKm(p, l.g) })).sort((a, b) => a.km - b.km)[0];
+  if (!near) return "";
+  return near.km < 0.4 ? `Il est en ce moment à ${near.l.g.nom} (moins de 400 m).` : near.km < 3 ? `Il est en ce moment à environ ${near.km.toFixed(1).replace(".", ",")} km de ${near.l.g.nom}.` : "Il n'est près d'aucun de ses lieux habituels.";
+}
+/* alertes de lieu : le téléphone surveille quelques zones et prévient en y entrant (appli v6) */
+async function jvBusWatch(p){
+  const D = await busData(), A = D ? busResolve(D, p.bus.arret) : []; if (!A.length) return;
+  const s = D.arrets[A[0].ids[0]], dep = new Date(`${p.date}T${p.bus.dep}:00`).getTime();
+  const w = (LS.get("copilote_bus_watch", []) || []).filter(b => b.dep > Date.now() - 6e5);
+  w.push({ id: "bus-" + dep, lat: s[1], lon: s[2], dep, ligne: p.bus.ligne, heure: p.bus.dep, arret: A[0].nom });
+  LS.set("copilote_bus_watch", w.slice(-10)); jvGeoSync();
+}
+async function jvGeoSync(){
+  try {
+    if ((await jvNative()) < 6 || !CFG.jvAlertes) return;
+    const st = await tn("locState"); if (!st || !st.fine || !st.bg) return;
+    const now = Date.now(), fences = [], L = jvLieux().filter(l => CFG.jvPro || l.d !== "pro");
+    for (const b of LS.get("copilote_bus_watch", []) || []) if (b.dep > now) fences.push({ id: b.id, lat: b.lat, lon: b.lon, r: 200, until: b.dep + 3e5, dep: b.dep, title: `Ton bus ${b.ligne ? b.ligne + " " : ""}passe à ${b.heure.replace(":", "h")}`, body: `${b.arret} · dans {min} min`, url: "./" });
+    try {
+      for (const c of colisOpen()) {
+        const rel = L.find(l => l.g.type === "relais" && c.place && (busKey(c.place).includes(busKey(l.g.nom)) || busKey(l.g.label).includes(busKey(c.place).split(" ")[0] || "§")));
+        if (rel) fences.push({ id: "colis-" + c.id, lat: rel.g.lat, lon: rel.g.lon, r: 200, until: c.until ? new Date(c.until + "T23:59").getTime() : now + 14 * 864e5, title: "Ton colis t'attend ici", body: [colisName(c), c.code ? "code " + c.code : ""].filter(Boolean).join(" · "), url: "./?colis=" + c.id });
+      }
+    } catch (e) {}
+    for (const sp of (CFG.jvPro ? ["pro", "perso"] : ["perso"])) {
+      const byL = {};
+      for (const i of spaceState(sp).items || []) if (!i.done && i.lieuId) (byL[i.lieuId] = byL[i.lieuId] || []).push(i.title);
+      for (const id in byL) { const l = MEM.items.get(id); if (l && l.g) fences.push({ id: "lieu-" + id, lat: l.g.lat, lon: l.g.lon, r: 250, until: 0, title: "À faire ici · " + l.g.nom, body: byL[id].slice(0, 3).join(" · "), url: "./" }); }
+    }
+    await tn("geoSet", { fences: fences.slice(0, 90) });
+  } catch (e) {}
+}
+async function jvAlertesState(){
+  const n = await jvNative(); if (n < 6) return { ok: false, txt: NATIVE ? "il faut la nouvelle version de l'appli (réglages → mettre à jour)" : "seulement dans l'appli Android" };
+  const st = (await tn("locState")) || {};
+  return { ok: !!(st.fine && st.bg), fine: !!st.fine, bg: !!st.bg, txt: !st.fine ? "position non autorisée" : !st.bg ? "position autorisée seulement quand l'appli est ouverte : choisis « Toujours autoriser »" : "position autorisée, même appli fermée ✓" };
+}
+function paintLieux(){
+  const box = $("cvLieux"); if (!box) return;
+  const L = jvLieux().sort((a, b) => (a.g.type === "maison" ? -1 : 0) - (b.g.type === "maison" ? -1 : 0) || a.g.nom.localeCompare(b.g.nom));
+  box.innerHTML = L.length ? L.map(l => `<div class="it" style="padding:9px 0"><span class="dot" style="opacity:.6"></span><div class="tx" style="flex:1"><div class="tt" style="font-size:15.5px">${esc(l.g.nom)}</div><div class="sub">${esc(JV_TYPES[l.g.type] || "lieu")} · ${esc(l.g.label || "")}</div><div class="sub" style="display:flex;gap:18px;margin-top:6px"><button data-wz="${l.id}">Waze</button><button data-del="${l.id}">oublier</button></div></div></div>`).join("")
+    : `<p class="small">Aucun lieu pour l'instant. Ajoute ta maison, ton arrêt, le golf, ton médecin… ou dis-les simplement à Jarvis.</p>`;
+  box.querySelectorAll("[data-wz]").forEach(b => b.onclick = () => { const l = MEM.items.get(b.dataset.wz); if (l) jvWaze(l.g.nom); });
+  box.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (b.dataset.sure) { memForget([b.dataset.del]).then(() => { paintLieux(); jvGeoSync(); }); } else { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; b.style.color = "var(--u3)"; } });
+  $("cvProChk").checked = !!CFG.jvPro;
+  $("cvAlChk").checked = !!CFG.jvAlertes;
+  jvAlertesState().then(s => { const e = $("cvAlSt"); if (e) e.textContent = s.txt; });
 }
 
 /* ---------- affichage ---------- */
@@ -4572,8 +4733,17 @@ function cvPaint(){
     if (v.r === "e") return `<div class="cv-m a cv-e">${esc(v.t)}${v.retry ? ` <button data-retry="${i}">réessayer</button>` : ""}</div>`;
     if (v.k === "rappel") {
       const quand = new Date(v.date + "T12:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + " à " + v.heure.replace(":", "h");
-      const act = v.st === "ok" ? `<div class="act">ajouté, il sonnera ✓</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
+      const wz = v.lieu ? `<button class="y" data-waze="${esc(v.lieu)}">Waze</button>` : "";
+      const act = v.st === "ok" ? `<div class="act">${wz}<span>ajouté, il sonnera ✓</span></div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
       return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">${v.rdv ? "Rendez-vous" : "Rappel"} · ${v.sp} · ${quand}</div><div>${esc(v.t)}</div>${v.lieu ? `<div class="sub">${esc(v.lieu)}</div>` : ""}${act}</div>`;
+    }
+    if (v.k === "lieu") {
+      const act = v.st === "ok" ? `<div class="act">ajouté ✓${v.label ? " · " + esc(v.label) : ""}</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
+      return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">Lieu habituel · ${JV_TYPES[v.type]} · ${v.sp}</div><div>${esc(v.t)}</div><div class="sub">${esc(v.adresse)}</div>${act}</div>`;
+    }
+    if (v.k === "ici") {
+      const act = v.st === "ok" ? `<div class="act">ajouté, je te préviens sur place ✓</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
+      return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">En passant · ${esc(v.lieu)}</div><div>${esc(v.t)}</div>${act}</div>`;
     }
     if (v.k === "vtc") {
       const act = v.st && v.st !== "non" ? `<div class="act">${esc(v.st)} ouvert ✓</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-vtc="${i}" data-app="Uber">Uber</button><button class="y" data-vtc="${i}" data-app="Bolt">Bolt</button></div>`;
@@ -4588,11 +4758,13 @@ function cvPaint(){
   L.querySelectorAll("[data-ok]").forEach(b => b.onclick = () => cvDecide(+b.dataset.ok, true));
   L.querySelectorAll("[data-no]").forEach(b => b.onclick = () => cvDecide(+b.dataset.no, false));
   L.querySelectorAll("[data-vtc]").forEach(b => b.onclick = () => cvDecide(+b.dataset.vtc, b.dataset.app));
+  L.querySelectorAll("[data-waze]").forEach(b => b.onclick = () => jvWaze(b.dataset.waze));
   L.querySelectorAll("[data-retry]").forEach(b => b.onclick = () => { const v = JV.view[+b.dataset.retry]; JV.view.splice(+b.dataset.retry, 1); const u = JV.view.length && JV.view[JV.view.length - 1]; if (u && u.r === "u" && u.t === v.retry) JV.view.pop(); cvSend(v.retry); });
   const nb = $("cvNew"); if (nb) nb.onclick = () => cvNew();
   requestAnimationFrame(() => { const s = $("conv"); s.scrollTop = s.scrollHeight; });
 }
 function paintMem(){
+  try { paintLieux(); } catch (e) {}
   const q = $("cvQ").value.trim();
   const all = [...MEM.items.values()].sort((a, b) => (b.p - a.p) || ((Date.parse(b.q) || 0) - (Date.parse(a.q) || 0)));
   const list = q ? memSearch(q, 50) : all;
@@ -4678,7 +4850,7 @@ async function openConv(){
     show("conv");
     $("cvLock").style.display = "none";
     if (!(await memUnlock())) { cvLockUI(); return; }
-    cvTab("parler"); memSync();
+    cvTab("parler"); memSync(); jvGeoSync();
   }, 60);
 }
 const _cvIdle = idle;
@@ -4705,6 +4877,25 @@ $("cvAddGo").onclick = async () => {
   const d = document.querySelector("#cvAddDom button[data-d=pro].on") ? "pro" : "perso", pin = !!document.querySelector("#cvAddDom button[data-d=pin].on");
   await memRemember(t, d, pin, "main"); $("cvAdd").value = ""; paintMem(); toast("retenu");
 };
+$("cvLieuGo").onclick = async () => {
+  const nom = $("cvLieuNom").value.trim(), adr = $("cvLieuAdr").value.trim(), type = $("cvLieuType").value; if (!nom || !MEM.key) return;
+  const b = $("cvLieuGo"); b.disabled = true; b.textContent = "je cherche…";
+  let ok = false;
+  try {
+    if (!adr) { const p = await jvPos(); if (p) { await memRememberMany([{ t: `Lieu habituel (${JV_TYPES[type]}) : ${nom} — position enregistrée sur place, dans le téléphone`, d: "perso", pin: type === "maison", g: { nom, type, lat: p.lat, lon: p.lon, label: "position enregistrée sur place" } }], "lieu"); ok = true; jvGeoSync(); } }
+    else ok = !!(await jvAddLieu(nom, adr, type, "perso"));
+  } catch (e) {}
+  b.disabled = false; b.textContent = "ajouter";
+  if (ok) { $("cvLieuNom").value = ""; $("cvLieuAdr").value = ""; paintLieux(); toast("lieu ajouté"); } else toast(adr ? "adresse introuvable : précise la rue et la ville" : "position indisponible : autorise la position ou tape l'adresse");
+};
+$("cvProChk").onchange = () => { CFG.jvPro = $("cvProChk").checked; saveCfg(); jvGeoSync(); };
+$("cvAlChk").onchange = async () => {
+  CFG.jvAlertes = $("cvAlChk").checked; saveCfg();
+  if (CFG.jvAlertes && (await jvNative()) >= 6) { const s = await jvAlertesState(); if (!s.ok) await tn("locAsk"); }
+  paintLieux(); jvGeoSync();
+};
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && MEM.key) { jvGeoSync(); if (cvVisible() && JV.tab === "memoire") paintLieux(); } });
+$("fiche").addEventListener("click", e => { if (e.target.closest("#fiWaze") && typeof FICHE !== "undefined" && FICHE && FICHE.it) jvWaze(FICHE.it.place); });
 $("cvImpFile").onclick = () => $("cvImpIn").click();
 $("cvImpIn").onchange = async e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; try { $("cvImpTxt").value = await f.text(); impRead(); } catch (err) { toast("fichier illisible"); } };
 $("cvImpGo").onclick = impRead;
