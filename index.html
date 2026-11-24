@@ -395,7 +395,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v20 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v21 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -635,7 +635,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 20;
+const TEMPO_BUILD = 21;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4554,8 +4554,16 @@ const jvSys = () => CV_SYS.replace(/\{NOM\}/g, jvNom()).replace(/\{PRENOM\}/g, (
   + (cvNorm(jvNom()) !== "jarvis" ? "\n\nTon nom\n- Il lui arrive encore de t'appeler Jarvis, ton ancien nom : c'est bien à toi qu'il parle." : "")
   + (jvEstNestor() ? "\n- Ton nom s'écrit N.E.S.T.O.R. en sigle. C'est un acronyme à géométrie variable : s'il te demande ce qu'il veut dire, donne avec flegme une seule de ces versions, jamais une autre : " + jvAcroListe().map(a => "« " + a + " »").join(", ") + "." : "")
   + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Ne touche jamais au chauffage de ta propre initiative, sauf s'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets alors la maison en absent jusqu'à son retour, et dis-le.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "");
+/* début de la fenêtre envoyée à Claude, fixé pour toute une réponse : si on le décale pendant qu'il utilise ses outils,
+   sa réflexion (signée pour ce début de conversation) est refusée (erreur 400 « bound to a different conversation ») */
+function cvFenetre(){
+  let s = Math.max(0, JV.msgs.length - CV_HIST);
+  while (s < JV.msgs.length - 1 && !(JV.msgs[s].role === "user" && typeof JV.msgs[s].content === "string")) s++;
+  return s;
+}
 async function cvCall(extras){
-  const body = { model: CV_MODEL, max_tokens: 4000, system: jvSys(), tools: jvOutils(), messages: JV.msgs.slice(-CV_HIST) };
+  const from = JV.from != null && JV.from < JV.msgs.length ? JV.from : cvFenetre();
+  const body = { model: CV_MODEL, max_tokens: 4000, system: jvSys(), tools: jvOutils(), messages: JV.msgs.slice(from) };
   if (extras !== false) { body.cache_control = { type: "ephemeral" }; body.output_config = { effort: CFG.cvEffort || "medium" }; }
   const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
     headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
@@ -4590,6 +4598,7 @@ async function cvSend(text, opt){
   JV.busy = true; cvPaint(); cvStatus("je réfléchis…");
   const base = JV.msgs.length;
   JV.msgs.push({ role: "user", content: `<souvenirs>\n${cvSouvenirs(text)}\n</souvenirs>\n<contexte>\n${await cvContexte()}\n</contexte>\n${val}\n${text}` });
+  JV.from = cvFenetre();
   try {
     let usd = 0; const texts = [], tools = [], seen = new Set();
     for (let step = 0; step < 6; step++) {
