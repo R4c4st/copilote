@@ -3,10 +3,11 @@
 Source : Réseau Stan / Métropole du Grand Nancy, données ouvertes (Licence Ouverte Etalab),
 publiées sur transport.data.gouv.fr. Données publiques : aucune information personnelle ici.
 """
-import csv, io, json, sys, urllib.request, zipfile
+import csv, io, json, os, re, sys, urllib.request, zipfile
 from datetime import date, datetime, timedelta
 
 DATASET = "https://transport.data.gouv.fr/api/datasets/fr-200052264-t0034-0000-1"
+PAGE = "https://transport.data.gouv.fr/datasets/fr-200052264-t0034-0000-1"
 SECOURS = "https://transport.data.gouv.fr/resources/83710/download"
 JOURS = 120  # jours de calendrier précalculés
 
@@ -24,8 +25,15 @@ def url_gtfs():
         res.sort(key=lambda r: r.get("updated") or r.get("last_update") or "", reverse=True)
         if res:
             return res[0].get("url")
-    except Exception as e:  # l'API change parfois : on garde le lien de secours
+    except Exception as e:  # l'API change parfois : on lit la page du jeu de données
         print("API indisponible :", e, file=sys.stderr)
+    try:
+        html = get(PAGE).decode("utf-8", "replace")
+        ids = re.findall(r'/resources/(\d+)[^"]*"[^<]{0,400}GTFS', html) or re.findall(r'/resources/(\d+)', html)
+        if ids:
+            return f"https://transport.data.gouv.fr/resources/{max(ids, key=int)}/download"
+    except Exception as e:
+        print("page indisponible :", e, file=sys.stderr)
     return SECOURS
 
 
@@ -111,6 +119,7 @@ def main(sortie):
         "arrets": arrets, "lignes": lignes, "directions": dirs, "parcours": parcours,
         "jours": jours_out, "courses": courses,
     }
+    os.makedirs(os.path.dirname(sortie) or ".", exist_ok=True)
     with open(sortie, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
     print(f"{len(arrets)} arrêts, {len(lignes)} lignes, {len(parcours)} parcours, {len(courses)} courses, jours actifs : {sum(1 for v in jours_out.values() if v)}")
