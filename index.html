@@ -390,7 +390,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v16 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v17 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -626,7 +626,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 16;
+const TEMPO_BUILD = 17;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1109,6 +1109,7 @@ async function capture(text, src, kind, ctx){
     ringState("think"); hint(kind === "mail" ? "je lis tes mails…" : kind === "phone" ? "je regarde tes messages…" : "je range…");
     try { const r = await aiParse(text, kind, ctx); parsed = r.items; U = applyUpdates(kind === "phone" ? (r.updates || []).map(u => ({ id: u.id, note: u.note, due: u.due, time: u.time, u: u.u })) : r.updates); viaAI = true; } catch (e) { parsed = null; }   // un message peut préciser une tâche, jamais la cocher ni la supprimer
   }
+  if ((kind === "mail" || kind === "phone") && viaAI && typeof jvSansDoublons === "function") parsed = jvSansDoublons(parsed);
   if (kind === "mail" || kind === "phone") {
     if (!viaAI) { idle(); if (kind === "mail") toast("il faut Claude pour lire les mails"); return false; }
     if (!parsed.length && !U.n) { idle(); if (kind === "mail") { flashOk(); toast("rien à faire dans tes mails"); } return true; }
@@ -1754,9 +1755,10 @@ document.addEventListener("pointerdown", e => {
   }, 520);
 });
 document.addEventListener("contextmenu", e => { if (e.target.closest(".sw")) e.preventDefault(); });
-function deleteItem(it){
-  const idx = S.items.indexOf(it); if (idx < 0) return;
-  S.items.splice(idx, 1); save(); render(); calDel(it); vib(12);
+function deleteItem(it0){
+  let idx = S.items.indexOf(it0); if (idx < 0 && it0) idx = S.items.findIndex(i => i.id === it0.id); if (idx < 0) return;
+  const it = S.items[idx];
+  S.items = S.items.filter(i => i !== it && i.id !== it.id); save(); render(); calDel(it); vib(12);
   toast("supprimé", "annuler", () => { S.items.splice(idx, 0, it); save(); render(); calSync(it); });
 }
 document.addEventListener("pointermove", e => {
@@ -2084,13 +2086,16 @@ async function processInbox(){
   const chatOk = e => { const w = (e.who || "").trim(); return !!w && (!!knownContact(w, "") || chatWho().includes(norm(w).split(/\s+/)[0])); };
   msgs = scope === "aucun" ? [] : scope === "tous" ? msgs : msgs.filter(e => e.kind === "chat" ? chatOk(e) : e.kind === "notif" ? NATIVE : known(e));   // notif : une appli que tu as cochée toi-même
   if (msgs.length) {
-    if (CFG.key) {
-      const txt = msgs.map(e => `[${e.kind === "whatsapp" ? "WHATSAPP" : e.kind === "sms" ? "SMS" : e.kind === "chat" ? (e.app || "MESSAGERIE").toUpperCase() : "NOTIFICATION " + (e.app || "")}] De : ${e.who || fmtNum(e.num) || "?"}${e.num && e.who && !isNumLike(e.who) ? " (" + fmtNum(e.num) + ")" : ""} — reçu ${new Date(e.at).toLocaleString("fr-FR", { weekday: "long", hour: "2-digit", minute: "2-digit" })}\n${e.body || "(vide)"}`).join("\n\n");
-      let ok = false; try { ok = await capture(txt, "téléphone", "phone"); } catch (er) { ok = false; }
-      if (!ok) keep = msgs;                                          // Claude injoignable : on réessaiera
-    } else {
+    const neufs = typeof jvMsgNeufs === "function" ? jvMsgNeufs(msgs) : msgs;   // déjà traité (même supprimé depuis) : on ne le renvoie pas à Claude
+    if (CFG.key && neufs.length) {
+      const txt = neufs.map(e => `[${e.kind === "whatsapp" ? "WHATSAPP" : e.kind === "sms" ? "SMS" : e.kind === "chat" ? (e.app || "MESSAGERIE").toUpperCase() : "NOTIFICATION " + (e.app || "")}] De : ${e.who || fmtNum(e.num) || "?"}${e.num && e.who && !isNumLike(e.who) ? " (" + fmtNum(e.num) + ")" : ""} — reçu ${new Date(e.at).toLocaleString("fr-FR", { weekday: "long", hour: "2-digit", minute: "2-digit" })}\n${e.body || "(vide)"}`).join("\n\n");
+      let ok = false; try { ok = await capture(txt, "téléphone", "phone"); } catch (er) { ok = "erreur"; }
+      if (ok === false) keep = neufs;                                // Claude injoignable : on réessaiera
+      else if (typeof jvMsgVus === "function") jvMsgVus(neufs);      // traité (ou planté après coup) : jamais une deuxième fois
+    } else if (!CFG.key) {
       /* sans Claude : seulement les messages de tes contacts connus → « Répondre à … » */
-      for (const e of msgs) {
+      if (typeof jvMsgVus === "function") jvMsgVus(neufs);
+      for (const e of neufs) {
         if (e.kind === "notif") continue;
         const kc = knownContact(e.who && !isNumLike(e.who) ? e.who : "", e.num); if (!kc && e.kind !== "chat") continue;
         const sp = kc ? kc.sp : "perso", name = kc ? kc.name : e.who, st = spaceState(sp), via = e.kind === "whatsapp" ? "wa" : e.kind === "chat" ? chatVia(e.app) : "sms";
@@ -2759,8 +2764,10 @@ $("eSave").onclick = () => {
   const edited = cur; save(); closeEdit(); render(); calSync(edited);
 };
 $("eDel").onclick = () => {
-  if (!cur) return; const it = cur, idx = S.items.indexOf(it);
-  S.items.splice(idx, 1); save(); closeEdit(); render(); calDel(it);
+  if (!cur) return; const it0 = cur; let idx = S.items.indexOf(it0); if (idx < 0) idx = S.items.findIndex(i => i.id === it0.id);
+  if (idx < 0) { closeEdit(); render(); return; }   // déjà parti : on ne retire jamais une autre ligne à sa place
+  const it = S.items[idx];
+  S.items = S.items.filter(i => i !== it && i.id !== it.id); save(); closeEdit(); render(); calDel(it);
   toast("supprimé", "annuler", () => { S.items.splice(idx, 0, it); save(); render(); if ($("memos").classList.contains("show")) paintMemos(); if ($("hist").classList.contains("show")) paintHist(); calSync(it); });
 };
 /* agenda Outlook : ouvre l'événement pré-rempli */
@@ -4496,6 +4503,27 @@ function jvAcro(){
   const gras = a.replace(/(^|[\s'’])(\p{Lu})/gu, "$1**$2**");
   return { ecrit: `${intro} : N.E.S.T.O.R., « ${gras} ».`, dit: `${intro} : ${a}.`, a };
 }
+/* ---------- correctif doublons : un message déjà traité ne refait ni tâche ni mémo, même si tu l'as supprimé depuis ---------- */
+const jvNormT = s => cvNorm(String(s || "")).replace(/[^a-z0-9]+/g, " ").trim();
+const jvHash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36) + s.length.toString(36); };
+/* Samsung renvoie souvent la même notification (mise à jour, rappel) : même personne + même texte = même message */
+const jvMsgCle = e => { const b = jvNormT(e && e.body); if (b.length < 2) return ""; return jvHash(jvNormT(e.who || e.num).split(" ").slice(0, 2).join(" ") + "|" + b.slice(0, 400)); };
+const JV_MSG_FENETRE = 24 * 3600e3;
+function jvMsgNeufs(msgs){
+  const now = Date.now(), vus = new Set((LS.get("copilote_msgvus", []) || []).filter(x => now - x.t < JV_MSG_FENETRE).map(x => x.k)), lot = new Set();
+  return (msgs || []).filter(e => { const k = jvMsgCle(e); if (!k) return true; if (vus.has(k) || lot.has(k)) return false; lot.add(k); return true; });
+}
+function jvMsgVus(msgs){
+  const now = Date.now(), L = (LS.get("copilote_msgvus", []) || []).filter(x => now - x.t < JV_MSG_FENETRE);
+  (msgs || []).forEach(e => { const k = jvMsgCle(e); if (k) L.push({ k, t: now }); });
+  LS.set("copilote_msgvus", L.slice(-500));
+}
+/* filet de sécurité : ce que Claude tire d'un message ne double jamais une ligne encore ouverte (pro ou perso) des 3 derniers jours */
+function jvSansDoublons(parsed){
+  const lim = Date.now() - 3 * 86400e3, deja = new Set();
+  for (const sp of ["pro", "perso"]) { try { (spaceState(sp).items || []).forEach(i => { if (!i.done && (i.created || 0) > lim) deja.add((isMemo(i) ? "memo" : i.cat) + "|" + jvNormT(i.title)); }); } catch (e) {} }
+  return (parsed || []).filter(p => { const k = (p.cat === "memo" ? "memo" : p.cat) + "|" + jvNormT(p.title); if (!jvNormT(p.title) || deja.has(k)) return false; deja.add(k); return true; });
+}
 /* « ça veut dire quoi, Nestor ? », « que signifie ton nom ? »… ; recent = une réponse vient de tomber (alors « Nestor, ça veut dire quoi ? » parle sans doute d'autre chose) */
 function jvAcroDemande(text, recent){
   if (!jvEstNestor()) return false;
@@ -5630,6 +5658,30 @@ async function cvLockUI(){
 }
 
 /* ---------- ouverture, micro, branchements ---------- */
+/* correctif doublons : une seule fois, on fusionne les lignes identiques venues d'un même message (on garde la plus ancienne) */
+function jvDedoublonne(){
+  if (LS.get("copilote_dedup1", 0)) return 0;
+  let n = 0;
+  try {
+    for (const sp of ["pro", "perso"]) {
+      const st = spaceState(sp), arr = st.items || [], garde = new Set(), vus = new Set(), parti = [];
+      [...arr].sort((a, b) => (a.created || 0) - (b.created || 0)).forEach(i => {
+        if (i.done || !/^(téléphone|mail)/.test(i.src || "")) { garde.add(i); return; }
+        const k = (isMemo(i) ? "memo" : i.cat) + "|" + jvNormT(i.title) + "|" + jvNormT(i.note);
+        if (vus.has(k)) parti.push(i); else { vus.add(k); garde.add(i); }
+      });
+      if (!parti.length) continue;
+      n += parti.length;
+      const ids = new Set([...garde].map(i => i.id)), rest = arr.filter(i => garde.has(i));
+      if (sp === SPACE) { S.items = rest; save(); } else { st.items = rest; LS.set(SKEY(sp), st); }
+      parti.forEach(i => { if ((i.gId || i.evId) && !ids.has(i.id)) { try { _jvCalDel(i); } catch (e) {} } });
+    }
+  } catch (e) {}
+  LS.set("copilote_dedup1", 1);
+  if (n) { try { render(); } catch (e) {} setTimeout(() => toast(`${n} doublon${n > 1 ? "s" : ""} retiré${n > 1 ? "s" : ""} (le même message noté plusieurs fois)`, "", null, 6000), 1500); }
+  return n;
+}
+setTimeout(jvDedoublonne, 800);
 async function openConv(){
   hide();
   setTimeout(async () => {
