@@ -395,7 +395,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v21 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v22 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -487,6 +487,13 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <p class="small" id="cvNetSt" style="margin-top:4px"></p>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvChauffeChk" style="width:auto"> selon ma présence : absent quand je pars, planning quand je rentre</label>
     <div class="foot" style="margin-top:10px"><button id="cvNetOff" style="color:var(--mut);display:none">déconnecter</button><button class="ok" id="cvNetGo">connecter Netatmo</button></div>
+    <div class="lab">Bêta</div>
+    <p class="small" style="margin-top:4px">Des essais : décoche ce qui t'encombre. Si tu n'en veux plus, je les retire.</p>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBetaMatchChk" style="width:auto"> Cote &amp; Match : ta sélection le jeudi soir et le vendredi matin</label>
+    <input id="cvBetaClub" placeholder="ton club de cœur (facultatif)" style="margin-top:6px">
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:12px"><input type="checkbox" id="cvBetaCineChk" style="width:auto"> Ciné du week-end : les sorties de la semaine, le vendredi soir et le samedi matin</label>
+    <input id="cvBetaCinema" placeholder="ton cinéma (nom et ville)" style="margin-top:6px">
+    <p class="small" id="cvBetaSt" style="margin-top:6px"></p>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBriefChk" style="width:auto"> brief du jour à la première ouverture du matin</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvProChk" style="width:auto"> Jarvis anticipe aussi le pro</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBnChk" style="width:auto"> brief en notification, le matin et le soir (aux heures des rituels)</label>
@@ -635,7 +642,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 21;
+const TEMPO_BUILD = 22;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4104,7 +4111,7 @@ const M_FN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/copilote-mem
 const CV_MODEL = "claude-sonnet-5-5";
 const CV_PRICE = { in: 2, cw: 2.5, cr: 0.10, out: 10 };   // $ par million de jetons, tarif Anthropic de Claude Sonnet 5.5 (nov. 2026)
 const CV_HIST = 13;                                       // messages gardés dans la conversation envoyée (6 échanges + la question)
-const CV_PAUSE = 8 * 3600e3;                              // après 8 h sans échange, nouvelle conversation
+const CV_PAUSE = 30 * 60e3, CV_GARDE = 24 * 3600e3;      // 30 min sans échange : écran vierge ; l'ancienne reste 24 h à reprendre
 const TE = new TextEncoder(), TD = new TextDecoder();
 const cvVisible = () => { const e = document.getElementById("conv"); return !!(e && e.classList.contains("show")); };
 const MEM = { key: null, tok: null, items: new Map(), last: "1970-01-01T00:00:00Z", busy: false, again: false };
@@ -4447,15 +4454,24 @@ const cvCap = () => Math.max(1, +CFG.cvCap || 20);
 const cvMoney = x => x.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " $";
 async function cvSave(){
   if (!MEM.key) return;
-  try { await kvSet("conv", await memSeal("conv", { msgs: JV.msgs, view: JV.view, notes: JV.notes, at: JV.at })); } catch (e) {}
+  const prev = JV.prev && Date.now() - JV.prev.at < CV_GARDE ? JV.prev : null;
+  try { await kvSet("conv", await memSeal("conv", { msgs: JV.msgs, view: JV.view, notes: JV.notes, at: JV.at, prev })); } catch (e) {}
 }
 async function cvLoad(){
   if (JV.loaded) return;
-  try { const r = await kvGet("conv"); if (r && r.ct) { const o = await memOpenRow(r); JV.msgs = o.msgs || []; JV.view = o.view || []; JV.notes = o.notes || []; JV.at = o.at || 0; } } catch (e) {}
+  try { const r = await kvGet("conv"); if (r && r.ct) { const o = await memOpenRow(r); JV.msgs = o.msgs || []; JV.view = o.view || []; JV.notes = o.notes || []; JV.at = o.at || 0; JV.prev = o.prev || null; } } catch (e) {}
   JV.loaded = true;
-  if (JV.at && Date.now() - JV.at > CV_PAUSE) cvNew(true);
+  cvFraiche();
 }
-function cvNew(silent){ JV.msgs = []; JV.view = []; JV.notes = []; JV.at = 0; cvSave(); if (!silent) cvPaint(); }
+function cvNew(silent){ if (JV.view.length) JV.prev = { msgs: JV.msgs, view: JV.view, at: JV.at || Date.now() }; JV.msgs = []; JV.view = []; JV.notes = []; JV.at = 0; cvSave(); if (!silent) cvPaint(); }
+/* 30 min sans échange : on repart d'un écran vierge (l'ancienne conversation se reprend d'un geste pendant 24 h) */
+function cvFraiche(){ if (JV.at && Date.now() - JV.at > CV_PAUSE && JV.view.length) { cvNew(true); return true; } return false; }
+function cvReprendre(){
+  const p = JV.prev; if (!p || !(p.view || []).length) return;
+  JV.prev = JV.view.length ? { msgs: JV.msgs, view: JV.view, at: JV.at || Date.now() } : null;
+  JV.msgs = p.msgs || []; JV.view = p.view || []; JV.notes = []; JV.at = Date.now(); JV.from = null;
+  cvSave(); cvPaint();
+}
 async function cvContexte(){
   const now = new Date();
   const d = now.toLocaleString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -4480,6 +4496,7 @@ async function cvContexte(){
       if (ev.length) L.push("Son agenda Google aujourd'hui :\n" + ev.slice(0, 8).map(e => (e.allDay || !e.s ? "journée" : hm(e.s)) + " · " + e.title).join("\n"));
     }
   } catch (e) {}
+  try { const b = jvBetaContexte(); if (b) L.push(b); } catch (e) {}
   return L.join("\n");
 }
 /* son nom (réglable) et le prénom de l'utilisateur (sa fiche, dans le téléphone) : jamais écrits dans le code */
@@ -4553,6 +4570,7 @@ function jvAcroDemande(text, recent){
 const jvSys = () => CV_SYS.replace(/\{NOM\}/g, jvNom()).replace(/\{PRENOM\}/g, (typeof myName === "function" && myName()) || "ton utilisateur")
   + (cvNorm(jvNom()) !== "jarvis" ? "\n\nTon nom\n- Il lui arrive encore de t'appeler Jarvis, ton ancien nom : c'est bien à toi qu'il parle." : "")
   + (jvEstNestor() ? "\n- Ton nom s'écrit N.E.S.T.O.R. en sigle. C'est un acronyme à géométrie variable : s'il te demande ce qu'il veut dire, donne avec flegme une seule de ces versions, jamais une autre : " + jvAcroListe().map(a => "« " + a + " »").join(", ") + "." : "")
+  + (jvBetaMatchOn() || jvBetaCineOn() ? "\n\nBêta (essais qu'il peut couper)\n- Quand il demande son brief, et seulement là, termine par les blocs bêta présents dans <contexte> (Cote & Match, Ciné du week-end) : francs, courts, sans les délayer.\n- S'il annonce son pari Cote & Match, note-le avec cote_match_choix, puis propose en une ligne le message prêt à envoyer au groupe : c'est lui qui l'envoie." : "")
   + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Ne touche jamais au chauffage de ta propre initiative, sauf s'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets alors la maison en absent jusqu'à son retour, et dis-le.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "");
 /* début de la fenêtre envoyée à Claude, fixé pour toute une réponse : si on le décale pendant qu'il utilise ses outils,
    sa réflexion (signée pour ce début de conversation) est refusée (erreur 400 « bound to a different conversation ») */
@@ -4581,7 +4599,7 @@ function cvCount(u){
 }
 async function cvSend(text, opt){
   text = (text || "").trim(); if (!text || JV.busy) return;
-  if (JV.at && Date.now() - JV.at > CV_PAUSE) cvNew(true);
+  cvFraiche();
   if (jvAcroDemande(text, JV.at && Date.now() - JV.at < 3 * 60000)) {
     const r = jvAcro();
     JV.view.push({ r: "u", t: text }, { r: "a", t: r.ecrit, usd: 0 });
@@ -4591,7 +4609,7 @@ async function cvSend(text, opt){
   }
   if (!CFG.key) { JV.view.push({ r: "a", t: "Il me faut ta clé Claude : réglages > Claude." }); cvPaint(); return; }
   if (cvMonth().usd >= cvCap()) { JV.view.push({ r: "a", t: `Plafond du mois atteint (${cvMoney(cvCap())}). Tu peux le changer dans l'onglet mémoire.` }); cvPaint(); return; }
-  if (JV.at && Date.now() - JV.at > CV_PAUSE) cvNew(true);
+  cvFraiche();
   const val = JV.notes.length ? `<validations>\n${JV.notes.join("\n")}\n</validations>\n` : "";
   JV.notes = [];
   JV.view.push({ r: "u", t: text });
@@ -4973,7 +4991,11 @@ const JV_NET_TOOLS = [
 ];
 Object.assign(JV_LOCAL, { chauffage: toolChauffage, chauffage_regler: toolChauffageRegler, chauffage_mode: toolChauffageMode, chauffage_planning: toolChauffagePlanning });
 Object.assign(JV_ATTENTE, { chauffage: "je regarde le chauffage…", chauffage_regler: "je règle le chauffage…", chauffage_mode: "je règle le chauffage…", chauffage_planning: "je change le planning…" });
-const jvOutils = () => jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS;
+const JV_BETA_TOOLS = [
+  { name: "cote_match_choix", description: "Note le pari qu'il a choisi cette semaine pour Cote & Match (ça coupe la relance de 11h du vendredi).",
+    input_schema: { type: "object", properties: { pari: { type: "string", description: "match et pari, ex. « Lens - Brest, victoire de Lens »" } }, required: ["pari"] } }
+];
+const jvOutils = () => { let t = jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS; if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); return t; };
 /* zones de la maison pour le chauffage selon la présence (l'appli Android les déclenche, même fermée) */
 const jvMaisonLieu = () => jvLieux().find(l => l.g.type === "maison");
 const jvChauffeAuto = () => jvNetOn() && CFG.jvChauffe !== false && !!jvMaisonLieu();
@@ -5409,6 +5431,7 @@ function jvRappelsEnPlus(){
     if (j7 >= tod) out.push({ at: dt(j7, "09:00"), title: "Dans 7 jours · " + i.title, body: mt + "échéance le " + jvJourTxt(i.due), url, tag: i.id + "-j7" });
     if (!i.time && i.due >= tod) out.push({ at: dt(i.due, "09:00"), title: "Aujourd'hui · " + i.title, body: mt + "c'est l'échéance", url, tag: i.id + "-j0" });
   }
+  try { const r = jvCoteRelance(); if (r) out.push(r); } catch (e) {}
   return out;
 }
 async function jvEchExtraire(src, kind){
@@ -5545,6 +5568,127 @@ async function jvBriefPrep(){
     const j = await r.json(); if (j.daily) LS.set("copilote_meteo", { at: Date.now(), d: j.daily, h: j.hourly });
   } catch (e) {}
 }
+/* ---------- lot 17 · BÊTA : Cote & Match et Ciné du week-end ----------
+   Tout est ici, à part : décocher coupe tout ; pour retirer la fonction, on enlève ce bloc et ses branchements
+   (jvJournalier, jvBriefNotif, jvRappelsEnPlus, cvContexte, jvOutils, jvSys) plus la section Bêta des réglages.
+   Recherche web de Claude : 10 $ les 1 000 recherches, comptées dans le plafond du mois. */
+const jvBetaMatchOn = () => CFG.jvBetaMatch !== false && !!CFG.key;
+const jvBetaCineOn = () => CFG.jvBetaCine !== false && !!CFG.key && !!String(CFG.jvBetaCinema || "").trim();
+const JV_BETA_BUSY = {};
+/* semaine Cote & Match = son vendredi (jeudi → lundi) ; semaine ciné = le mercredi des sorties */
+const jvVendredi = d => jvAjoute(d, { 4: 1, 5: 0, 6: -1, 0: -2, 1: -3, 2: 3, 3: 2 }[new Date(d + "T12:00").getDay()]);
+const jvMercredi = d => jvAjoute(d, { 3: 0, 4: -1, 5: -2, 6: -3, 0: -4, 1: -5, 2: -6 }[new Date(d + "T12:00").getDay()]);
+const jvBetaNet = t => String(t || "").replace(/\*\*/g, "").replace(/^\s*[-•]\s*/gm, "").replace(/\n\s*\n+/g, "\n").trim().slice(0, 1600);
+/* Claude avec la recherche web, depuis le téléphone (compté dans le plafond du mois) */
+async function jvWeb(sys, user, maxUses){
+  if (!CFG.key || cvMonth().usd >= cvCap()) return null;
+  const head = { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" };
+  for (const v of ["web_search_20260318", "web_search_20250305"]) {
+    let msgs = [{ role: "user", content: user }], autre = false;
+    for (let step = 0; step < 4; step++) {
+      let r, j;
+      try {
+        r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: head, body: JSON.stringify({ model: CV_MODEL, max_tokens: 2000, system: sys,
+          tools: [{ type: v, name: "web_search", max_uses: maxUses || 8, user_location: { type: "approximate", country: "FR", timezone: "Europe/Paris" } }], messages: msgs }) });
+        j = await r.json().catch(() => ({}));
+      } catch (e) { return null; }
+      if (!r.ok) { if (r.status === 400 && step === 0) { autre = true; break; } return null; }   // version de l'outil refusée : on essaie l'autre
+      cvCount(j.usage);
+      const n = +((j.usage && j.usage.server_tool_use && j.usage.server_tool_use.web_search_requests) || 0);
+      if (n) { const m = cvMonth(); m.usd += n * 0.01; LS.set("copilote_conso", m); }
+      const c = j.content || [];
+      if (j.stop_reason === "pause_turn") { msgs = msgs.concat([{ role: "assistant", content: c }]); continue; }
+      let k = -1; c.forEach((b, i) => { if (b.type === "web_search_tool_result" || b.type === "server_tool_use") k = i; });
+      return c.slice(k + 1).filter(b => b.type === "text").map(b => b.text).join("").trim() || null;
+    }
+    if (!autre) return null;
+  }
+  return null;
+}
+async function jvMatchPrep(force){
+  if (!jvBetaMatchOn() || JV_BETA_BUSY.match) return;
+  const now = new Date(), tod = ymd(now), w = now.getDay(), h = now.getHours();
+  if (!force && !((w === 4 && h >= 12) || (w === 5 && h < 12))) return;
+  const sem = jvVendredi(tod), st = LS.get("copilote_beta_match", null) || {};
+  const vendrediFait = st.at && ymd(new Date(st.at)) === tod && new Date(st.at).getDay() === 5;
+  if (!force && st.sem === sem && st.txt && (w !== 5 || vendrediFait)) return;
+  JV_BETA_BUSY.match = true;
+  try {
+    const club = String(CFG.jvBetaClub || "").trim(), lundi = jvAjoute(sem, 3);
+    const sys = `Tu prépares la sélection de la semaine de ${myName()} pour « Cote & Match », un championnat amical de paris foot entre amis (le dernier paie le resto).
+Règles : un seul pari par semaine ; cote minimum 1,50 chez Parions Sport (FDJ), qui fait référence ; annonce le vendredi avant 12h ; matchs joués du vendredi ${sem} au lundi ${lundi}. Championnats : Ligue 1, Ligue 2, Premier League, Liga, Bundesliga.
+Le but : le pari le plus probable. La cote n'est qu'un seuil : par prudence, ne retiens que des cotes d'au moins 1,55, car elle peut baisser avant l'annonce.
+Cherche sur le web le programme, les cotes (Parions Sport si tu les trouves, sinon une cote moyenne des bookmakers, et dis-le), les blessures et suspensions importantes, la forme récente. Sois franc et honnête, sans enjoliver. N'invente rien : si une information manque, dis-le.
+Réponds uniquement par ces lignes, en texte brut, sans emoji ni titre :
+1er choix : <équipes, jour> · <pari> · cote ~<x> (<source>) · <raison en une phrase>
+Plan B : <même format>
+Piège : <le pari tentant à éviter> · <pourquoi>   (omets la ligne s'il n'y en a pas)${club ? `
+${club} : <son match de la semaine et ton avis honnête en une phrase, même si ce n'est pas ce qu'il veut entendre>   (omets la ligne s'il ne joue pas du vendredi au lundi)` : ""}`;
+    const txt = await jvWeb(sys, `Prépare la sélection Cote & Match de cette semaine. Nous sommes le ${jvJourTxt(tod)} (${tod}).`, 10);
+    if (txt) { LS.set("copilote_beta_match", { sem, at: Date.now(), txt: jvBetaNet(txt) }); try { syncReminders(); } catch (e) {} }
+  } finally { JV_BETA_BUSY.match = false; }
+}
+async function jvCinePrep(force){
+  if (!jvBetaCineOn() || JV_BETA_BUSY.cine) return;
+  const now = new Date(), tod = ymd(now), w = now.getDay(), h = now.getHours();
+  if (!force && !((w === 5 && h >= 10) || w === 6)) return;
+  const sem = jvMercredi(tod), st = LS.get("copilote_beta_cine", null) || {};
+  if (!force && st.sem === sem && st.txt) return;
+  JV_BETA_BUSY.cine = true;
+  try {
+    const cine = String(CFG.jvBetaCinema).trim();
+    const sys = `Tu prépares le « Ciné du week-end » de ${myName()}.
+Seulement les films sortis en salle en France le mercredi ${sem} (les sorties de cette semaine), et seulement ceux qui passent au cinéma ${cine}. Aucun film sorti avant.
+Pour chaque film, une ligne : <titre> · <genre>, <durée> · <avis franc en une phrase, appuyé sur la presse et les spectateurs : vaut le déplacement, ou attends la télé> · <séances du vendredi soir et du samedi si tu les trouves>.
+De 2 à 6 films, les plus intéressants d'abord. Sois honnête, n'invente rien. Si tu ne trouves pas les séances, ajoute une dernière ligne : « Séances : voir le site du cinéma ».
+Réponds uniquement par ces lignes, en texte brut, sans emoji ni titre.`;
+    const txt = await jvWeb(sys, `Les sorties ciné de cette semaine au ${cine}. Nous sommes le ${jvJourTxt(tod)} (${tod}).`, 8);
+    if (txt) { LS.set("copilote_beta_cine", { sem, at: Date.now(), txt: jvBetaNet(txt) }); try { syncReminders(); } catch (e) {} }
+  } finally { JV_BETA_BUSY.cine = false; }
+}
+/* dans les briefs en notification : jeudi soir et vendredi matin (match), vendredi soir et samedi matin (ciné) */
+function jvBetaBrief(d, quand){
+  const w = new Date(d + "T12:00").getDay(), out = [];
+  if (jvBetaMatchOn() && ((quand === "soir" && w === 4) || (quand === "matin" && w === 5))) {
+    const st = LS.get("copilote_beta_match", null), ch = LS.get("copilote_beta_choix", null), v = jvVendredi(d);
+    if (ch && ch.sem === v) out.push("Cote & Match · ton pari : " + ch.pari);
+    else if (st && st.sem === v && st.txt) out.push("Cote & Match" + (quand === "matin" ? " · annonce avant midi" : "") + " :", ...st.txt.split("\n").filter(Boolean).slice(0, 4));
+  }
+  if (jvBetaCineOn() && ((quand === "soir" && w === 5) || (quand === "matin" && w === 6))) {
+    const st = LS.get("copilote_beta_cine", null);
+    if (st && st.sem === jvMercredi(d) && st.txt) out.push("Ciné · sorties de la semaine :", ...st.txt.split("\n").filter(Boolean).slice(0, 6));
+  }
+  return out;
+}
+/* vendredi 11h : relance si aucun pari n'est encore choisi */
+function jvCoteRelance(){
+  if (!jvBetaMatchOn()) return null;
+  const tod = ymd(new Date()), v = jvVendredi(tod), ch = LS.get("copilote_beta_choix", null), st = LS.get("copilote_beta_match", null);
+  if (v < tod || (ch && ch.sem === v)) return null;
+  return { at: new Date(v + "T11:00:00").toISOString(), title: "Cote & Match · annonce avant midi", body: st && st.sem === v && st.txt ? st.txt.split("\n")[0] : "Ton pari de la semaine n'est pas encore choisi", url: "./", tag: "cm-" + v };
+}
+/* ce que Nestor sait dans la conversation, aux bons moments */
+function jvBetaContexte(){
+  const now = new Date(), tod = ymd(now), w = now.getDay(), h = now.getHours(), L = [];
+  if (jvBetaMatchOn() && ((w === 4 && h >= 12) || (w === 5 && h < 14))) {
+    const st = LS.get("copilote_beta_match", null), ch = LS.get("copilote_beta_choix", null), v = jvVendredi(tod);
+    if (st && st.sem === v && st.txt) L.push("Bêta · sélection Cote & Match préparée " + jvJourTxt(ymd(new Date(st.at))) + " :\n" + st.txt + (ch && ch.sem === v ? "\nSon pari déjà annoncé : " + ch.pari : ""));
+  }
+  if (jvBetaCineOn() && ((w === 5 && h >= 10) || w === 6 || w === 0)) {
+    const st = LS.get("copilote_beta_cine", null);
+    if (st && st.sem === jvMercredi(tod) && st.txt) L.push("Bêta · Ciné du week-end (sorties de la semaine au " + String(CFG.jvBetaCinema).trim() + ") :\n" + st.txt);
+  }
+  return L.join("\n");
+}
+async function toolCoteChoix(x){
+  const v = jvVendredi(ymd(new Date())), pari = String(x.pari || "").trim().slice(0, 200);
+  if (!pari) return { erreur: "quel pari ?" };
+  LS.set("copilote_beta_choix", { sem: v, pari, at: Date.now() });
+  try { syncReminders(); } catch (e) {}
+  return { ok: "noté pour la semaine du vendredi " + v + " ; plus de relance" };
+}
+JV_LOCAL.cote_match_choix = toolCoteChoix;
+JV_ATTENTE.cote_match_choix = "je note ton pari…";
 function jvBriefNotif(d, quand){
   try {
     const tod = ymd(new Date()), jour = quand === "soir" ? jvAjoute(d, 1) : d, L = [], items = [];
@@ -5564,6 +5708,7 @@ function jvBriefNotif(d, quand){
     if (quand === "matin" && jour === tod) { const n = jvRelancesListe().length; if (n) L.push(`${n} tâche${n > 1 ? "s traînent" : " traîne"} depuis plus d'une semaine`); }
     if (quand === "soir" && d === tod) { const n = items.filter(i => i.due && i.due <= tod && i.cat !== "rdv").length; if (n) L.push(`Ce soir, il reste ${n} tâche${n > 1 ? "s" : ""} ouverte${n > 1 ? "s" : ""}`); }
     const m = jvMeteoJour(jour); if (m) L.push(m);
+    try { L.push(...jvBetaBrief(d, quand)); } catch (e) {}
     return { title: (quand === "soir" ? "Demain · " : "Ta journée · ") + jvJourTxt(jour), body: L.join("\n") || (quand === "soir" ? "Rien de prévu demain" : "Rien de prévu aujourd'hui") };
   } catch (e) { return null; }
 }
@@ -5572,6 +5717,8 @@ async function jvJournalier(){
   try { if (MEM.key) { await jvAnnivAgenda(); jvAnnivTaches(); } } catch (e) {}
   try { await jvEchMails(false); } catch (e) {}
   try { jvRelancesAuto(); } catch (e) {}
+  try { await jvMatchPrep(); } catch (e) {}
+  try { await jvCinePrep(); } catch (e) {}
 }
 /* branché sur l'agenda : chaque création ou modification d'une tâche passe par calSync */
 function jvSortieCheck(it){
@@ -5604,6 +5751,7 @@ function paintLieux(){
   $("cvAlChk").checked = !!CFG.jvAlertes;
   jvAlertesState().then(s => { const e = $("cvAlSt"); if (e) e.textContent = s.txt; });
   try { paintNet(); } catch (e) {}
+  try { paintBeta(); } catch (e) {}
 }
 
 /* ---------- le tri des dictées s'appuie sur la mémoire (une seule source) ---------- */
@@ -5673,7 +5821,7 @@ const cvUndoBtn = (v, i) => v.auto && (v.tid || (v.tids && v.tids.length)) ? `<b
 function cvPaint(){
   if (!cvVisible()) return;
   const L = $("cvList");
-  if (!JV.view.length) L.innerHTML = `<p class="small" style="margin:0">Parle-moi de ce que tu veux : une idée à creuser, une décision, ta journée… Je m'appuie sur ta mémoire et je te dis franchement ce que j'en pense. Touche le rond pour dicter.</p>`;
+  if (!JV.view.length) L.innerHTML = (JV.prev && Date.now() - JV.prev.at < CV_GARDE && (JV.prev.view || []).length ? `<button class="cv-new" id="cvReprendre" style="align-self:flex-start;margin:0 0 12px">reprendre la conversation précédente</button>` : "") + `<p class="small" style="margin:0">Parle-moi de ce que tu veux : une idée à creuser, une décision, ta journée… Je m'appuie sur ta mémoire et je te dis franchement ce que j'en pense. Touche le rond pour dicter.</p>`;
   else L.innerHTML = JV.view.map((v, i) => {
     if (v.r === "u") return `<div class="cv-m u">${esc(v.t)}</div>`;
     if (v.r === "a") return `<div class="cv-m a">${cvHtml(v.t)}</div>`;
@@ -5798,6 +5946,22 @@ async function cvLockUI(){
 }
 
 /* ---------- ouverture, micro, branchements ---------- */
+/* lot 17 : réglages de la section Bêta, et « reprendre la conversation précédente » */
+function paintBeta(){
+  const m = $("cvBetaMatchChk"); if (!m) return;
+  m.checked = CFG.jvBetaMatch !== false; $("cvBetaCineChk").checked = CFG.jvBetaCine !== false;
+  if (document.activeElement !== $("cvBetaClub")) $("cvBetaClub").value = CFG.jvBetaClub || "";
+  if (document.activeElement !== $("cvBetaCinema")) $("cvBetaCinema").value = CFG.jvBetaCinema || "";
+  const sm = LS.get("copilote_beta_match", null), sc = LS.get("copilote_beta_cine", null), tod = ymd(new Date()), L = [];
+  if (CFG.jvBetaMatch !== false) L.push(sm && sm.sem === jvVendredi(tod) && sm.txt ? "Cote & Match : sélection prête (" + jvJourTxt(ymd(new Date(sm.at))) + ")" : "Cote & Match : prochaine sélection jeudi après-midi");
+  if (CFG.jvBetaCine !== false) L.push(!String(CFG.jvBetaCinema || "").trim() ? "Ciné : indique ton cinéma" : sc && sc.sem === jvMercredi(tod) && sc.txt ? "Ciné : sorties de la semaine prêtes" : "Ciné : sorties de la semaine dès vendredi");
+  $("cvBetaSt").textContent = L.join(" · ");
+}
+$("cvBetaMatchChk").onchange = () => { CFG.jvBetaMatch = $("cvBetaMatchChk").checked; saveCfg(); try { syncReminders(); } catch (e) {} paintBeta(); };
+$("cvBetaCineChk").onchange = () => { CFG.jvBetaCine = $("cvBetaCineChk").checked; saveCfg(); try { syncReminders(); } catch (e) {} paintBeta(); };
+$("cvBetaClub").onchange = () => { CFG.jvBetaClub = $("cvBetaClub").value.trim().slice(0, 60); saveCfg(); paintBeta(); };
+$("cvBetaCinema").onchange = () => { CFG.jvBetaCinema = $("cvBetaCinema").value.trim().slice(0, 80); saveCfg(); paintBeta(); jvCinePrep(); };
+$("cvList").addEventListener("click", e => { if (e.target.closest("#cvReprendre")) cvReprendre(); });
 /* lot 16 : connexion Netatmo (comme Google : Chrome dans l'appli, retour par copilote://gauth) et réglages */
 async function jvNetConnecter(){
   if (!MEM.tok) { toast("ouvre d'abord ta mémoire, puis recommence", "", null, 6000); return; }
@@ -5882,7 +6046,7 @@ async function openConv(){
     show("conv");
     $("cvLock").style.display = "none";
     if (!(await memUnlock())) { cvLockUI(); return; }
-    cvTab("parler"); memSync(); jvGeoSync();
+    cvFraiche(); cvTab("parler"); memSync(); jvGeoSync();
     const h = new Date().getHours();
     if (CFG.jvBrief !== false && !jvBriefFait() && h >= 5 && h < 11 && CFG.key) setTimeout(jvBrief, 400);
   }, 60);

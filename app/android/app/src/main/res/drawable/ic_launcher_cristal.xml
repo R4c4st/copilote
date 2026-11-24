@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nestor : fond « cristal » de l'icône (verre blanc qui tire vers le bleu) -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient
+        android:type="linear"
+        android:angle="315"
+        android:startColor="#FFFFFF"
+        android:centerColor="#EEF7F9"
+        android:endColor="#DFE8FB" />
+</shape>

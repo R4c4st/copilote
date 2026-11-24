@@ -85,7 +85,7 @@ import org.json.JSONObject;
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 10;
+    static final int NATIVE_BUILD = 11;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
