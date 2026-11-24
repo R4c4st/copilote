@@ -85,7 +85,7 @@ import org.json.JSONObject;
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 8;
+    static final int NATIVE_BUILD = 9;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -659,7 +659,7 @@ public class TempoNativePlugin extends Plugin {
         Intent i = new Intent(AlarmClock.ACTION_SET_ALARM);
         i.putExtra(AlarmClock.EXTRA_HOUR, (int) call.getInt("hour", 7));
         i.putExtra(AlarmClock.EXTRA_MINUTES, (int) call.getInt("minute", 0));
-        i.putExtra(AlarmClock.EXTRA_MESSAGE, call.getString("label", "Jarvis"));
+        i.putExtra(AlarmClock.EXTRA_MESSAGE, call.getString("label", "Nestor"));
         i.putExtra(AlarmClock.EXTRA_SKIP_UI, (boolean) call.getBoolean("skipUi", true));
         JSArray days = call.getArray("days");
         if (days != null && days.length() > 0) {
@@ -674,7 +674,7 @@ public class TempoNativePlugin extends Plugin {
     public void setTimer(PluginCall call) {
         Intent i = new Intent(AlarmClock.ACTION_SET_TIMER);
         i.putExtra(AlarmClock.EXTRA_LENGTH, (int) call.getInt("seconds", 300));
-        i.putExtra(AlarmClock.EXTRA_MESSAGE, call.getString("label", "Jarvis"));
+        i.putExtra(AlarmClock.EXTRA_MESSAGE, call.getString("label", "Nestor"));
         i.putExtra(AlarmClock.EXTRA_SKIP_UI, true);
         startSafely(i, call);
     }
@@ -868,7 +868,7 @@ public class TempoNativePlugin extends Plugin {
 
     @PluginMethod
     public void print(PluginCall call) {
-        final String name = call.getString("name", "Jarvis");
+        final String name = call.getString("name", "Nestor");
         getActivity().runOnUiThread(() -> {
             try {
                 PrintManager pm = (PrintManager) getActivity().getSystemService(Context.PRINT_SERVICE);

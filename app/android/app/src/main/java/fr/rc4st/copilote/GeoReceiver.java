@@ -52,7 +52,7 @@ public class GeoReceiver extends BroadcastReceiver {
             // pas deux fois la même alerte en 45 min (on passe souvent plusieurs fois devant)
             long last = p.getLong("geo_last_" + id, 0);
             if (now - last < 45 * 60 * 1000L) continue;
-            String title = f.optString("title", "Jarvis");
+            String title = f.optString("title", "Nestor");
             String body = f.optString("body", "");
             long dep = f.optLong("dep", 0);
             if (dep > 0) {
