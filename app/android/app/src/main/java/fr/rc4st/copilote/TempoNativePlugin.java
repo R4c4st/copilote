@@ -85,7 +85,7 @@ import org.json.JSONObject;
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 7;
+    static final int NATIVE_BUILD = 8;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -502,6 +502,34 @@ public class TempoNativePlugin extends Plugin {
         String id = UUID.randomUUID().toString();
         speakCalls.put(id, call);
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, id);
+    }
+
+    /* mode discret automatique : silencieux, vibreur ou « ne pas déranger », sauf casque ou Bluetooth */
+    @PluginMethod
+    public void sonState(PluginCall call) {
+        JSObject r = new JSObject();
+        int ringer = 2;
+        boolean dnd = false, casque = false;
+        try {
+            android.media.AudioManager am = (android.media.AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+            if (am != null) {
+                ringer = am.getRingerMode();
+                android.media.AudioDeviceInfo[] outs = am.getDevices(android.media.AudioManager.GET_DEVICES_OUTPUTS);
+                if (outs != null) for (android.media.AudioDeviceInfo d : outs) {
+                    int t = d.getType();
+                    if (t == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || t == android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET
+                        || t == android.media.AudioDeviceInfo.TYPE_WIRED_HEADPHONES || t == android.media.AudioDeviceInfo.TYPE_USB_HEADSET) casque = true;
+                }
+            }
+        } catch (Exception e) {}
+        try {
+            android.app.NotificationManager nm = (android.app.NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) dnd = nm.getCurrentInterruptionFilter() > android.app.NotificationManager.INTERRUPTION_FILTER_ALL;
+        } catch (Exception e) {}
+        r.put("ringer", ringer);
+        r.put("dnd", dnd);
+        r.put("casque", casque);
+        call.resolve(r);
     }
 
     @PluginMethod

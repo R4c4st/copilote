@@ -390,7 +390,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center">Jarvis v11 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center">Jarvis v12 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -493,6 +493,8 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:6px">posé <input type="range" id="cvRate" min="0.75" max="1.3" step="0.05" style="flex:1"> rapide</label>
     <div class="foot" style="margin-top:10px"><p class="small" id="cvVoixSt" style="margin:0;flex:1"></p><button class="ok" id="cvVoixTest">écouter</button></div>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvParleChk" style="width:auto"> il me répond à voix haute quand je lui parle</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvDiscretChk" style="width:auto"> mode discret : il ne parle plus du tout (ou dis-lui « mode discret » / « tu peux parler »)</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvDiscretAutoChk" style="width:auto"> se taire tout seul quand le téléphone est en silencieux, vibreur ou « ne pas déranger » (sauf casque ou Bluetooth)</label>
     <div class="lab">Mes souvenirs</div>
     <input id="cvQ" placeholder="chercher dans ma mémoire…" style="margin-top:4px">
     <div id="cvMemList" style="margin-top:6px"></div>
@@ -620,7 +622,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 11;
+const TEMPO_BUILD = 12;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1077,6 +1079,7 @@ async function alarmIntent(text){
 }
 async function capture(text, src, kind, ctx){
   text = (text || "").trim(); if (!text) { idle(); return; }
+  if (typeof jvCommandeVoix === "function" && text.length < 60 && jvCommandeVoix(text)) { idle(); return true; }
   /* Jarvis : quand l'écran de conversation est ouvert, la dictée va à la conversation */
   { const cv = document.getElementById("conv"); if (cv && cv.classList.contains("show") && src === "voix" && !(ctx && ctx.cr)) { idle(); cvSend(text, { voix: true }); return true; } }
   if (ctx && ctx.cr) return captureCR(text, ctx.cr);
@@ -4493,7 +4496,7 @@ async function cvSend(text, opt){
     const txt = texts.join("\n\n").trim();
     JV.msgs.push({ role: "assistant", content: txt || "(je te propose quelque chose ci-dessous)" });
     if (txt) JV.view.push({ r: "a", t: txt, usd });
-    if (txt && opt && opt.voix && CFG.jvParle !== false) { try { speak(jvPourVoix(txt)); } catch (e) {} }
+    if (txt && opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0") { try { speak(jvPourVoix(txt)); } catch (e) {} }
     const v0 = JV.view.length;
     for (const t of tools) {
       const x = t.input || {};
@@ -5309,6 +5312,15 @@ function jvNoms(){
   return [...set].slice(0, 40);
 }
 /* la dictée Voxtral reconnaît mieux les prénoms de tes proches */
+/* mode discret : à la voix (« mode discret » / « tu peux parler ») ou par la case ; il se tait aussi tout seul quand le téléphone est en silencieux */
+function jvCommandeVoix(text){
+  const n = cvNorm(String(text).replace(/[’`]/g, "'")).replace(/[^a-z' ]+/g, " ").replace(/\s+/g, " ").trim().replace(new RegExp("^(?:" + [jvNom(), "jarvis", "nestor", "vega"].map(x => cvNorm(x)).join("|") + ")\\s+"), "");
+  const off = /^(?:(?:passe|mets toi|reste) )?(?:en )?mode (?:discret|silencieux)(?: s'il te plait)?$|^(?:active|mets) (?:le )?mode (?:discret|silencieux)$|^silence(?: s'il te plait)?$/;
+  const on = /^(?:tu peux (?:re)?parler|reparle|mode (?:normal|vocal)|(?:fin|sors) du mode (?:discret|silencieux)|(?:desactive|coupe) le mode (?:discret|silencieux))(?: s'il te plait)?$/;
+  if (off.test(n)) { CFG.jvDiscret = true; saveCfg(); try { hush(); } catch (e) {} toast("mode discret : je ne parle plus · dis « tu peux parler » pour que je reprenne", "", null, 5000); return true; }
+  if (on.test(n)) { CFG.jvDiscret = false; saveCfg(); toast("je peux de nouveau te répondre à voix haute", "", null, 4000); return true; }
+  return false;
+}
 const jvPourVoix = t => String(t || "").replace(/\*\*/g, "").replace(/^\s*[-•]\s*/gm, "").replace(/https?:\/\/\S+/g, "").replace(/\s*\n+\s*/g, " ").trim().slice(0, 900);
 const _jvVoxBias = voxBias;
 voxBias = function(){ const r = _jvVoxBias.apply(this, arguments) || []; try { const have = new Set(r); [jvNom(), ...jvNoms()].forEach(n => { if (!have.has(n) && r.length < 80) r.push(n); }); } catch (e) {} return r; };
@@ -5510,6 +5522,20 @@ $("jvRelOk").onclick = () => hide();
 $("cvEspChk").onchange = () => { CFG.jvEsp = $("cvEspChk").checked; saveCfg(); };
 $("eSpace").onclick = () => jvChangeEspace(cur);
 
+/* ---------- lot 9 : mode discret ---------- */
+const _jvSpeak = speak;
+speak = function(t, then){
+  const sans = () => { if (then) then(); };
+  if (CFG.jvDiscret) return sans();
+  if (NATIVE && CFG.jvDiscretAuto !== false) {
+    tn("sonState").then(r => { if (r && (r.ringer < 2 || r.dnd) && !r.casque) sans(); else _jvSpeak(t, then); }, () => _jvSpeak(t, then));
+    return;
+  }
+  return _jvSpeak(t, then);
+};
+$("cvDiscretChk").onchange = () => { CFG.jvDiscret = $("cvDiscretChk").checked; saveCfg(); if (CFG.jvDiscret) { try { hush(); } catch (e) {} } };
+$("cvDiscretAutoChk").onchange = () => { CFG.jvDiscretAuto = $("cvDiscretAutoChk").checked; saveCfg(); };
+
 /* ---------- lot 8 : son nom à l'écran, sa voix ---------- */
 let JV_NOM_AFF = "Jarvis", jvNomT = null;
 const jvEscRx = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -5542,12 +5568,13 @@ async function jvVoixListe(){
 function jvVoixSave(){ CFG.jvVoix = $("cvVoix").value; CFG.jvPitch = +$("cvPitch").value || 1; CFG.jvRate = +$("cvRate").value || 1.05; saveCfg(); }
 function paintVoix(){
   $("cvNom").value = jvNom(); $("cvPitch").value = CFG.jvPitch || 1; $("cvRate").value = CFG.jvRate || 1.05; $("cvParleChk").checked = CFG.jvParle !== false;
+  $("cvDiscretChk").checked = !!CFG.jvDiscret; $("cvDiscretAutoChk").checked = CFG.jvDiscretAuto !== false;
   jvVoixListe();
 }
 $("cvNom").onchange = () => { CFG.jvNom = $("cvNom").value.trim() || "Jarvis"; saveCfg(); jvNomDom(); toast(`désormais, je m'appelle ${jvNom()}`); };
 ["cvVoix", "cvPitch", "cvRate"].forEach(id => $(id).onchange = jvVoixSave);
 $("cvParleChk").onchange = () => { CFG.jvParle = $("cvParleChk").checked; saveCfg(); };
-$("cvVoixTest").onclick = () => { jvVoixSave(); try { hush(); } catch (e) {} speak(`Bonsoir ${(typeof myName === "function" && myName()) || ""}. Ici ${jvNom()}. Ton bus passe à 18 heures 45 : je te laisse le temps de retrouver tes clés.`); };
+$("cvVoixTest").onclick = () => { jvVoixSave(); try { hush(); } catch (e) {} _jvSpeak(`Bonsoir ${(typeof myName === "function" && myName()) || ""}. Ici ${jvNom()}. Ton bus passe à 18 heures 45 : je te laisse le temps de retrouver tes clés.`); };
 const _jvOpenEdit = openEdit;
 openEdit = function(it){ const r = _jvOpenEdit.apply(this, arguments); const b = $("eSpace"); if (b) b.textContent = "→ " + jvAutre(); return r; };
 $("cvAlChk").onchange = async () => {
