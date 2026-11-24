@@ -1,0 +1,37 @@
+name: Horaires des bus Stan
+
+# Récupère chaque semaine les horaires publics du réseau Stan (données ouvertes) et les range,
+# en version compacte, dans donnees/stan.json : Jarvis les lit et cherche les trajets dans le téléphone.
+on:
+  schedule:
+    - cron: "23 3 * * 1"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['outils/bus/**', '.github/workflows/bus.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bus
+  cancel-in-progress: true
+
+jobs:
+  horaires:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Horaires Stan
+        run: python outils/bus/stan.py donnees/stan.json
+      - name: Rangement
+        run: |
+          git add donnees/stan.json
+          if git diff --cached --quiet; then echo "rien de neuf"; exit 0; fi
+          git -c user.name="copilote-ci" -c user.email="copilote-ci@users.noreply.github.com" commit -qm "Horaires Stan mis à jour"
+          git pull -q --rebase origin main
+          git push -q origin HEAD:main
