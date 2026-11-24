@@ -18,23 +18,43 @@ def get(url):
         return r.read()
 
 
-def url_gtfs():
+def candidats():
+    """Liens possibles vers le GTFS Stan, du plus récent au plus ancien (l'identifiant change à chaque publication)."""
+    urls = []
     try:
         d = json.loads(get(DATASET))
         res = [r for r in d.get("resources", []) if (r.get("format") or "").upper() == "GTFS" and r.get("url")]
         res.sort(key=lambda r: r.get("updated") or r.get("last_update") or "", reverse=True)
-        if res:
-            return res[0].get("url")
+        urls += [r["url"] for r in res]
     except Exception as e:  # l'API change parfois : on lit la page du jeu de données
         print("API indisponible :", e, file=sys.stderr)
     try:
         html = get(PAGE).decode("utf-8", "replace")
-        ids = re.findall(r'/resources/(\d+)[^"]*"[^<]{0,400}GTFS', html) or re.findall(r'/resources/(\d+)', html)
-        if ids:
-            return f"https://transport.data.gouv.fr/resources/{max(ids, key=int)}/download"
+        ids = sorted({int(i) for i in re.findall(r"/resources/(\d+)", html)}, reverse=True)
+        urls += [f"https://transport.data.gouv.fr/resources/{i}/download" for i in ids]
     except Exception as e:
         print("page indisponible :", e, file=sys.stderr)
-    return SECOURS
+    urls.append(SECOURS)
+    vus, out = set(), []
+    for u in urls:
+        if u not in vus:
+            vus.add(u); out.append(u)
+    return out
+
+
+def gtfs():
+    for u in candidats()[:8]:
+        try:
+            data = get(u)
+            if not zipfile.is_zipfile(io.BytesIO(data)):
+                print("pas un zip :", u); continue
+            z = zipfile.ZipFile(io.BytesIO(data))
+            if {"stops.txt", "stop_times.txt", "trips.txt"} <= set(z.namelist()):
+                print("GTFS :", u); return z
+            print("zip sans horaires GTFS :", u)
+        except Exception as e:
+            print("échec", u, e, file=sys.stderr)
+    raise SystemExit("aucun GTFS Stan trouvé")
 
 
 def lire(z, nom):
@@ -48,9 +68,7 @@ def minutes(t):
 
 
 def main(sortie):
-    url = url_gtfs()
-    print("GTFS :", url)
-    z = zipfile.ZipFile(io.BytesIO(get(url)))
+    z = gtfs()
 
     stops = {s["stop_id"]: s for s in lire(z, "stops.txt")}
     routes = {r["route_id"]: r for r in lire(z, "routes.txt")}
