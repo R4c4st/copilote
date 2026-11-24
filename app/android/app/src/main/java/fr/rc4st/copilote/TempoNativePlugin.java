@@ -79,13 +79,25 @@ import org.json.JSONObject;
     permissions = {
         @Permission(strings = { Manifest.permission.RECORD_AUDIO }, alias = "mic"),
         @Permission(strings = { Manifest.permission.READ_CONTACTS }, alias = "contacts"),
-        @Permission(strings = { Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION }, alias = "loc")
+        @Permission(strings = { Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION }, alias = "loc"),
+        @Permission(
+            strings = {
+                "android.permission.health.READ_SLEEP",
+                "android.permission.health.READ_STEPS",
+                "android.permission.health.READ_HEART_RATE",
+                "android.permission.health.READ_RESTING_HEART_RATE",
+                "android.permission.health.READ_EXERCISE",
+                "android.permission.health.READ_WEIGHT",
+                "android.permission.health.READ_HEALTH_DATA_HISTORY"
+            },
+            alias = "sante"
+        )
     }
 )
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 11;
+    static final int NATIVE_BUILD = 12;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -1008,6 +1020,80 @@ public class TempoNativePlugin extends Plugin {
         File[] kids = f.listFiles();
         if (kids != null) for (File k : kids) deleteRec(k);
         f.delete();
+    }
+
+    // ------------------------------------------------------------------ lot 18 : santé (Health Connect, Android 14 et plus)
+
+    private boolean santeOk() {
+        return Build.VERSION.SDK_INT >= 34 && Sante.dispo(getContext());
+    }
+
+    /** Health Connect est-il là, et qu'est-ce que Nestor a le droit de lire ? */
+    @PluginMethod
+    public void santeEtat(PluginCall call) {
+        JSObject r = new JSObject();
+        boolean ok = santeOk();
+        r.put("dispo", ok);
+        r.put("android", Build.VERSION.SDK_INT);
+        r.put("perms", ok && Build.VERSION.SDK_INT >= 34 ? Sante.accordees(getContext()) : new JSONArray());
+        call.resolve(r);
+    }
+
+    /** l'écran d'autorisation de Health Connect (il choisit ce qu'il partage) */
+    @PluginMethod
+    public void santeDemander(PluginCall call) {
+        if (!santeOk()) {
+            call.reject("indisponible");
+            return;
+        }
+        requestPermissionForAlias("sante", call, "santePerm");
+    }
+
+    @PermissionCallback
+    private void santePerm(PluginCall call) {
+        JSObject r = new JSObject();
+        r.put("perms", Build.VERSION.SDK_INT >= 34 ? Sante.accordees(getContext()) : new JSONArray());
+        call.resolve(r);
+    }
+
+    /** lecture des derniers jours (en arrière-plan : quelques dizaines de requêtes locales) */
+    @PluginMethod
+    public void santeLire(PluginCall call) {
+        if (!santeOk()) {
+            call.reject("indisponible");
+            return;
+        }
+        Integer j = call.getInt("jours", 35);
+        final int jours = Math.max(1, Math.min(400, j == null ? 35 : j));
+        new Thread(() -> {
+            try {
+                if (Build.VERSION.SDK_INT >= 34) call.resolve(new JSObject(Sante.lire(getContext(), jours).toString()));
+                else call.reject("indisponible");
+            } catch (Exception e) {
+                call.reject(String.valueOf(e.getMessage()));
+            }
+        }).start();
+    }
+
+    /** les réglages Health Connect de Nestor (retirer ou rendre une autorisation) */
+    @PluginMethod
+    public void santeGerer(PluginCall call) {
+        Intent i = new Intent(Build.VERSION.SDK_INT >= 34 ? "android.health.connect.action.MANAGE_HEALTH_PERMISSIONS" : "androidx.health.ACTION_HEALTH_CONNECT_SETTINGS");
+        i.putExtra(Intent.EXTRA_PACKAGE_NAME, getContext().getPackageName());
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            getContext().startActivity(i);
+            call.resolve();
+        } catch (Exception e) {
+            try {
+                Intent s = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getContext().getPackageName()));
+                s.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(s);
+                call.resolve();
+            } catch (Exception e2) {
+                call.reject("indisponible");
+            }
+        }
     }
 
     /** écran allumé pendant une dictée (sinon la veille coupe la phrase) */

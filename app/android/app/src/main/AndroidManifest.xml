@@ -53,6 +53,26 @@
             </intent-filter>
         </service>
 
+        <!-- Health Connect : page de confidentialité (« pourquoi Nestor lit ces données ? »), exigée pour demander l'accès -->
+        <activity
+            android:name=".SanteConfidentialite"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity>
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".SanteConfidentialite"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- widget constellation -->
         <receiver android:name=".GeoReceiver" android:exported="false" />
 
@@ -90,6 +110,15 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
+    <!-- Nestor : santé, en lecture seule (montre Garmin, balance Withings, via Health Connect) -->
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+
     <!-- Android 11+ : déclarer ce qu'on ouvre ou utilise -->
     <queries>
         <intent><action android:name="android.speech.RecognitionService" /></intent>
@@ -103,6 +132,7 @@
         <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="https" /></intent>
         <intent><action android:name="android.intent.action.INSERT" /><data android:mimeType="vnd.android.cursor.dir/event" /></intent>
         <intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent>
+        <package android:name="com.google.android.apps.healthdata" />
         <package android:name="com.whatsapp" />
         <package android:name="com.microsoft.office.outlook" />
     </queries>
