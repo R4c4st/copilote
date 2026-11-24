@@ -218,6 +218,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
 .aRow input,#cGm{accent-color:rgb(var(--glow))}
 .toast{position:fixed;left:50%;bottom:calc(26px + var(--sab));transform:translate(-50%,20px);opacity:0;transition:.3s;font-size:14px;display:flex;gap:18px;padding:12px 20px;border-radius:999px;background:var(--sheet);border:1px solid var(--faint);z-index:60;white-space:nowrap;letter-spacing:.2px}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+.toast{pointer-events:none}.toast.show button{pointer-events:auto}
 .toast button{color:rgb(var(--glow));font-weight:500}
 
 /* Jarvis : conversation et mémoire */
@@ -390,7 +391,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v17 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v18 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -626,7 +627,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 17;
+const TEMPO_BUILD = 18;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1759,7 +1760,7 @@ function deleteItem(it0){
   let idx = S.items.indexOf(it0); if (idx < 0 && it0) idx = S.items.findIndex(i => i.id === it0.id); if (idx < 0) return;
   const it = S.items[idx];
   S.items = S.items.filter(i => i !== it && i.id !== it.id); save(); render(); calDel(it); vib(12);
-  toast("supprimé", "annuler", () => { S.items.splice(idx, 0, it); save(); render(); calSync(it); });
+  toast("supprimé", "annuler", () => { if (S.items.some(i => i.id === it.id)) return; S.items.splice(Math.min(idx, S.items.length), 0, it); save(); render(); calSync(it); });
 }
 document.addEventListener("pointermove", e => {
   if (!sw || e.pointerId !== sw.id) return;
@@ -2768,7 +2769,7 @@ $("eDel").onclick = () => {
   if (idx < 0) { closeEdit(); render(); return; }   // déjà parti : on ne retire jamais une autre ligne à sa place
   const it = S.items[idx];
   S.items = S.items.filter(i => i !== it && i.id !== it.id); save(); closeEdit(); render(); calDel(it);
-  toast("supprimé", "annuler", () => { S.items.splice(idx, 0, it); save(); render(); if ($("memos").classList.contains("show")) paintMemos(); if ($("hist").classList.contains("show")) paintHist(); calSync(it); });
+  toast("supprimé", "annuler", () => { if (S.items.some(i => i.id === it.id)) return; S.items.splice(Math.min(idx, S.items.length), 0, it); save(); render(); if ($("memos").classList.contains("show")) paintMemos(); if ($("hist").classList.contains("show")) paintHist(); calSync(it); });
 };
 /* agenda Outlook : ouvre l'événement pré-rempli */
 function agendaUrl(o){
@@ -3374,8 +3375,9 @@ function vib(p){ try { navigator.vibrate && navigator.vibrate(p); } catch (e) {}
 let tt = null;
 function toast(msg, btn, fn, ms){
   $("tTxt").innerHTML = richText(msg); const b = $("tBtn");
-  b.textContent = btn || ""; b.style.display = btn ? "" : "none"; b.onclick = () => { fn && fn(); $("toast").classList.remove("show"); };
-  $("toast").classList.add("show"); clearTimeout(tt); tt = setTimeout(() => $("toast").classList.remove("show"), ms || (btn ? 4000 : 2200));
+  let used = false;
+  b.textContent = btn || ""; b.style.display = btn ? "" : "none"; b.onclick = () => { if (used) return; used = true; b.onclick = null; fn && fn(); $("toast").classList.remove("show"); };
+  $("toast").classList.add("show"); clearTimeout(tt); tt = setTimeout(() => { $("toast").classList.remove("show"); b.onclick = null; }, ms || (btn ? 4000 : 2200));
 }
 
 /* ===== reminders ===== */
@@ -5658,27 +5660,30 @@ async function cvLockUI(){
 }
 
 /* ---------- ouverture, micro, branchements ---------- */
-/* correctif doublons : une seule fois, on fusionne les lignes identiques venues d'un même message (on garde la plus ancienne) */
+/* correctif doublons : une seule fois, on nettoie
+   1) les jumeaux : la même ligne réinsérée plusieurs fois (même identifiant) par le « annuler » invisible → on garde la première
+   2) les lignes identiques venues d'un même message → on garde la plus ancienne */
 function jvDedoublonne(){
-  if (LS.get("copilote_dedup1", 0)) return 0;
+  if (LS.get("copilote_dedup2", 0)) return 0;
   let n = 0;
   try {
     for (const sp of ["pro", "perso"]) {
-      const st = spaceState(sp), arr = st.items || [], garde = new Set(), vus = new Set(), parti = [];
-      [...arr].sort((a, b) => (a.created || 0) - (b.created || 0)).forEach(i => {
+      const st = spaceState(sp), arr = st.items || [], ids = new Set(), garde = new Set(), vus = new Set(), parti = [];
+      const uniques = arr.filter(i => { if (i && ids.has(i.id)) { n++; return false; } if (i) ids.add(i.id); return !!i; });
+      [...uniques].sort((a, b) => (a.created || 0) - (b.created || 0)).forEach(i => {
         if (i.done || !/^(téléphone|mail)/.test(i.src || "")) { garde.add(i); return; }
         const k = (isMemo(i) ? "memo" : i.cat) + "|" + jvNormT(i.title) + "|" + jvNormT(i.note);
         if (vus.has(k)) parti.push(i); else { vus.add(k); garde.add(i); }
       });
-      if (!parti.length) continue;
+      const rest = uniques.filter(i => garde.has(i));
+      if (rest.length === arr.length) continue;
       n += parti.length;
-      const ids = new Set([...garde].map(i => i.id)), rest = arr.filter(i => garde.has(i));
       if (sp === SPACE) { S.items = rest; save(); } else { st.items = rest; LS.set(SKEY(sp), st); }
-      parti.forEach(i => { if ((i.gId || i.evId) && !ids.has(i.id)) { try { _jvCalDel(i); } catch (e) {} } });
+      parti.forEach(i => { if (i.gId || i.evId) { try { _jvCalDel(i); } catch (e) {} } });
     }
   } catch (e) {}
-  LS.set("copilote_dedup1", 1);
-  if (n) { try { render(); } catch (e) {} setTimeout(() => toast(`${n} doublon${n > 1 ? "s" : ""} retiré${n > 1 ? "s" : ""} (le même message noté plusieurs fois)`, "", null, 6000), 1500); }
+  LS.set("copilote_dedup2", 1);
+  if (n) { try { render(); } catch (e) {} setTimeout(() => toast(`${n} doublon${n > 1 ? "s" : ""} retiré${n > 1 ? "s" : ""}`, "", null, 6000), 1500); }
   return n;
 }
 setTimeout(jvDedoublonne, 800);
