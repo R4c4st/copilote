@@ -395,7 +395,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v23 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v24 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -646,7 +646,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 23;
+const TEMPO_BUILD = 24;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1106,6 +1106,8 @@ async function capture(text, src, kind, ctx){
   if (typeof jvCommandeVoix === "function" && text.length < 60 && jvCommandeVoix(text)) { idle(); return true; }
   /* Jarvis : quand l'écran de conversation est ouvert, la dictée va à la conversation */
   { const cv = document.getElementById("conv"); if (cv && cv.classList.contains("show") && src === "voix" && !(ctx && ctx.cr)) { idle(); cvSend(text, { voix: true }); return true; } }
+  /* Nestor : « Nestor, … » au cercle (ou tapé) s'adresse à lui : ni tâche ni mémo */
+  if (!kind && (src === "voix" || src === "texte") && !(ctx && ctx.cr) && typeof jvPourNestor === "function" && jvPourNestor(text)) return true;
   if (ctx && ctx.cr) return captureCR(text, ctx.cr);
   if (!kind && (src === "voix" || src === "texte") && (await alarmIntent(text))) return true;
   if (!kind && (src === "voix" || src === "texte") && colisIntent(text)) return true;
@@ -5969,6 +5971,61 @@ function jvCommandeVoix(text){
   if (off.test(n)) { CFG.jvDiscret = true; saveCfg(); try { hush(); } catch (e) {} toast("mode discret : je ne parle plus · dis « tu peux parler » pour que je reprenne", "", null, 5000); return true; }
   if (on.test(n)) { CFG.jvDiscret = false; saveCfg(); toast("je peux de nouveau te répondre à voix haute", "", null, 4000); return true; }
   return false;
+}
+/* ---------- lot 19 : au cercle, « Nestor, … » s'adresse à lui (ni tâche ni mémo) ---------- */
+/* ce qui suit son nom (« Dis Nestor, je rentre » → « je rentre ») ; null si la phrase ne commence pas par son nom */
+function jvAppel(text){
+  const noms = [...new Set([jvNom(), "Nestor", "Jarvis"].map(x => cvNorm(x).replace(/[^a-z0-9]+/g, "")))].filter(Boolean);
+  const t = String(text || "").replace(/[’`]/g, "'");
+  const m = cvNorm(t).match(new RegExp("^\\s*(?:(?:dis|hey|he|eh|ok|allo)[\\s,!]+)?(?:" + noms.join("|") + ")(?![a-z0-9])[\\s,.:;!?-]*"));
+  return m ? t.slice(m[0].length).trim() : null;
+}
+/* raccourcis : faits tout de suite, sans passer par Claude (les prochains automatismes s'ajoutent ici) */
+const JV_RACCOURCIS = [
+  { nom: "rentre", pret: () => jvNetOn(),
+    rx: /^(?:je (?:rentre|reviens|suis sur le (?:chemin du )?retour|suis en route pour la maison)|on rentre)(?: (?:a la maison|chez moi|du (?:boulot|travail|taf|bureau|golf|chantier)))?(?: (?:maintenant|la|tout de suite))?$/,
+    faire: async () => { const r = await jvNetMode("schedule"); return r.ok ? { dit: "Chauffage remis au planning : la maison chauffe pour ton retour." } : { err: "Netatmo n'a pas répondu, le chauffage n'a pas changé." }; } },
+  { nom: "pars", pret: () => jvNetOn(),
+    rx: /^(?:je (?:pars|m'en vais|quitte la maison|sors de (?:la maison|chez moi))|on part)(?: (?:de la maison|de chez moi))?(?: (?:maintenant|la|tout de suite))?$/,
+    faire: async () => { const r = await jvNetMode("away"); return r.ok ? { dit: "Maison en absent, le chauffage baisse." + (jvChauffeAuto() ? " Il reprend tout seul à ton retour." : " Dis « Nestor, je rentre » au retour.") } : { err: "Netatmo n'a pas répondu, le chauffage n'a pas changé." }; } }
+];
+function jvRaccourci(reste){
+  const n = cvNorm(String(reste || "").replace(/[’`]/g, "'")).replace(/\bs'il te plait\b/g, " ").replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim().replace(/^(?:bon|ok|allez|alors) /, "");
+  return JV_RACCOURCIS.find(r => r.rx.test(n) && r.pret()) || null;
+}
+/* appelé par capture() pour la dictée du cercle et le texte tapé : true = c'est pour Nestor, rien d'autre ne se fait */
+function jvPourNestor(text){
+  const reste = jvAppel(text); if (reste === null) return false;
+  if (!reste) { try { idle(); } catch (e) {} openConv(); return true; }   // « Nestor » tout seul : la conversation s'ouvre
+  jvAuCercle(reste).catch(() => { try { idle(); } catch (e) {} toast("je n'ai pas pu répondre", "", null, 5000); });
+  return true;
+}
+async function jvAuCercle(reste){
+  try { ringState("think"); hint(jvNom() + " t'écoute…"); } catch (e) {}
+  try { await memUnlock(); } catch (e) {}
+  const parle = t => { if (CFG.jvParle !== false && CFG.vSay !== "0") { try { speak(jvPourVoix(t)); } catch (e) {} } };
+  const r = jvRaccourci(reste);
+  if (r) {
+    const o = await r.faire();
+    idle();
+    if (o.err) { toast(o.err, "", null, 6000); parle(o.err); return; }
+    flashOk(); vib(18); toast(o.dit, "voir", () => openConv(), 7000); parle(o.dit);
+    // gardé dans la conversation : s'il l'ouvre ensuite, Nestor sait ce qui a été fait
+    cvFraiche();
+    JV.view.push({ r: "u", t: reste }, { r: "a", t: o.dit, usd: 0 });
+    JV.msgs.push({ role: "user", content: reste }, { role: "assistant", content: o.dit });
+    JV.at = Date.now(); await cvSave(); return;
+  }
+  if (!CFG.key) { idle(); toast("il me faut ta clé Claude pour te répondre (réglages)", "", null, 6000); return; }
+  if (JV.busy) { idle(); toast("je réponds déjà à autre chose, réessaie dans un instant", "", null, 5000); return; }
+  const n0 = JV.view.length;
+  await cvSend(reste, { voix: true });
+  idle();
+  const nv = JV.view.slice(n0);
+  // une proposition à valider (souvenir, lieu, oubli) ou une erreur : la conversation s'ouvre
+  if (nv.some(v => (v.r === "p" && !v.st) || v.r === "e")) { openConv(); return; }
+  const rep = jvPourVoix(nv.filter(v => v.r === "a").map(v => v.t).join(" "));
+  flashOk(); toast(rep.length > 180 ? rep.slice(0, 177) + "…" : rep || "c'est fait", "voir", () => openConv(), 9000);
 }
 const jvPourVoix = t => String(t || "").replace(/\*\*/g, "").replace(/\b(?:[A-Z]\.\s?){3,}[A-Z]?\.?/g, m => m.replace(/[.\s]/g, "").toLowerCase() === cvNorm(jvNom()) ? jvNom() + (/\s$/.test(m) ? " " : "") : m).replace(/^\s*[-•]\s*/gm, "").replace(/https?:\/\/\S+/g, "").replace(/\s*\n+\s*/g, " ").trim().slice(0, 900);
 const _jvVoxBias = voxBias;
