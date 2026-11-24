@@ -1,4 +1,4 @@
-package fr.rc4st.tempo;
+package fr.rc4st.copilote;
 
 import android.Manifest;
 import android.app.Activity;
@@ -118,7 +118,7 @@ public class TempoNativePlugin extends Plugin {
         if (text == null && subject == null) return;
         JSObject d = new JSObject();
         d.put("text", ((subject != null && !subject.isEmpty()) ? subject + " — " : "") + (text != null ? text : ""));
-        intent.setAction("fr.rc4st.tempo.SHARE_DONE");
+        intent.setAction("fr.rc4st.copilote.SHARE_DONE");
         notifyListeners("shared", d, true);
     }
 
@@ -424,7 +424,7 @@ public class TempoNativePlugin extends Plugin {
         Intent i = new Intent(AlarmClock.ACTION_SET_ALARM);
         i.putExtra(AlarmClock.EXTRA_HOUR, (int) call.getInt("hour", 7));
         i.putExtra(AlarmClock.EXTRA_MINUTES, (int) call.getInt("minute", 0));
-        i.putExtra(AlarmClock.EXTRA_MESSAGE, call.getString("label", "Tempo"));
+        i.putExtra(AlarmClock.EXTRA_MESSAGE, call.getString("label", "Jarvis"));
         i.putExtra(AlarmClock.EXTRA_SKIP_UI, (boolean) call.getBoolean("skipUi", true));
         JSArray days = call.getArray("days");
         if (days != null && days.length() > 0) {
@@ -439,7 +439,7 @@ public class TempoNativePlugin extends Plugin {
     public void setTimer(PluginCall call) {
         Intent i = new Intent(AlarmClock.ACTION_SET_TIMER);
         i.putExtra(AlarmClock.EXTRA_LENGTH, (int) call.getInt("seconds", 300));
-        i.putExtra(AlarmClock.EXTRA_MESSAGE, call.getString("label", "Tempo"));
+        i.putExtra(AlarmClock.EXTRA_MESSAGE, call.getString("label", "Jarvis"));
         i.putExtra(AlarmClock.EXTRA_SKIP_UI, true);
         startSafely(i, call);
     }
@@ -612,7 +612,7 @@ public class TempoNativePlugin extends Plugin {
     @PluginMethod
     public void shareFile(PluginCall call) {
         try {
-            String name = call.getString("name", "tempo.txt").replaceAll("[^A-Za-z0-9._-]", "_");
+            String name = call.getString("name", "jarvis.txt").replaceAll("[^A-Za-z0-9._-]", "_");
             File dir = new File(getContext().getCacheDir(), "partage");
             dir.mkdirs();
             File f = new File(dir, name);
@@ -633,7 +633,7 @@ public class TempoNativePlugin extends Plugin {
 
     @PluginMethod
     public void print(PluginCall call) {
-        final String name = call.getString("name", "Tempo");
+        final String name = call.getString("name", "Jarvis");
         getActivity().runOnUiThread(() -> {
             try {
                 PrintManager pm = (PrintManager) getActivity().getSystemService(Context.PRINT_SERVICE);

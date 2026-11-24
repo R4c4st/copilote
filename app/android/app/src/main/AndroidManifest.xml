@@ -24,15 +24,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- tempo://ecoute (widget, raccourci), tempo://transfert, tempo://gauth -->
+            <!-- copilote://ecoute (widget, raccourci), copilote://transfert, copilote://gauth -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="tempo" />
+                <data android:scheme="copilote" />
             </intent-filter>
 
-            <!-- « Partager → Tempo » depuis Outlook, WhatsApp, Messages… -->
+            <!-- « Partager → Jarvis » depuis Outlook, WhatsApp, Messages… -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />

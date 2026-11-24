@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
 
-// Tempo — rappels qui sonnent : abonnements, programmation, envoi (appelé chaque minute par pg_cron).
+// Jarvis (copie de Tempo) — rappels qui sonnent : abonnements, programmation, envoi (appelé chaque minute par pg_cron).
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const ORIGINS = ["https://r4c4st.github.io"];
 let CONF: Record<string, string> | null = null;
@@ -10,7 +10,14 @@ async function conf() {
   if (CONF) return CONF;
   const { data } = await db.from("tempo_config").select("k,v");
   CONF = Object.fromEntries((data ?? []).map((r: { k: string; v: string }) => [r.k, r.v]));
-  webpush.setVapidDetails("https://r4c4st.github.io/zap/", CONF.vapid_public, CONF.vapid_private);
+  if (!CONF.vapid_public || !CONF.vapid_private) {
+    // première fois : les clés de notification sont créées ici, sur le serveur, et ne passent jamais ailleurs
+    const k = webpush.generateVAPIDKeys();
+    await db.from("tempo_config").upsert([{ k: "vapid_public", v: k.publicKey }, { k: "vapid_private", v: k.privateKey }], { onConflict: "k", ignoreDuplicates: true });
+    const { data: d2 } = await db.from("tempo_config").select("k,v");
+    CONF = Object.fromEntries((d2 ?? []).map((r: { k: string; v: string }) => [r.k, r.v]));
+  }
+  webpush.setVapidDetails("https://r4c4st.github.io/copilote/", CONF.vapid_public, CONF.vapid_private);
   return CONF;
 }
 async function logErr(what: string) {
@@ -78,7 +85,7 @@ Deno.serve(async (req: Request) => {
     }
     if (b.action === "test") {
       if (!dev) return json({ error: "bad_request" }, 400);
-      return json(await send(dev, { title: "Tempo", body: "Les rappels fonctionnent. Je sonnerai au bon moment.", url: "./", tag: "test" }, true));
+      return json(await send(dev, { title: "Jarvis", body: "Les rappels fonctionnent. Je sonnerai au bon moment.", url: "./", tag: "test" }, true));
     }
     if (b.action === "dispatch") {
       if (b.secret !== c.cron_secret) return json({ error: "forbidden" }, 403);

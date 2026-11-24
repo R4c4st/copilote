@@ -1,15 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "fr.rc4st.tempo"
+    namespace = "fr.rc4st.copilote"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "fr.rc4st.tempo"
+        applicationId "fr.rc4st.copilote"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // NATIVE_BUILD (TempoNativePlugin.java) et version.json "apk" doivent suivre ce numéro
         versionCode 5
-        versionName "1.0.5"
+        versionName "0.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -19,12 +19,12 @@ android {
     }
     signingConfigs {
         release {
-            // clé de signature stable, déchiffrée par GitHub avec le secret TEMPO_KEY (jamais en clair dans le dépôt) :
+            // clé de signature stable, déchiffrée par GitHub avec le secret COPILOTE_KEY (jamais en clair dans le dépôt) :
             // chaque nouvelle version s'installe par-dessus l'ancienne sans perdre les données
-            storeFile file('../../tempo-release.jks')
-            storePassword System.getenv('TEMPO_KEY') ?: ''
-            keyAlias 'tempo'
-            keyPassword System.getenv('TEMPO_KEY') ?: ''
+            storeFile file('../../copilote-release.jks')
+            storePassword System.getenv('COPILOTE_KEY') ?: ''
+            keyAlias 'copilote'
+            keyPassword System.getenv('COPILOTE_KEY') ?: ''
         }
     }
     buildTypes {

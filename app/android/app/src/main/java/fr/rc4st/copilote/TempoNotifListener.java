@@ -1,4 +1,4 @@
-package fr.rc4st.tempo;
+package fr.rc4st.copilote;
 
 import android.app.Notification;
 import android.content.Context;
@@ -32,7 +32,7 @@ public class TempoNotifListener extends NotificationListenerService {
         "com.android.messaging"
     ));
     static final Set<String> WA = new HashSet<>(Arrays.asList("com.whatsapp", "com.whatsapp.w4b"));
-    static final Set<String> SKIP = new HashSet<>(Arrays.asList("android", "com.android.systemui", "fr.rc4st.tempo"));
+    static final Set<String> SKIP = new HashSet<>(Arrays.asList("android", "com.android.systemui", "fr.rc4st.copilote", "fr.rc4st.tempo"));
 
     static String appOf(String pkg) {
         if (DIALER.contains(pkg)) return "Téléphone";

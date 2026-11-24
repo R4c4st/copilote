@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-// Tempo — transcription Voxtral (Mistral) avec compteur et plafond mensuel.
+// Jarvis (copie de Tempo) — transcription Voxtral (Mistral) avec compteur et plafond mensuel.
 // La clé Mistral reste dans le téléphone : elle transite ici pour l'appel, n'est jamais stockée
 // (seule son empreinte SHA-256 sert à compter la dépense et à retenir le plafond).
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);

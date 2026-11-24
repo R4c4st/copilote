@@ -1,4 +1,4 @@
-package fr.rc4st.tempo;
+package fr.rc4st.copilote;
 
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;

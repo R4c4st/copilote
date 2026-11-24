@@ -1,11 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-// Tempo — échange et rafraîchissement des jetons Google (le secret Google reste ici, jamais dans l'appli).
+// Jarvis (copie de Tempo) — échange et rafraîchissement des jetons Google (le secret Google reste ici, jamais dans l'appli).
 const CID = Deno.env.get("GOOGLE_CLIENT_ID") ?? "";
 const SEC = Deno.env.get("GOOGLE_CLIENT_SECRET") ?? "";
 const ORIGINS = ["https://r4c4st.github.io", "https://localhost", "http://localhost", "capacitor://localhost"];
-const REDIRECT_PREFIX = "https://r4c4st.github.io/zap/";
+const REDIRECT_PREFIX = "https://r4c4st.github.io/copilote/";
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const ipOf = (req: Request) => (req.headers.get("x-forwarded-for") ?? req.headers.get("cf-connecting-ip") ?? "").split(",")[0].trim() || "?";
 // limite de débit (anti-abus) : en cas de souci de base, on laisse passer plutôt que de bloquer l'appli

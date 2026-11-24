@@ -1,8 +1,8 @@
 {
-  "name": "tempo-app",
+  "name": "copilote-app",
   "version": "1.0.0",
   "private": true,
-  "description": "Tempo — appli Android (Capacitor) de l'outil de rappel et d'organisation Tempo",
+  "description": "Jarvis (nom provisoire) — appli Android (Capacitor), assistant personnel, issue de Tempo",
   "dependencies": {
     "@capacitor/android": "8.6.2",
     "@capacitor/app": "8.1.2",

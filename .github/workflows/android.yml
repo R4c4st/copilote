@@ -1,8 +1,8 @@
 name: Appli Android
 
-# Fabrique tempo.apk à chaque changement de l'appli (dossier app/) et le publie
-# sur https://github.com/R4c4st/zap/releases/download/app/tempo.apk
-# La clé de signature n'est jamais en clair dans le dépôt : elle est chiffrée avec le secret TEMPO_KEY.
+# Fabrique copilote.apk (Jarvis) à chaque changement de l'appli (dossier app/) et le publie
+# sur https://github.com/R4c4st/copilote/releases/download/app/copilote.apk
+# La clé de signature n'est jamais en clair dans le dépôt : elle est chiffrée avec le secret COPILOTE_KEY.
 on:
   push:
     branches: [main]
@@ -36,62 +36,62 @@ jobs:
         working-directory: app
         run: npm ci --no-audit --no-fund
 
-      - name: Tempo embarqué (dernière version de la page)
+      - name: Jarvis embarqué (dernière version de la page)
         working-directory: app
         run: |
           rm -rf www && mkdir www
           cp ../index.html ../manifest.json ../icon-192.png ../icon-512.png www/
           npx cap sync android
 
-      - name: Clé de signature (secret TEMPO_KEY)
+      - name: Clé de signature (secret COPILOTE_KEY)
         id: key
         env:
-          TEMPO_KEY: ${{ secrets.TEMPO_KEY }}
+          COPILOTE_KEY: ${{ secrets.COPILOTE_KEY }}
         run: |
-          if [ -z "$TEMPO_KEY" ]; then
+          if [ -z "$COPILOTE_KEY" ]; then
             echo "nokey=1" >> "$GITHUB_OUTPUT"
-            echo "::warning::Secret TEMPO_KEY absent : compilation de contrôle seulement, rien n'est publié."
+            echo "::warning::Secret COPILOTE_KEY absent : compilation de contrôle seulement, rien n'est publié."
             exit 0
           fi
           cd app
-          if [ ! -f tempo-release.jks.enc ]; then
+          if [ ! -f copilote-release.jks.enc ]; then
             # première fois : GitHub crée la clé de l'appli et la range chiffrée avec le secret
-            keytool -genkeypair -keystore tempo-release.jks -alias tempo -keyalg RSA -keysize 2048 -validity 36500 \
-              -storepass "$TEMPO_KEY" -keypass "$TEMPO_KEY" -dname "CN=Rc4st, O=Rc4st, C=FR"
-            openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -in tempo-release.jks -out tempo-release.jks.enc -pass env:TEMPO_KEY
-            git add tempo-release.jks.enc
-            git -c user.name="tempo-ci" -c user.email="tempo-ci@users.noreply.github.com" commit -qm "Clé de signature de l'appli (chiffrée avec le secret TEMPO_KEY)"
+            keytool -genkeypair -keystore copilote-release.jks -alias copilote -keyalg RSA -keysize 2048 -validity 36500 \
+              -storepass "$COPILOTE_KEY" -keypass "$COPILOTE_KEY" -dname "CN=Rc4st, O=Rc4st, C=FR"
+            openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -in copilote-release.jks -out copilote-release.jks.enc -pass env:COPILOTE_KEY
+            git add copilote-release.jks.enc
+            git -c user.name="copilote-ci" -c user.email="copilote-ci@users.noreply.github.com" commit -qm "Clé de signature de l'appli (chiffrée avec le secret COPILOTE_KEY)"
             git pull -q --rebase origin main
             git push -q origin HEAD:main
           else
-            openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in tempo-release.jks.enc -out tempo-release.jks -pass env:TEMPO_KEY
+            openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in copilote-release.jks.enc -out copilote-release.jks -pass env:COPILOTE_KEY
           fi
 
       - name: Compilation
         working-directory: app/android
         env:
-          TEMPO_KEY: ${{ secrets.TEMPO_KEY }}
+          COPILOTE_KEY: ${{ secrets.COPILOTE_KEY }}
         run: |
           chmod +x gradlew
           set -o pipefail
           if [ "${{ steps.key.outputs.nokey }}" = "1" ]; then TASK=assembleDebug; else TASK=assembleRelease; fi
           ./gradlew $TASK --no-daemon --stacktrace 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
 
-      - name: Publication de tempo.apk
+      - name: Publication de copilote.apk
         if: steps.key.outputs.nokey != '1'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/android/app/build/outputs/apk/release/app-release.apk tempo.apk
-          gh release view app >/dev/null 2>&1 || gh release create app --title "Tempo — appli Android" --notes "Ouvre ce lien sur ton téléphone, télécharge tempo.apk et installe-le. Chaque nouvelle version s'installe par-dessus l'ancienne, sans perdre tes données."
-          gh release upload app tempo.apk --clobber
+          cp app/android/app/build/outputs/apk/release/app-release.apk copilote.apk
+          gh release view app >/dev/null 2>&1 || gh release create app --title "Jarvis — appli Android" --notes "Ouvre ce lien sur ton téléphone, télécharge copilote.apk et installe-le. Chaque nouvelle version s'installe par-dessus l'ancienne, sans perdre tes données."
+          gh release upload app copilote.apk --clobber
 
       - name: Journal de fabrication
         if: always()
         run: |
           mkdir -p /tmp/journal && cd /tmp/journal
           git init -q && git checkout -q -b build-log
-          NOTE=""; [ "${{ steps.key.outputs.nokey }}" = "1" ] && NOTE=" · secret TEMPO_KEY absent : compilation de contrôle, rien publié"
+          NOTE=""; [ "${{ steps.key.outputs.nokey }}" = "1" ] && NOTE=" · secret COPILOTE_KEY absent : compilation de contrôle, rien publié"
           echo "${{ job.status }} · run ${GITHUB_RUN_NUMBER} · $(date -u +%FT%TZ) · ${GITHUB_SHA}${NOTE}" > status.txt
           if [ -f "$GITHUB_WORKSPACE/build.log" ]; then
             tail -n 400 "$GITHUB_WORKSPACE/build.log" > build-tail.txt
@@ -100,5 +100,5 @@ jobs:
             echo "la compilation n'a pas démarré (voir les étapes précédentes)" > build-tail.txt
           fi
           git add -A
-          git -c user.name="tempo-ci" -c user.email="tempo-ci@users.noreply.github.com" commit -qm "fabrication ${GITHUB_RUN_NUMBER}"
+          git -c user.name="copilote-ci" -c user.email="copilote-ci@users.noreply.github.com" commit -qm "fabrication ${GITHUB_RUN_NUMBER}"
           git push -qf "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" build-log

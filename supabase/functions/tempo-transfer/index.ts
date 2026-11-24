@@ -1,8 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-// Tempo — transfert unique des données de Chrome vers l'appli Android.
-// Le contenu arrive chiffré (AES-GCM) : la clé reste dans le lien tempo:// entre Chrome et l'appli, jamais ici.
+// Jarvis (copie de Tempo) — transfert unique des données de Chrome vers l'appli Android.
+// Le contenu arrive chiffré (AES-GCM) : la clé reste dans le lien copilote:// entre Chrome et l'appli, jamais ici.
 // Lu une seule fois puis effacé ; tout ce qui a plus de 30 min est effacé.
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const ORIGINS = ["https://r4c4st.github.io", "https://localhost", "http://localhost", "capacitor://localhost"];

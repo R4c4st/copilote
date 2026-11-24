@@ -1,6 +1,6 @@
 {
-  "appId": "fr.rc4st.tempo",
-  "appName": "Tempo",
+  "appId": "fr.rc4st.copilote",
+  "appName": "Jarvis",
   "webDir": "www",
   "android": {
     "allowMixedContent": false,

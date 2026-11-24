@@ -1,6 +1,6 @@
 {
-  "name": "Tempo",
-  "short_name": "Tempo",
+  "name": "Jarvis",
+  "short_name": "Jarvis",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -1,9 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-// Tempo — boîte d'entrée du téléphone. MacroDroid y envoie les notifications Téléphone / Messages / WhatsApp
+// Jarvis (copie de Tempo) — boîte d'entrée du téléphone. MacroDroid y envoie les notifications Téléphone / Messages / WhatsApp
 // (ou, en mode avancé, des appels manqués, SMS, fins d'appel déjà typés).
-// Tempo les relève à l'ouverture puis les efface d'ici (rien n'est gardé plus de 7 jours).
+// Jarvis les relève à l'ouverture puis les efface d'ici (rien n'est gardé plus de 7 jours).
 // Accès MacroDroid : lien secret (?k=…) propre au téléphone. Accès appli : identifiant d'appareil.
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const ORIGINS = ["https://r4c4st.github.io", "https://localhost", "http://localhost", "capacitor://localhost"];
@@ -30,7 +30,7 @@ const isNum = (s: string) => /^[+\d][\d\s.()-]{5,}$/.test(s);
 const day = () => new Date().toLocaleString("sv-SE", { timeZone: "Europe/Paris" }).slice(0, 10);
 
 type Ev = { kind: string; who: string; num: string; body: string; app: string };
-// Une notification (appli, titre, texte) → un événement Tempo, ou null si rien d'utile
+// Une notification (appli, titre, texte) → un événement Jarvis, ou null si rien d'utile
 export function fromNotification(app: string, title: string, text: string): Ev | null {
   const a = app.toLowerCase();
   if (/whatsapp/.test(a)) {
@@ -88,7 +88,7 @@ Deno.serve(async (req: Request) => {
       } catch (_e) { /* corps illisible : on garde les paramètres d'URL */ }
     }
 
-    // ---- côté appli Tempo ----
+    // ---- côté appli ----
     if (p.action === "register") {
       if (!(await allow("ib:r:" + ip, 20, 3600))) return json({ error: "rate" }, 429);
       if (!okDev(p.device) || !okTok(p.token)) return json({ error: "bad_request" }, 400);
@@ -114,13 +114,13 @@ Deno.serve(async (req: Request) => {
     }
 
     // ---- côté MacroDroid ----
-    if (!(await allow("ib:m:" + ip, 600, 3600))) return txt("Tempo : trop d'envois, réessaie plus tard", 429);
+    if (!(await allow("ib:m:" + ip, 600, 3600))) return txt("Jarvis : trop d'envois, réessaie plus tard", 429);
     const tok = p.k ?? p.key ?? p.token;
-    if (!okTok(tok)) return txt("Tempo : lien incomplet (il manque k=…)", 400);
+    if (!okTok(tok)) return txt("Jarvis : lien incomplet (il manque k=…)", 400);
     const { data: K } = await db.from("tempo_inbox_keys").select("token_hash,device,n_day,day,recent").eq("token_hash", await sha(tok as string)).maybeSingle();
-    if (!K) return txt("Tempo : lien inconnu ou coupé — recrée-le dans Tempo > réglages", 403);
+    if (!K) return txt("Jarvis : lien inconnu ou coupé — recrée-le dans Jarvis > réglages", 403);
     const today = day(), n = K.day === today ? K.n_day : 0;
-    if (n >= MAX_PER_DAY) return txt("Tempo : trop d'événements aujourd'hui", 429);
+    if (n >= MAX_PER_DAY) return txt("Jarvis : trop d'événements aujourd'hui", 429);
     const test = String(p.test ?? "") === "1";
 
     let ev: Ev | null;
@@ -133,13 +133,13 @@ Deno.serve(async (req: Request) => {
       ev = (who || num || texte) ? { kind, who, num, body: texte, app } : null;
     }
     const touch = async (recent: unknown) => { await db.from("tempo_inbox_keys").update({ last_at: new Date().toISOString(), n_day: n + 1, day: today, recent }).eq("token_hash", K.token_hash); };
-    if (test) { await touch(K.recent ?? []); return txt("Tempo : lien OK ✓"); }
-    if (!ev) { await touch(K.recent ?? []); return txt("Tempo : rien à noter"); }
+    if (test) { await touch(K.recent ?? []); return txt("Jarvis : lien OK ✓"); }
+    if (!ev) { await touch(K.recent ?? []); return txt("Jarvis : rien à noter"); }
 
     // la même notification qui se met à jour plusieurs fois (WhatsApp…) : on ne la garde qu'une fois
     const sig = await sha([ev.kind, ev.who, ev.num, ev.body].join("|")), now = Date.now();
     const recent = ((K.recent ?? []) as { s: string; t: number }[]).filter(r => now - r.t < 10 * 60000);
-    if (recent.some(r => r.s === sig)) { await touch(recent); return txt("Tempo : déjà reçu"); }
+    if (recent.some(r => r.s === sig)) { await touch(recent); return txt("Jarvis : déjà reçu"); }
     recent.push({ s: sig, t: now });
     await db.from("tempo_inbox").insert({ device: K.device, kind: ev.kind, who: ev.who.slice(0, 80), num: ev.num.slice(0, 40), body: ev.body, app: ev.app.slice(0, 40) });
     await touch(recent.slice(-30));

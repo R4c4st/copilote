@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#e6f6f7">
-<title>Tempo</title>
+<title>Jarvis</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <style>
@@ -219,6 +219,24 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
 .toast{position:fixed;left:50%;bottom:calc(26px + var(--sab));transform:translate(-50%,20px);opacity:0;transition:.3s;font-size:14px;display:flex;gap:18px;padding:12px 20px;border-radius:999px;background:var(--sheet);border:1px solid var(--faint);z-index:60;white-space:nowrap;letter-spacing:.2px}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .toast button{color:rgb(var(--glow));font-weight:500}
+
+/* Jarvis : conversation et mémoire */
+.cv-list{display:flex;flex-direction:column;gap:14px;padding:18px 0 14px;min-height:46vh}
+.cv-m{max-width:88%;font-size:16px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.cv-m.u{align-self:flex-end;background:var(--faint);border-radius:18px 18px 4px 18px;padding:10px 14px}
+.cv-m.a{align-self:flex-start}
+.cv-e{color:var(--mut);font-size:14.5px}.cv-e button{color:var(--fg);font-weight:500;margin-left:6px}
+.cv-p{align-self:stretch;border:1px solid var(--faint);border-radius:16px;padding:12px 14px;font-size:15px;line-height:1.45}
+.cv-p .act{display:flex;justify-content:flex-end;gap:22px;margin-top:10px;font-size:14px;color:var(--mut)}.cv-p .act .y{color:var(--fg);font-weight:500}
+.cv-new{align-self:center;font-size:13px;color:var(--mut);margin-top:6px}
+.cv-bar{position:sticky;bottom:calc(-26px - var(--sab));background:var(--sheet);display:flex;gap:12px;align-items:flex-end;padding:10px 0 calc(12px + var(--sab))}
+.cv-bar textarea{flex:1;max-height:30vh}
+.cv-mic{width:46px;height:46px;border-radius:50%;border:1px solid var(--faint);flex:none;position:relative}
+.cv-mic::after{content:"";position:absolute;inset:15px;border-radius:50%;background:rgb(var(--glow));transition:transform .3s}
+.cv-mic.on::after{animation:cvp 1.1s ease-in-out infinite}
+@keyframes cvp{50%{transform:scale(1.45);opacity:.55}}
+.cv-go{font-size:14px;color:var(--fg);font-weight:500;padding:12px 0;flex:none}
+#cvStat{min-height:18px;margin-top:0}
 </style>
 </head>
 <body>
@@ -233,7 +251,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <div class="live" id="live"></div>
   <textarea class="typed" id="typed" rows="2" placeholder="écris en vrac…"></textarea>
   <div class="acts" id="acts"><button id="aNo">annuler</button><button class="yes" id="aYes">c'est noté</button></div>
-  <div class="alt" id="alt"><button id="bType">écrire</button><button id="bPaste">coller</button><button id="bMail" style="display:none">mails</button></div>
+  <div class="alt" id="alt"><button id="bConv">Jarvis</button><button id="bType">écrire</button><button id="bPaste">coller</button><button id="bMail" style="display:none">mails</button></div>
 </div>
 
 <div class="list" id="list"></div>
@@ -289,7 +307,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <p class="small" id="appState"></p>
     <div class="foot" style="margin-top:10px"><div class="l"><button id="appGet" style="color:var(--fg)">installer l'appli</button><button id="appMove" style="color:var(--fg)">transférer mes données</button><button id="appUpd">mettre à jour</button></div></div>
   </div>
-  <p class="small">Sans clé, Tempo trie seul avec ses règles. Avec, c'est Claude qui comprend, découpe et range — en s'appuyant sur la fiche ci-dessous et sur tes corrections.</p>
+  <p class="small">Sans clé, Jarvis trie seul avec ses règles. Avec, c'est Claude qui comprend, découpe et range — en s'appuyant sur la fiche ci-dessous et sur tes corrections.</p>
   <div class="lab" id="lProf">Qui je suis (lu par Claude à chaque tri)</div>
   <textarea id="sProfile" rows="7" placeholder="Prénom Nom, ton métier, ce que tu fais, tes contacts clés, ce qui passe en premier pour toi…"></textarea>
   <div class="lab">Signature des rapports (espace pro)</div>
@@ -336,16 +354,16 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <div class="two"><div><div class="lab">Plafond par mois</div><select id="vCap"><option value="1">1 €</option><option value="2">2 €</option><option value="3">3 €</option><option value="5">5 €</option><option value="10">10 €</option></select></div><div><div class="lab">Dictée max</div><select id="vMax"><option value="60">1 min</option><option value="120">2 min</option><option value="180">3 min</option></select></div></div>
     <p class="small" id="vUse"></p>
   </div>
-  <div class="lab">Tempo me répond à voix haute</div>
+  <div class="lab">Jarvis me répond à voix haute</div>
   <select id="vSay"><option value="auto">quand il m'écoute dès l'ouverture</option><option value="1">toujours</option><option value="0">jamais</option></select>
-  <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" id="vAuto" style="width:auto"> ouvrir Tempo = il m'écoute tout de suite (idéal avec la touche latérale)</label>
+  <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" id="vAuto" style="width:auto"> ouvrir Jarvis = il m'écoute tout de suite (idéal avec la touche latérale)</label>
   <div id="wBox" style="display:none">
     <div class="lab">Widget de l'écran d'accueil</div>
     <div class="wPrev" title="aperçu sur un fond d'écran"><i id="wPrevBg"></i><img id="wPrevImg" alt=""></div>
     <div class="two"><div><div class="lab">Fond · <span id="wBgV"></span></div><input type="range" id="wBg" min="0" max="100" step="5"></div><div><div class="lab">Éclat · <span id="wImgV"></span></div><input type="range" id="wImg" min="20" max="100" step="5"></div></div>
     <div class="two"><div><div class="lab">Teinte du fond</div><select id="wTone"><option value="clair">clair</option><option value="sombre">sombre</option></select></div><div><div class="lab">Points</div><select id="wCol"><option value="blanc">blancs</option><option value="espace">couleur de l'espace</option><option value="turquoise">turquoise</option><option value="nuit">bleu nuit</option><option value="or">dorés</option></select></div></div>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" id="wStars" style="width:auto"> les étoiles dorées de la semaine</label>
-    <p class="small">Fond à 0 % : la constellation flotte directement sur ton fond d'écran. Un appui sur le widget = Tempo t'écoute.</p>
+    <p class="small">Fond à 0 % : la constellation flotte directement sur ton fond d'écran. Un appui sur le widget = Jarvis t'écoute.</p>
   </div>
   <div class="lab">Téléphone · appels manqués, SMS, WhatsApp</div>
   <p class="small" id="iState"></p>
@@ -354,13 +372,13 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <p class="small">Claude ne garde que ce qui compte : une question à laquelle répondre, un rendez-vous, une chose à faire, une info à garder (code, adresse, référence) ou une tâche à mettre à jour. Le reste est oublié.</p>
   <div class="foot" style="margin-top:10px"><div class="l"><button id="iGo" style="color:var(--fg)">créer mon lien MacroDroid</button><button id="iCopy">copier le lien</button><button id="iOff">couper</button></div></div>
   <div id="aBox" style="display:none">
-    <div class="lab">Autres applis lues par Tempo</div>
-    <p class="small">En plus de Téléphone, Messages et WhatsApp, Tempo lit seulement les applis cochées. Applis de colis : il n'en garde que les colis. Messageries (Snapchat…) : seulement les prénoms ci-dessous et tes contacts.</p>
+    <div class="lab">Autres applis lues par Jarvis</div>
+    <p class="small">En plus de Téléphone, Messages et WhatsApp, Jarvis lit seulement les applis cochées. Applis de colis : il n'en garde que les colis. Messageries (Snapchat…) : seulement les prénoms ci-dessous et tes contacts.</p>
     <div id="aList" style="margin-top:8px"></div>
     <button id="aMore" style="margin-top:6px;font-size:13px;color:rgb(var(--glow))">voir toutes mes applis</button>
     <div class="lab">Snapchat et messageries · prénoms lus</div>
     <input id="sChat" placeholder="prénoms, comme affichés dans Snapchat (séparés par des virgules)">
-    <p class="small">Les Snaps photo ne se lisent pas : seulement les messages écrits, quand Snapchat affiche le texte dans la notification. Tempo n'ouvre et ne marque rien comme lu.</p>
+    <p class="small">Les Snaps photo ne se lisent pas : seulement les messages écrits, quand Snapchat affiche le texte dans la notification. Jarvis n'ouvre et ne marque rien comme lu.</p>
   </div>
   <div class="lab">Colis</div>
   <p class="small" id="cState"></p>
@@ -372,11 +390,12 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center">Tempo v47 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center">Jarvis v1 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
   <div class="menu">
+    <button id="mConv">parler à Jarvis</button>
     <button id="mRep">rapport</button>
     <button id="mMemo">mémos & frais</button>
     <button id="mHist">historique & chantiers</button>
@@ -428,6 +447,35 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
 <div class="sheet full" id="ritual"><div id="ritBody"></div></div>
 <div class="sheet full" id="report"><div id="repBody"></div></div>
 <div class="sheet full" id="fiche"><div id="ficheBody"></div></div>
+
+<div class="sheet full" id="conv">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div class="tabs" id="cvTabs"><button data-t="parler" class="on">Jarvis</button><button data-t="memoire">mémoire</button></div>
+    <button id="cvClose" style="font-size:14px;color:var(--mut)">fermer</button>
+  </div>
+  <div id="cvLock" style="display:none"></div>
+  <div id="cvChat">
+    <div class="cv-list" id="cvList"></div>
+    <p class="small" id="cvStat"></p>
+    <div class="cv-bar">
+      <textarea id="cvIn" rows="1" placeholder="écris, ou touche le rond pour parler…"></textarea>
+      <button class="cv-mic" id="cvMic" aria-label="Parler à Jarvis"></button>
+      <button class="cv-go" id="cvGo">envoyer</button>
+    </div>
+    <p class="small" id="cvCost"></p>
+  </div>
+  <div id="cvMem" style="display:none">
+    <input id="cvQ" placeholder="chercher dans ma mémoire…" style="margin-top:14px">
+    <div id="cvMemList" style="margin-top:6px"></div>
+    <div class="lab">Ajouter à la main</div>
+    <textarea id="cvAdd" rows="2" placeholder="une chose à retenir, en une phrase"></textarea>
+    <div class="foot" style="margin-top:12px"><div class="sl" id="cvAddDom"><button data-d="pro">pro</button><button data-d="perso" class="on">perso</button><button data-d="pin">épingler</button></div><button class="ok" id="cvAddGo">retenir</button></div>
+    <div class="lab">Plafond mensuel de la conversation (Claude Sonnet)</div>
+    <input id="cvCapIn" type="number" min="1" max="200" step="1" inputmode="numeric">
+    <p class="small">Ta mémoire est chiffrée sur ce téléphone avec ta phrase secrète : le serveur ne garde que du chiffré illisible, et seuls les souvenirs utiles à une question partent chez Claude. Ce plafond s'ajoute à celui que tu fixes dans la console Claude.</p>
+    <div class="foot" style="margin-top:18px"><div class="l"><button id="cvLockBtn">verrouiller sur cet appareil</button></div><span></span></div>
+  </div>
+</div>
 
 <div id="focus">
   <button id="fStop" class="fX">arrêter</button>
@@ -537,18 +585,18 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 47;
+const TEMPO_BUILD = 1;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
 const LN = NATIVE && CAP.Plugins ? CAP.Plugins.LocalNotifications : null;
 const CAPP = NATIVE && CAP.Plugins ? CAP.Plugins.App : null;
-const PWA_URL = "https://r4c4st.github.io/zap/";
-const APK_URL = "https://github.com/R4c4st/zap/releases/download/app/tempo.apk";
+const PWA_URL = "https://r4c4st.github.io/copilote/";
+const APK_URL = "https://github.com/R4c4st/copilote/releases/download/app/copilote.apk";
 const tn = async (m, a) => { try { return TN && TN[m] ? await TN[m](a || {}) : null; } catch (e) { return null; } };
 const tnOk = async (m, a) => { try { if (!TN || !TN[m]) return false; await TN[m](a || {}); return true; } catch (e) { return false; } };
 let NV = 0;   // version de l'appli Android installée (0 = navigateur)
-/* micro : uniquement quand Tempo est à l'écran. MIC_GEN annule une écoute qui démarrait pendant que tu quittais l'appli. */
+/* micro : uniquement quand Jarvis est à l'écran. MIC_GEN annule une écoute qui démarrait pendant que tu quittais l'appli. */
 let MIC_GEN = 0;
 const micAwake = () => !isAway && !document.hidden;
 function hush(){ try { if (NATIVE) tn("stopSpeak"); else if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {} }
@@ -571,7 +619,7 @@ class NativeSR {
   }
   _end(){ if (!this._on) return; this._on = false; tn("srCancel"); if (this._h) { try { this._h.remove(); } catch (e) {} this._h = null; } if (this.onend) this.onend(); }   // srCancel : rend le micro et la reconnaissance Google aux autres applis
 }
-/* une notification (appli, titre, texte) → un événement Tempo (même logique que le serveur MacroDroid) */
+/* une notification (appli, titre, texte) → un événement Jarvis (même logique que le serveur MacroDroid) */
 const MISSED_RX = /appels? (?:vocal |vid[ée]o )?manqu|missed (?:voice |video )?call|appels? en absence|appels? non r[ée]pondu/i;
 const isNumS = s => /^[+\d][\d\s.()-]{5,}$/.test(s || "");
 function fromNotification(app, title, text){
@@ -975,7 +1023,7 @@ async function alarmIntent(text){
     if (/et demie?\b/.test(n)) sec += /heure/.test(n) ? 1800 : 30;
     if (!sec) return false;
     if (!NATIVE) { toast("les minuteurs se règlent depuis l'appli Android"); return false; }
-    const ok = await tn("setTimer", { seconds: sec, label: "Tempo" }) !== null;
+    const ok = await tn("setTimer", { seconds: sec, label: "Jarvis" }) !== null;
     const lab = sec >= 3600 ? Math.floor(sec / 3600) + " h" + (sec % 3600 ? " " + Math.round(sec % 3600 / 60) + " min" : "") : sec >= 60 ? Math.round(sec / 60) + " min" : sec + " s";
     idle(); flashOk(); vib(18); toast(ok ? `${IC.minut} minuteur ${lab} lancé` : "l'Horloge n'a pas répondu");
     if (ok && shouldSpeak()) speak(`Minuteur de ${lab.replace("min", "minutes").replace(" h", " heure")} lancé.`);
@@ -986,7 +1034,7 @@ async function alarmIntent(text){
   if (!NATIVE) { toast("les réveils se règlent depuis l'appli Android"); return false; }
   const [h, mi] = w.time.split(":").map(Number);
   const days = /\b(en semaine|du lundi au vendredi|jours ouvres|les jours de semaine)\b/.test(n) ? [2, 3, 4, 5, 6] : /\b(tous les jours|chaque jour|tous les matins)\b/.test(n) ? [1, 2, 3, 4, 5, 6, 7] : [];
-  const label = (text.match(/\b(?:pour|:)\s+(.{3,40})$/i) || [])[1] || "Tempo";
+  const label = (text.match(/\b(?:pour|:)\s+(.{3,40})$/i) || [])[1] || "Jarvis";
   const ok = await tn("setAlarm", { hour: h, minute: mi, label, days }) !== null;
   const hh = h + "h" + (mi ? pad(mi) : "");
   idle(); flashOk(); vib(18); toast(ok ? `${IC.reveil} réveil ${hh} réglé${days.length ? days.length === 5 ? " en semaine" : " tous les jours" : ""}` : "l'Horloge n'a pas répondu", ok ? "voir" : "", () => tn("showAlarms"));
@@ -995,6 +1043,8 @@ async function alarmIntent(text){
 }
 async function capture(text, src, kind, ctx){
   text = (text || "").trim(); if (!text) { idle(); return; }
+  /* Jarvis : quand l'écran de conversation est ouvert, la dictée va à la conversation */
+  { const cv = document.getElementById("conv"); if (cv && cv.classList.contains("show") && src === "voix" && !(ctx && ctx.cr)) { idle(); cvSend(text); return true; } }
   if (ctx && ctx.cr) return captureCR(text, ctx.cr);
   if (!kind && (src === "voix" || src === "texte") && (await alarmIntent(text))) return true;
   if (!kind && (src === "voix" || src === "texte") && colisIntent(text)) return true;
@@ -1099,7 +1149,7 @@ async function captureCR(text, cr){
   return true;
 }
 
-/* ===== Tempo parle : confirmation courte, puis il réécoute quelques secondes pour une correction ===== */
+/* ===== Jarvis parle : confirmation courte, puis il réécoute quelques secondes pour une correction ===== */
 let HANDS_FREE = false, FOLLOW = 0;
 const shouldSpeak = () => (NATIVE || "speechSynthesis" in window) && (CFG.vSay === "1" || (CFG.vSay !== "0" && HANDS_FREE));
 const lc = t => (t || "").charAt(0).toLowerCase() + (t || "").slice(1);
@@ -1319,7 +1369,7 @@ async function makeBrief(){
 
 /* ===== Outlook perso (Microsoft Graph, lecture seule) ===== */
 const MS_AUTH = "https://login.microsoftonline.com/common/oauth2/v2.0", MS_SCOPE = "offline_access User.Read Mail.Read Calendars.ReadWrite";
-const msRedirect = () => NATIVE ? "tempo://msauth" : location.origin + location.pathname;
+const msRedirect = () => NATIVE ? "copilote://msauth" : location.origin + location.pathname;
 const b64u = b => btoa(String.fromCharCode(...b)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 let MS = LS.get("zap_ms", {});
 const saveMs = () => LS.set("zap_ms", MS);
@@ -1330,7 +1380,7 @@ async function msLogin(){
   const st = b64u(crypto.getRandomValues(new Uint8Array(12)));
   LS.set("zap_pkce", { v, st });
   const url = `${MS_AUTH}/authorize?client_id=${encodeURIComponent(CFG.msId)}&response_type=code&redirect_uri=${encodeURIComponent(msRedirect())}&response_mode=query&scope=${encodeURIComponent(MS_SCOPE)}&code_challenge=${ch}&code_challenge_method=S256&state=${st}&prompt=select_account`;
-  if (NATIVE) { tn("openUrl", { url }); toast("connexion Microsoft dans Chrome… puis « Ouvrir avec Tempo »", "", null, 8000); return; }
+  if (NATIVE) { tn("openUrl", { url }); toast("connexion Microsoft dans Chrome… puis « Ouvrir avec Jarvis »", "", null, 8000); return; }
   location.href = url;
 }
 /* dans l'appli, l'échange de jetons passe par une requête native (Microsoft refuse ce type d'appli depuis une page web) */
@@ -1496,15 +1546,15 @@ function paintMailBtn(){ $("bMail").style.display = CFG.msId && (MS.rt || MS.at)
 
 /* agenda Outlook : chaque tâche datée = un événement ; faite = « ✓ » en tête, sans rappel */
 /* ===== Google Agenda (le secret Google reste côté Supabase) ===== */
-const G_FN = "https://jifaszjdhretgorxlpvs.supabase.co/functions/v1/tempo-google";
-const G_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppZmFzempkaHJldGdvcnhscHZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1NTgyODAsImV4cCI6MjExMDEzNDI4MH0.5a5JCoUMqwoPTvIIkh6arKDXiMcheiaB2hr1_6Iay8M";
+const G_FN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/tempo-google";
+const G_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2YWZkanlneG52andvaGpqaGFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU0NzQxMjgsImV4cCI6MjExMTA1MDEyOH0.gvX96mQ500J-R2rxhciDihJzKYKjhnCqg8Nc4l75A64";
 const G_CAL = "https://www.googleapis.com/auth/calendar.events", G_MAIL = "https://www.googleapis.com/auth/gmail.readonly";
 const gScope = () => CFG.gmail ? G_CAL + " " + G_MAIL : G_CAL;
 let G = LS.get("tempo_g", {});
 const saveG = () => LS.set("tempo_g", G);
 const gOn = () => !!G.rt;
 const gMailOk = () => gOn() && /gmail/.test(G.scope || "");
-/* dans l'appli, Google refuse la connexion « embarquée » : on passe par Chrome, qui renvoie le code à l'appli (tempo://gauth) */
+/* dans l'appli, Google refuse la connexion « embarquée » : on passe par Chrome, qui renvoie le code à l'appli (copilote://gauth) */
 const gRedirect = () => NATIVE ? PWA_URL : location.origin + location.pathname;
 async function gFn(body){
   const r = await fetch(G_FN, { method: "POST", headers: { "content-type": "application/json", Authorization: "Bearer " + G_KEY, apikey: G_KEY }, body: JSON.stringify(body) });
@@ -1516,7 +1566,7 @@ async function gLogin(){
   const st = (NATIVE ? "gsa_" : "gs_") + b64u(crypto.getRandomValues(new Uint8Array(12)));
   LS.set("tempo_gstate", st);
   const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(c.j.client_id)}&redirect_uri=${encodeURIComponent(gRedirect())}&response_type=code&scope=${encodeURIComponent(gScope())}&include_granted_scopes=true&access_type=offline&prompt=consent&state=${st}`;
-  if (NATIVE) { await tn("openUrl", { url }); toast("connecte-toi dans Chrome, Tempo reprend la main ensuite", "", null, 7000); }
+  if (NATIVE) { await tn("openUrl", { url }); toast("connecte-toi dans Chrome, Jarvis reprend la main ensuite", "", null, 7000); }
   else location.href = url;
 }
 async function gFinish(p){
@@ -1537,7 +1587,7 @@ async function gFinish(p){
 }
 async function gHandleRedirect(){
   const p = new URLSearchParams(location.search), st = p.get("state") || "";
-  if (st.startsWith("gsa_")) { history.replaceState(null, "", location.pathname); location.href = "tempo://gauth?" + p.toString(); return true; }   // Chrome → retour dans l'appli
+  if (st.startsWith("gsa_")) { history.replaceState(null, "", location.pathname); location.href = "copilote://gauth?" + p.toString(); return true; }   // Chrome → retour dans l'appli
   if (!st.startsWith("gs_")) return false;
   history.replaceState(null, "", location.pathname);
   return gFinish(p);
@@ -1566,7 +1616,7 @@ async function gSync(it){
   else { start = { date: it.due }; end = { date: ymd(addDays(1, new Date(it.due + "T12:00"))) }; }
   const ev = {
     summary: (it.done ? "✓ " : "") + (it.ch ? "[" + it.ch + "] " : "") + it.title,
-    description: (it.note ? it.note + "\n\n" : "") + (it.done ? "Fait le " + new Date(it.doneAt).toLocaleString("fr-FR") + "\n" : "") + "— Tempo",
+    description: (it.note ? it.note + "\n\n" : "") + (it.done ? "Fait le " + new Date(it.doneAt).toLocaleString("fr-FR") + "\n" : "") + "— Jarvis",
     start, end, transparency: it.done ? "transparent" : "opaque",
     reminders: { useDefault: false, overrides: it.done || !it.time ? [] : [{ method: "popup", minutes: it.cat === "rdv" ? 30 : 0 }] }
   };
@@ -1609,9 +1659,9 @@ async function calSync(it){
     start = { dateTime: `${it.due}T${it.time}:00`, timeZone: "Europe/Paris" }; end = { dateTime: `${it.due}T${pad(e.getHours())}:${pad(e.getMinutes())}:00`, timeZone: "Europe/Paris" }; }
   const body = {
     subject: (it.done ? "✓ " : "") + (it.ch ? "[" + it.ch + "] " : "") + it.title,
-    body: { contentType: "text", content: (it.note ? it.note + "\n\n" : "") + (it.done ? "Fait le " + new Date(it.doneAt).toLocaleString("fr-FR") + "\n" : "") + "— Tempo" },
+    body: { contentType: "text", content: (it.note ? it.note + "\n\n" : "") + (it.done ? "Fait le " + new Date(it.doneAt).toLocaleString("fr-FR") + "\n" : "") + "— Jarvis" },
     start, end, isAllDay: allDay, showAs: "free",
-    isReminderOn: !it.done && !allDay, reminderMinutesBeforeStart: 10, categories: ["Tempo"]
+    isReminderOn: !it.done && !allDay, reminderMinutesBeforeStart: 10, categories: ["Jarvis"]
   };
   try {
     const url = "https://graph.microsoft.com/v1.0/me/events" + (it.evId ? "/" + it.evId : "");
@@ -1831,8 +1881,8 @@ function openAck(it, p){
   show("ack");
 }
 
-/* ===== PONT TÉLÉPHONE (MacroDroid → Supabase → Tempo) ===== */
-const I_FN = "https://jifaszjdhretgorxlpvs.supabase.co/functions/v1/tempo-inbox";
+/* ===== PONT TÉLÉPHONE (MacroDroid → Supabase → Jarvis) ===== */
+const I_FN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/tempo-inbox";
 async function iFn(body){
   const r = await fetch(I_FN, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(Object.assign({ device: DEVICE }, body)) });
   let j = {}; try { j = await r.json(); } catch (e) {} return j;
@@ -1858,16 +1908,16 @@ async function paintInbox(){
   if (NATIVE) {
     const r = await tn("info"); NOTIF_OK = !!(r && r.notifAccess);
     $("iState").textContent = NOTIF_OK
-      ? "Activé ✓ Tempo lit tes appels manqués, SMS et WhatsApp, directement dans le téléphone (rien ne passe par un serveur). Appel manqué → « Rappeler … » ; message → Claude ne garde que ce qui demande une action."
-      : "Pour que Tempo voie tes appels manqués, SMS et WhatsApp : touche « activer », puis allume Tempo dans la liste « Accès aux notifications ».";
+      ? "Activé ✓ Jarvis lit tes appels manqués, SMS et WhatsApp, directement dans le téléphone (rien ne passe par un serveur). Appel manqué → « Rappeler … » ; message → Claude ne garde que ce qui demande une action."
+      : "Pour que Jarvis voie tes appels manqués, SMS et WhatsApp : touche « activer », puis allume Jarvis dans la liste « Accès aux notifications ».";
     $("iGo").textContent = NOTIF_OK ? "réglages Android" : "activer";
     $("iCopy").style.display = "none"; $("iOff").style.display = "none";
     return;
   }
   const on = !!LS.get("tempo_itok", ""), last = LS.get("tempo_ilast", null);
   $("iState").textContent = on
-    ? `Lien actif${last ? " · dernier événement reçu " + new Date(last).toLocaleString("fr-FR", { weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : " · rien reçu pour l'instant"}. Appel manqué → « Rappeler … » ; SMS / WhatsApp → Claude ne garde que ce qui demande une action ; fin d'appel avec un contact → Tempo propose le compte rendu.`
-    : "Avec l'appli gratuite MacroDroid, Tempo reçoit tes appels manqués, tes SMS et tes WhatsApp, et en tire les actions tout seul. Guide pas à pas : dans ton guide Tempo (TEMPO-GUIDE.txt).";
+    ? `Lien actif${last ? " · dernier événement reçu " + new Date(last).toLocaleString("fr-FR", { weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : " · rien reçu pour l'instant"}. Appel manqué → « Rappeler … » ; SMS / WhatsApp → Claude ne garde que ce qui demande une action ; fin d'appel avec un contact → Jarvis propose le compte rendu.`
+    : "Avec l'appli gratuite MacroDroid, Jarvis reçoit tes appels manqués, tes SMS et tes WhatsApp, et en tire les actions tout seul. Guide pas à pas : dans ton guide Jarvis (TEMPO-GUIDE.txt).";
   $("iGo").textContent = on ? "recréer le lien" : "créer mon lien MacroDroid";
   $("iCopy").style.display = on ? "" : "none"; $("iOff").style.display = on ? "" : "none";
 }
@@ -1981,7 +2031,7 @@ async function processInbox(){
     rest.push(e);
   }
   msgs = rest;
-  /* seulement les gens que tu connais : tes contacts Tempo, ou un nom enregistré dans le téléphone (pas un numéro, pas « ~pseudo ») */
+  /* seulement les gens que tu connais : tes contacts Jarvis, ou un nom enregistré dans le téléphone (pas un numéro, pas « ~pseudo ») */
   const scope = CFG.msgScope || "connus";
   const known = e => { const w = (e.who || "").trim(); if (knownContact(isNumLike(w) ? "" : w, e.num)) return true; return !!w && !isNumLike(w) && !/^~/.test(w) && !/^\d{3,6}$/.test(w) && !(e.kind === "sms" && /^[A-Z0-9 .&_-]{2,11}$/.test(w)); };
   const msgs0 = msgs.length;
@@ -2232,7 +2282,7 @@ function paintColis(focusId){
     return `<div class="cc${colisHot(c) ? " hot" : ""}" data-c="${c.id}"><div class="ccN">${esc(colisName(c))}${c.art ? " · " + esc(c.art) : ""}</div>${c.code ? `<button class="ccC" data-ca="copy">${esc(fmtCode(c.code))}</button>` : `<div class="ccC none">pas de code dans le message${ap ? " · il est dans " + esc(ap.label) : ""}</div>`}<div class="small">${esc([c.place, c.until ? "jusqu'à " + dayLab(c.until) : "", "arrivé " + agoLab(c.firstAt), c.n > 1 ? "prévenu " + c.n + " fois" : ""].filter(Boolean).join(" · "))}</div><div class="foot"><div class="l"><button data-ca="done" style="color:var(--fg)">retiré ✓</button>${ap ? `<button data-ca="app">ouvrir ${esc(ap.label)}</button>` : ""}${c.place ? `<button data-ca="map">y aller</button>` : ""}<button data-ca="del">supprimer</button></div></div></div>`; }).join("");
   if (w.length) h += `<div class="lab">en route · ${w.length}</div>` + w.map(c => `<div class="cc dim" data-c="${c.id}"><div class="ccN">${esc(colisName(c))}${c.art ? " · " + esc(c.art) : ""}</div><div class="small">expédié ${esc(agoLab(c.firstAt))}${c.ref ? " · n° " + esc(c.ref) : ""} · <button data-ca="del" style="font-size:12.5px;color:var(--mut)">supprimer</button></div></div>`).join("");
   if (past.length) h += `<div class="lab">retirés · livrés</div>` + past.map(c => `<div class="cc dim" data-c="${c.id}"><div class="ccN">${esc(colisName(c))}${c.art ? " · " + esc(c.art) : ""}</div><div class="small">${c.st === "livre" ? "livré" : "retiré"} ${esc(agoLab(c.doneAt || c.lastAt))} · <button data-ca="undo" style="font-size:12.5px;color:var(--mut)">pas encore retiré</button></div></div>`).join("");
-  h += `<p class="small" style="margin-top:20px">Tempo lit les SMS${NATIVE ? " et les notifications" : ""} des transporteurs${gMailOk() ? " et tes mails Gmail" : ""}. Un colis = une ligne : les relances la mettent juste à jour. Touche le code pour le copier. Dis « j'ai récupéré le colis » pour le cocher.</p>`;
+  h += `<p class="small" style="margin-top:20px">Jarvis lit les SMS${NATIVE ? " et les notifications" : ""} des transporteurs${gMailOk() ? " et tes mails Gmail" : ""}. Un colis = une ligne : les relances la mettent juste à jour. Touche le code pour le copier. Dis « j'ai récupéré le colis » pour le cocher.</p>`;
   $("cBody").innerHTML = h;
   $("cGmail").style.display = gMailOk() ? "" : "none";
   if (focusId) { const el = document.querySelector(`#cBody [data-c="${focusId}"]`); if (el) setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 350); }
@@ -2388,7 +2438,7 @@ async function openFiche(it){
   const sec = (t, h) => h ? `<h3 class="rpH">${t}</h3>${h}` : "";
   const paint = () => {
     $("ficheBody").innerHTML = `
-      <div class="rpTop">Tempo · avant d'y aller</div>
+      <div class="rpTop">Jarvis · avant d'y aller</div>
       <h1 class="rpT">${esc(it.title)}</h1>
       <div class="rpP">${[when, it.ch, c && c.name].filter(Boolean).map(esc).join(" · ")}</div>
       ${it.note ? `<p class="rpSum" style="font-size:15px">${esc(it.note)}</p>` : ""}
@@ -2396,7 +2446,7 @@ async function openFiche(it){
       ${sec("Encore ouvert sur ce sujet", open.map(i => row(i.due ? fdt(Date.parse(i.due + "T12:00")) : "—", i.title, i.note || "")).join(""))}
       ${sec("Ce qui a déjà été fait", done.map(i => row(fdt(i.doneAt || i.created), i.title, i.note || "")).join(""))}
       ${sec("Infos notées", infos.map(i => row(fdt(i.created), i.title, i.note || "")).join(""))}
-      ${!rel.length ? `<p class="empty" style="margin-top:30px">rien d'autre dans Tempo sur ce sujet pour l'instant.</p>` : ""}
+      ${!rel.length ? `<p class="empty" style="margin-top:30px">rien d'autre dans Jarvis sur ce sujet pour l'instant.</p>` : ""}
       <div class="rpBtns">${c && c.phone ? `<button id="fiCall" class="ok">appeler ${esc(c.name.split(" ")[0])}</button>` : ""}<button id="fiEdit">ouvrir la tâche</button><button id="fiClose">fermer</button></div>`;
   };
   paint(); show("fiche");
@@ -2698,7 +2748,7 @@ function icsFile(o){
   if (o.time) { const [H, M] = o.time.split(":").map(Number), e = new Date(2000, 0, 1, H, M + dur);
     when = `DTSTART;TZID=Europe/Paris:${dv}T${pad(H)}${pad(M)}00\r\nDTEND;TZID=Europe/Paris:${dv}T${pad(e.getHours())}${pad(e.getMinutes())}00`; }
   else when = `DTSTART;VALUE=DATE:${dv}\r\nDTEND;VALUE=DATE:${ymd(addDays(1, new Date((o.due || today()) + "T12:00"))).replace(/-/g, "")}`;
-  const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Rc4st//Tempo//FR", "BEGIN:VEVENT", "UID:" + uid() + "@tempo",
+  const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Rc4st//Jarvis//FR", "BEGIN:VEVENT", "UID:" + uid() + "@tempo",
     "DTSTAMP:" + new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z", when, "SUMMARY:" + esc2((o.ch ? "[" + o.ch + "] " : "") + o.title),
     "DESCRIPTION:" + esc2(o.note || ""), "BEGIN:VALARM", "TRIGGER:-PT15M", "ACTION:DISPLAY", "DESCRIPTION:Rappel", "END:VALARM", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
   return new File([ics], "rdv.ics", { type: "text/calendar" });
@@ -2795,7 +2845,7 @@ $("mClose").onclick = hide;
 /* réglages · colis et applis lues */
 function paintColisSet(){
   const n = colisOpen().length;
-  $("cState").textContent = (n ? `${n} colis à retirer. ` : "") + "Tempo lit les SMS et notifications des transporteurs (Mondial Relay, InPost, Relais Colis, Vinted Go, Amazon…) et ne note chaque colis qu'une fois, avec son code ; les relances mettent juste la ligne à jour."
+  $("cState").textContent = (n ? `${n} colis à retirer. ` : "") + "Jarvis lit les SMS et notifications des transporteurs (Mondial Relay, InPost, Relais Colis, Vinted Go, Amazon…) et ne note chaque colis qu'une fois, avec son code ; les relances mettent juste la ligne à jour."
     + (gMailOk() ? " Gmail : lu ✓ (seulement les mails de colis)." : CFG.gmail ? (gOn() ? " Gmail : touche « autoriser Gmail » et coche l'accès aux e-mails." : " Gmail : connecte d'abord Google (plus haut).") : "");
   $("cGm").checked = !!CFG.gmail; $("cGmGo").style.display = CFG.gmail && !gMailOk() ? "" : "none";
 }
@@ -2836,14 +2886,14 @@ $("mSet").onclick = () => { hide(); setTimeout(openSettings, 60); };
 const openSettings = () => {
   $("sKey").value = CFG.key || ""; $("sProfile").value = CFG.profile; $("sSign").value = CFG.meSign || ""; $("sCh").value = CFG.ch; $("sTeam").value = CFG.team;
   $("sMsId").value = CFG.msId || ""; $("sBook").value = CFG.bookWords == null ? "golf" : CFG.bookWords; $("sCal").checked = CFG.calSync !== false; paintG();
-  $("sMsState").textContent = MS.rt || MS.at ? `connecté : ${MS.user || "Outlook"}. En espace perso, Tempo relève tes mails à l'ouverture (toutes les 20 min max) et via « mails » sous le rond. Les réservations sont lues dans tous les cas.` : "Colle l'ID de ton autorisation Microsoft (voir le guide), puis « connecter Outlook ». Tempo lit tes mails sans jamais en envoyer, déplacer ni supprimer.";
+  $("sMsState").textContent = MS.rt || MS.at ? `connecté : ${MS.user || "Outlook"}. En espace perso, Jarvis relève tes mails à l'ouverture (toutes les 20 min max) et via « mails » sous le rond. Les réservations sont lues dans tous les cas.` : "Colle l'ID de ton autorisation Microsoft (voir le guide), puis « connecter Outlook ». Jarvis lit tes mails sans jamais en envoyer, déplacer ni supprimer.";
   const P = SPACE === "perso";
   $("lProf").textContent = (P ? "Qui je suis — vie privée" : "Qui je suis — travail") + " (lu par Claude à chaque tri)";
   $("lChs").textContent = P ? "Mes thèmes — Nom : mots-clés" : "Mes chantiers — Nom : mots-clés";
   $("lTeam").textContent = P ? "Mes proches" : "Mon équipe";
   $("lStyle").textContent = P ? "Ma façon d'écrire mes textos et mails perso" : "Ma façon d'écrire mes mails";
   $("sContacts").value = CFG.contacts; $("sPick").style.display = PICK ? "" : "none"; $("sStyle").value = CFG.style; $("sSil").value = String(CFG.silence); { const R = RIT(); $("rOn").checked = R.on; $("rM").value = R.matin; $("rS").value = R.soir; $("rW").value = R.semaine; $("sFoc").value = String(CFG.focusMin || 25); } $("sVis").value = CFG.visual === "rond" ? "rond" : "const"; $("sAg").checked = CFG.agenda !== false;
-  const n = (CFG.learn || []).length; $("sLearn").textContent = n ? `Tempo a retenu ${n} correction${n > 1 ? "s" : ""} de ta part.` : "Quand tu corriges un classement, Tempo le retient pour la suite.";
+  const n = (CFG.learn || []).length; $("sLearn").textContent = n ? `Jarvis a retenu ${n} correction${n > 1 ? "s" : ""} de ta part.` : "Quand tu corriges un classement, Jarvis le retient pour la suite.";
   $("vMode").value = CFG.vMode === "voxtral" ? "voxtral" : "google"; $("vKey").value = CFG.mkey || ""; $("vCap").value = String(CFG.vCap || 2); $("vMax").value = String(CFG.vMax || 120);
   $("vSay").value = ["auto", "1", "0"].includes(CFG.vSay) ? CFG.vSay : "auto"; $("vAuto").checked = !!CFG.vAuto;
   paintVox(); if (CFG.mkey) voxSync().then(paintVox);
@@ -3085,7 +3135,7 @@ function validate(){
 }
 
 /* --- Voxtral --- */
-const V_FN = "https://jifaszjdhretgorxlpvs.supabase.co/functions/v1/tempo-voice";
+const V_FN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/tempo-voice";
 const V_USD_MIN = 0.0035;
 const curMonth = () => new Date().toLocaleString("sv-SE", { timeZone: "Europe/Paris" }).slice(0, 7);
 const voxUse = () => { const u = LS.get("tempo_vox", null); return u && u.month === curMonth() ? u : { month: curMonth(), usd: 0, sec: 0, cap: +CFG.vCap || 2 }; };
@@ -3110,8 +3160,8 @@ async function startRec(opts){
   let stream;
   const gen = opts && opts._gen;
   try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: true, channelCount: 1 } }); }
-  catch (e) { idle(); toast("autorise le micro pour Tempo"); return; }
-  if (!micAwake() || gen !== MIC_GEN) { stream.getTracks().forEach(t => t.stop()); return; }   // tu as quitté Tempo pendant que le micro s'ouvrait
+  catch (e) { idle(); toast("autorise le micro pour Jarvis"); return; }
+  if (!micAwake() || gen !== MIC_GEN) { stream.getTracks().forEach(t => t.stop()); return; }   // tu as quitté Jarvis pendant que le micro s'ouvrait
   const V = VOICE = { stream, chunks: [], pcm: [], pcmLen: 0, t0: Date.now(), spoke: false, loud: 0, lastLoud: Date.now(), floor: null, max: 0, opts };
   const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) || "";
   try {
@@ -3195,7 +3245,7 @@ function voxBias(){
     (c.team || "").split(",").forEach(add);
     (c.contacts || "").split("\n").forEach(l => add(l.split(":")[0]));
   }
-  ["2N", "VPI", "DOE", "SAV", "PoE", "baie de brassage", "contrôle d'accès", "vidéoprotection", "interphonie", "ventouse", "Ubiquiti", "Cambium", "ePMP", "nacelle", "devis", "Tempo"].forEach(add);
+  ["2N", "VPI", "DOE", "SAV", "PoE", "baie de brassage", "contrôle d'accès", "vidéoprotection", "interphonie", "ventouse", "Ubiquiti", "Cambium", "ePMP", "nacelle", "devis", "Jarvis"].forEach(add);
   return [`Dictée en français de ${myName()}, qui note ses tâches, appels, mails et rendez-vous.`].concat([...set].slice(0, 70));
 }
 async function sendVox(r, o, forceWav){
@@ -3224,7 +3274,7 @@ async function sendVox(r, o, forceWav){
   if (j && j.capped) { toast("Voxtral : plafond du mois atteint · je repasse sur Google", "redire", () => startListen(o), 9000); return; }
   LAST_AUDIO = { r, o };
   if (j && (j.error === "mistral_limit" || j.error === "key")) {
-    /* Mistral refuse : on ne bloque pas les dictées, Tempo repasse sur la voix du téléphone pendant 2 h */
+    /* Mistral refuse : on ne bloque pas les dictées, Jarvis repasse sur la voix du téléphone pendant 2 h */
     const w = voxWhy(j), why = j.error === "key" ? "clé Mistral refusée" : w.t || "Mistral refuse";
     LS.set("tempo_voxoff", { until: Date.now() + 2 * 3600e3, why, raw: w.raw, at: Date.now() });
     toast(`Voxtral : ${why} · je passe sur la voix du téléphone`, "redire", () => startListen(o), 12000);
@@ -3250,8 +3300,8 @@ function paintVox(){
   const on = $("vMode").value === "voxtral"; $("vBox").style.display = on ? "" : "none";
   if (!on) return;
   const u = voxUse(), min = u.sec / 60, cap = u.cap || +CFG.vCap || 2;
-  $("vUse").innerHTML = (CFG.mkey ? `Ce mois-ci : ${min < 1 ? Math.round(u.sec) + " s" : Math.round(min) + " min"} dictées · ≈ ${eur(u.usd)} sur ${eur(cap)} de plafond.${voxCapped() ? " <b>Plafond atteint : Tempo est repassé sur Google jusqu'au 1er du mois.</b>" : ""}${voxPaused() ? ` <b>En pause jusqu'à ${hm(new Date(voxPaused().until))} : Mistral a refusé (${esc(voxPaused().why)}).</b> Message de Mistral : « ${esc(voxPaused().raw || "aucun")} ». Sauvegarder les réglages relance Voxtral.` : ""}<br>` : "") +
-    `Tarif : 0,0035 $ la minute (≈ 0,35 centime). 10 min de dictée par jour ≈ 1 € par mois. Tempo compte 1 $ = 1 € pour garder de la marge, n'envoie rien si tu n'as rien dit, et repasse tout seul sur Google quand le plafond approche.`;
+  $("vUse").innerHTML = (CFG.mkey ? `Ce mois-ci : ${min < 1 ? Math.round(u.sec) + " s" : Math.round(min) + " min"} dictées · ≈ ${eur(u.usd)} sur ${eur(cap)} de plafond.${voxCapped() ? " <b>Plafond atteint : Jarvis est repassé sur Google jusqu'au 1er du mois.</b>" : ""}${voxPaused() ? ` <b>En pause jusqu'à ${hm(new Date(voxPaused().until))} : Mistral a refusé (${esc(voxPaused().why)}).</b> Message de Mistral : « ${esc(voxPaused().raw || "aucun")} ». Sauvegarder les réglages relance Voxtral.` : ""}<br>` : "") +
+    `Tarif : 0,0035 $ la minute (≈ 0,35 centime). 10 min de dictée par jour ≈ 1 € par mois. Jarvis compte 1 $ = 1 € pour garder de la marge, n'envoie rien si tu n'as rien dit, et repasse tout seul sur Google quand le plafond approche.`;
 }
 function startType(){
   typing = true; ringState("on"); hint(""); $("alt").style.display = "none";
@@ -3289,7 +3339,7 @@ async function checkReminders(){
 }
 
 /* ===== A. RAPPELS QUI SONNENT (Web Push via Supabase) ===== */
-const P_FN = "https://jifaszjdhretgorxlpvs.supabase.co/functions/v1/tempo-push";
+const P_FN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/tempo-push";
 let DEVICE = LS.get("tempo_dev", "");
 if (!DEVICE) { DEVICE = b64u(crypto.getRandomValues(new Uint8Array(18))); LS.set("tempo_dev", DEVICE); }
 async function pFn(body){
@@ -3305,7 +3355,7 @@ async function lnSetup(){
   try {
     let p = await LN.checkPermissions(); if (p.display !== "granted") p = await LN.requestPermissions();
     if (p.display !== "granted") return false;
-    await LN.createChannel({ id: "rappels", name: "Rappels Tempo", description: "Rappels, rendez-vous et rituels", importance: 5, visibility: 1, vibration: true, lights: true, lightColor: "#2EB8C4" });
+    await LN.createChannel({ id: "rappels", name: "Rappels Jarvis", description: "Rappels, rendez-vous et rituels", importance: 5, visibility: 1, vibration: true, lights: true, lightColor: "#2EB8C4" });
     lnReady = true;
   } catch (e) {}
   return lnReady;
@@ -3326,15 +3376,15 @@ async function nativeSchedule(list){
 }
 async function enablePush(){
   if (NATIVE) {
-    if (!(await lnSetup())) return toast("autorise les notifications pour Tempo", "réglages", () => tn("openAppSettings"), 8000);
+    if (!(await lnSetup())) return toast("autorise les notifications pour Jarvis", "réglages", () => tn("openAppSettings"), 8000);
     LS.set("tempo_push", true); paintPush(); syncReminders(true);
-    try { await LN.schedule({ notifications: [{ id: 99, title: "Tempo", body: "Les rappels fonctionnent. Je sonnerai au bon moment.", schedule: { at: new Date(Date.now() + 4000), allowWhileIdle: true }, channelId: "rappels", smallIcon: "ic_stat_tempo" }] }); } catch (e) {}
+    try { await LN.schedule({ notifications: [{ id: 99, title: "Jarvis", body: "Les rappels fonctionnent. Je sonnerai au bon moment.", schedule: { at: new Date(Date.now() + 4000), allowWhileIdle: true }, channelId: "rappels", smallIcon: "ic_stat_tempo" }] }); } catch (e) {}
     toast("rappels activés ✓ — une notification de test arrive", "", null, 6000);
     return;
   }
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return toast("notifications impossibles ici");
   const perm = await Notification.requestPermission();
-  if (perm !== "granted") return toast("autorise les notifications pour Tempo dans Android", "", null, 7000);
+  if (perm !== "granted") return toast("autorise les notifications pour Jarvis dans Android", "", null, 7000);
   try {
     const reg = await navigator.serviceWorker.ready;
     const { key } = await pFn({ action: "key" });
@@ -3348,7 +3398,7 @@ async function enablePush(){
     paintPush();
   } catch (e) { toast("échec de l'activation des rappels"); }
 }
-/* l'abonnement aux notifications peut mourir côté Google (c'est arrivé le 20/11) : Tempo le vérifie et le refait seul */
+/* l'abonnement aux notifications peut mourir côté Google (c'est arrivé le 20/11) : Jarvis le vérifie et le refait seul */
 async function pushHeal(force, renew){
   if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window) || Notification.permission !== "granted") return;
   const k = renew ? "tempo_pushrenew" : "tempo_pushheal", last = LS.get(k, 0);
@@ -3425,7 +3475,7 @@ async function gEvents(day){
     if (!r.ok) return [];
     const j = await r.json();
     return (j.items || []).filter(e => e.status !== "cancelled" && !(e.summary || "").startsWith("✓ ")).map(e => ({
-      title: e.summary || "(sans titre)", allDay: !!e.start.date, tempo: (e.description || "").includes("— Tempo"),
+      title: e.summary || "(sans titre)", allDay: !!e.start.date, tempo: /— (Tempo|Jarvis)\b/.test(e.description || ""),
       s: e.start.dateTime ? new Date(e.start.dateTime) : null, e: e.end && e.end.dateTime ? new Date(e.end.dateTime) : null
     }));
   } catch (e) { return []; }
@@ -3711,14 +3761,14 @@ function reportText(){
   if (X.notes.length) { L.push("NOTES, INFOS ET IDÉES"); X.notes.forEach(i => L.push(`${fdt(i.created)}  ${i.title}${i.note ? " — " + i.note : ""}`)); L.push(""); }
   if (X.frais.length) { L.push("FRAIS"); X.frais.forEach(i => L.push(`${fdt(Date.parse((i.due || today()) + "T12:00"))}  ${i.title}${i.ch ? " [" + i.ch + "]" : ""}  ${eur(i.amount)}${i.done ? " (remboursé)" : ""}`)); L.push(`TOTAL : ${eur(X.totF)}`, ""); }
   if (!X.done.length && !X.open.length && !X.notes.length && !X.frais.length) L.push("Aucune action trouvée sur cette période.");
-  L.push("— Tempo");
+  L.push("— Jarvis");
   return L.join("\n");
 }
 function paintReport(){
   const X = REPORT, sec = (t, h) => h ? `<h3 class="rpH">${t}</h3>${h}` : "";
   const row = (d, t, s) => `<div class="rpR"><span class="rpD">${d}</span><div><div>${esc(t)}</div>${s ? `<div class="rpS">${esc(s)}</div>` : ""}</div></div>`;
   $("repBody").innerHTML = `
-    <div class="rpTop">Tempo · état d'activité</div>
+    <div class="rpTop">Jarvis · état d'activité</div>
     <h1 class="rpT">${esc(X.R.what.charAt(0).toUpperCase() + X.R.what.slice(1))}</h1>
     <div class="rpP">${X.per}${SPACE === "pro" && CFG.meSign ? " · " + esc(CFG.meSign) : ""}</div>
     ${X.summary ? `<p class="rpSum">${esc(X.summary)}</p>` : (CFG.key ? `<p class="rpSum" style="color:var(--mut)">synthèse en cours…</p>` : "")}
@@ -3735,7 +3785,7 @@ $("report").addEventListener("click", async e => {
   if (!REPORT) return;
   if (e.target.closest("#rpClose")) { hide(); return; }
   if (e.target.closest("#rpPdf") && NATIVE) { tn("print", { name: `Etat ${REPORT.R.what} ${fdt(Date.now()).replace(/\//g, "-")}` }); return; }
-  if (e.target.closest("#rpPdf")) { document.title = `Etat ${REPORT.R.what} ${fdt(Date.now()).replace(/\//g, "-")}`; window.print(); setTimeout(() => document.title = "Tempo", 1500); return; }
+  if (e.target.closest("#rpPdf")) { document.title = `Etat ${REPORT.R.what} ${fdt(Date.now()).replace(/\//g, "-")}`; window.print(); setTimeout(() => document.title = "Jarvis", 1500); return; }
   const txt = reportText(), name = `etat-${norm(REPORT.R.what).replace(/[^a-z0-9]+/g, "-")}-${today()}.txt`;
   if (e.target.closest("#rpTxt") && NATIVE) { tn("shareFile", { name, text: txt, title: "Envoyer l'état" }); return; }
   if (e.target.closest("#rpTxt")) {
@@ -3836,7 +3886,7 @@ gHandleRedirect();
 autoSpace();
 handleImport();
 window.addEventListener("hashchange", handleImport);
-/* ouvrir Tempo = il t'écoute (réglage), sauf si on revient d'une action ou qu'une fenêtre est ouverte */
+/* ouvrir Jarvis = il t'écoute (réglage), sauf si on revient d'une action ou qu'une fenêtre est ouverte */
 const autoListenOK = () => CFG.vAuto && !listening && !typing && !S.pendingAck && !FOC && !document.querySelector(".sheet.show") && !$("ring").classList.contains("think");
 msHandleRedirect().then(was => {
   if (!was) {
@@ -3852,7 +3902,7 @@ let hiddenAt = 0, isAway = false;
 function onHidden(){
   if (isAway) return; isAway = true;
   hiddenAt = Date.now();
-  /* tu quittes Tempo en pleine dictée : on envoie ce qui a été dit, sinon on coupe le micro */
+  /* tu quittes Jarvis en pleine dictée : on envoie ce qui a été dit, sinon on coupe le micro */
   if (listening && !typing) { if ((VOICE && VOICE.spoke) || (!VOICE && (finalTxt || interim))) validate(); else { stopListen(); idle(); } }
   MIC_GEN++; if (NATIVE) tn("srCancel"); screenOn(false);   // une écoute qui démarrait est annulée, la reconnaissance Google est rendue
   hush();
@@ -3866,8 +3916,8 @@ function onVisible(){
 }
 document.addEventListener("visibilitychange", () => { if (document.hidden) onHidden(); else onVisible(); });
 
-/* ===== APPLI ANDROID : liens tempo://, partage, notifications touchées, bouton retour, mises à jour ===== */
-const T_FN = "https://jifaszjdhretgorxlpvs.supabase.co/functions/v1/tempo-transfer";
+/* ===== APPLI ANDROID : liens copilote://, partage, notifications touchées, bouton retour, mises à jour ===== */
+const T_FN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/tempo-transfer";
 const toB64 = u8 => { let x = ""; for (let i = 0; i < u8.length; i += 32768) x += String.fromCharCode.apply(null, u8.subarray(i, i + 32768)); return btoa(x); };
 const fromB64 = b => Uint8Array.from(atob(b), c => c.charCodeAt(0));
 const fromB64u = b => fromB64(b.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - b.length % 4) % 4));
@@ -3875,7 +3925,7 @@ async function tFn(body){
   const r = await fetch(T_FN, { method: "POST", headers: { "content-type": "application/json", Authorization: "Bearer " + G_KEY, apikey: G_KEY }, body: JSON.stringify(body) });
   let j = {}; try { j = await r.json(); } catch (e) {} return j;
 }
-/* Chrome → appli : tout Tempo (tâches, réglages, clés) chiffré ici, la clé ne passe que par le lien vers l'appli */
+/* Chrome → appli : tout Jarvis (tâches, réglages, clés) chiffré ici, la clé ne passe que par le lien vers l'appli */
 async function transferOut(){
   try {
     const data = {};
@@ -3886,7 +3936,7 @@ async function transferOut(){
     const r = await tFn({ action: "put", blob: toB64(ct), iv: toB64(iv) });
     if (!r.id) { toast("transfert impossible · réessaie"); return; }
     LS.set("tempo_moved", Date.now()); paintApp();
-    const link = `intent://transfert?id=${r.id}&k=${b64u(key)}#Intent;scheme=tempo;package=fr.rc4st.tempo;S.browser_fallback_url=${encodeURIComponent(APK_URL)};end`;
+    const link = `intent://transfert?id=${r.id}&k=${b64u(key)}#Intent;scheme=copilote;package=fr.rc4st.copilote;S.browser_fallback_url=${encodeURIComponent(APK_URL)};end`;
     location.href = link;
     setTimeout(() => { if (document.visibilityState === "visible") toast("l'appli ne s'est pas ouverte ?", "ouvrir l'appli", () => { location.href = link; }, 15000); }, 2500);
   } catch (e) { toast("transfert impossible · réessaie"); }
@@ -3909,17 +3959,17 @@ async function transferIn(id, k){
 async function paintApp(){
   if (NATIVE) {
     const r = (await tn("info")) || {};
-    $("appState").textContent = `Appli ${r.versionName || ""} · Tempo v${TEMPO_BUILD}${r.web ? " (mis à jour)" : ""}. Les nouveautés de l'écran arrivent toutes seules ; quand l'appli elle-même change, Tempo te propose de l'installer.` + (S.items.length ? "" : " Tes tâches sont dans Chrome ? Ouvre Tempo dans Chrome > ··· > réglages > « transférer mes données ».");
+    $("appState").textContent = `Appli ${r.versionName || ""} · Jarvis v${TEMPO_BUILD}${r.web ? " (mis à jour)" : ""}. Les nouveautés de l'écran arrivent toutes seules ; quand l'appli elle-même change, Jarvis te propose de l'installer.` + (S.items.length ? "" : " Tes tâches sont dans Chrome ? Ouvre Jarvis dans Chrome > ··· > réglages > « transférer mes données ».");
     $("appGet").style.display = "none"; $("appMove").style.display = "none"; $("appUpd").style.display = ""; $("appUpd").textContent = "chercher une mise à jour";
     return;
   }
   const moved = LS.get("tempo_moved", 0);
   $("appState").textContent = moved
     ? `Données envoyées à l'appli le ${new Date(moved).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}. Si tout y est, coupe les rappels ici pour ne pas les recevoir en double.`
-    : "Tempo existe en vraie appli Android : widget, réveils, appels manqués et messages lus directement, rappels même sans réseau. 1) installer l'appli, 2) transférer tes données (tâches, réglages, clés) en un appui.";
+    : "Jarvis existe en vraie appli Android : widget, réveils, appels manqués et messages lus directement, rappels même sans réseau. 1) installer l'appli, 2) transférer tes données (tâches, réglages, clés) en un appui.";
   $("appGet").style.display = ""; $("appMove").style.display = ""; $("appUpd").style.display = moved ? "" : "none"; $("appUpd").textContent = "couper les rappels ici";
 }
-$("appGet").onclick = () => { location.href = APK_URL; toast("téléchargement de Tempo… ouvre-le depuis la notification", "", null, 8000); };
+$("appGet").onclick = () => { location.href = APK_URL; toast("téléchargement de Jarvis… ouvre-le depuis la notification", "", null, 8000); };
 $("appMove").onclick = transferOut;
 $("appUpd").onclick = async () => {
   if (NATIVE) { webUpdate(true); return; }
@@ -3934,13 +3984,13 @@ async function webUpdate(manual){
   if (!v) { if (manual) toast("pas de réseau"); return; }
   /* d'abord l'intérieur (si l'appli installée le supporte), puis on propose la nouvelle appli au démarrage suivant */
   if (v.build > TEMPO_BUILD && (info.native || 0) >= (v.minNative || 0)) {
-    const go = () => { if (listening || typing || document.querySelector(".sheet.show") || $("ring").classList.contains("think")) { setTimeout(go, 20000); return; } toast("mise à jour de Tempo…"); tn("updateWeb", { base: PWA_URL, files: ["index.html"], version: String(v.build) }); };
+    const go = () => { if (listening || typing || document.querySelector(".sheet.show") || $("ring").classList.contains("think")) { setTimeout(go, 20000); return; } toast("mise à jour de Jarvis…"); tn("updateWeb", { base: PWA_URL, files: ["index.html"], version: String(v.build) }); };
     go(); return;
   }
   if (v.apk && (info.native || 0) < v.apk && (manual || LS.get("tempo_apkask", "") !== today())) {
     LS.set("tempo_apkask", today()); toast("nouvelle version de l'appli", "installer", () => tn("openUrl", { url: APK_URL }), 12000); return;
   }
-  if (manual) toast("Tempo est à jour ✓");
+  if (manual) toast("Jarvis est à jour ✓");
 }
 function openInternal(url){ try { const u = new URL(url || "./", location.href); history.replaceState(null, "", location.pathname + u.search); handleShare(); } catch (e) {} }
 function appUrl(url){
@@ -3970,6 +4020,416 @@ if (NATIVE) {
   tn("info").then(r => { NV = (r && r.native) || 0; if (NV >= 3) watchInit(); });
 }
 if (CFG.gmail) setTimeout(() => gmailColis(false), 4000);
+
+/* ===================================================================================================
+   Jarvis — lot c : mémoire chiffrée + conversation (Claude Sonnet)
+   - La phrase secrète ne quitte jamais le téléphone. Elle donne la clé de chiffrement (gardée ici,
+     non exportable) et un jeton d'accès au serveur, qui ne voit que du chiffré.
+   - La recherche dans la mémoire se fait ici ; seuls les souvenirs utiles à la question partent chez Claude.
+   - Claude propose de retenir ou d'oublier ; rien n'est gardé ni effacé sans ton OK.
+   =================================================================================================== */
+const M_FN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/copilote-memoire";
+const CV_MODEL = "claude-sonnet-5-5";
+const CV_PRICE = { in: 2, cw: 2.5, cr: 0.10, out: 10 };   // $ par million de jetons, tarif Anthropic de Claude Sonnet 5.5 (nov. 2026)
+const CV_HIST = 13;                                       // messages gardés dans la conversation envoyée (6 échanges + la question)
+const CV_PAUSE = 8 * 3600e3;                              // après 8 h sans échange, nouvelle conversation
+const TE = new TextEncoder(), TD = new TextDecoder();
+const cvVisible = () => { const e = document.getElementById("conv"); return !!(e && e.classList.contains("show")); };
+const MEM = { key: null, tok: null, items: new Map(), last: "1970-01-01T00:00:00Z", busy: false, again: false };
+const JV = { tab: "parler", msgs: [], view: [], notes: [], at: 0, busy: false, loaded: false };
+
+/* ---------- petits outils ---------- */
+const b64e = u8 => { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const b64url = u8 => b64e(u8).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const uuid4 = () => (crypto.randomUUID ? crypto.randomUUID() : ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)));
+const idbReq = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+let IDBP = null;
+function idb(){
+  return IDBP || (IDBP = new Promise((res, rej) => {
+    const r = indexedDB.open("copilote", 1);
+    r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains("kv")) d.createObjectStore("kv"); if (!d.objectStoreNames.contains("rows")) d.createObjectStore("rows", { keyPath: "id" }); };
+    r.onsuccess = () => res(r.result); r.onerror = () => { IDBP = null; rej(r.error); };
+  }));
+}
+async function kvGet(k){ const d = await idb(); return idbReq(d.transaction("kv").objectStore("kv").get(k)); }
+async function kvSet(k, v){ const d = await idb(); return idbReq(d.transaction("kv", "readwrite").objectStore("kv").put(v, k)); }
+async function kvDel(k){ const d = await idb(); return idbReq(d.transaction("kv", "readwrite").objectStore("kv").delete(k)); }
+async function rowsAll(){ const d = await idb(); return idbReq(d.transaction("rows").objectStore("rows").getAll()); }
+async function rowsDo(fn){ const d = await idb(); const t = d.transaction("rows", "readwrite"); fn(t.objectStore("rows")); return new Promise((res, rej) => { t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); }
+const rowsPut = list => rowsDo(s => list.forEach(r => s.put(r)));
+const rowsDel = ids => rowsDo(s => ids.forEach(id => s.delete(id)));
+
+/* ---------- chiffrement ---------- */
+async function memDerive(pass, sel){
+  const base = await crypto.subtle.importKey("raw", TE.encode(pass.normalize("NFC").trim()), "PBKDF2", false, ["deriveBits"]);
+  const bits = new Uint8Array(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: b64d(sel), iterations: 600000 }, base, 512));
+  const key = await crypto.subtle.importKey("raw", bits.slice(0, 32), { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+  const tok = b64url(bits.slice(32)); bits.fill(0);
+  return { key, tok };
+}
+async function memSeal(id, obj, key){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: TE.encode(id) }, key || MEM.key, TE.encode(JSON.stringify(obj))));
+  return { id, iv: b64e(iv), ct: b64e(ct) };
+}
+async function memOpenRow(r, key){
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64d(r.iv), additionalData: TE.encode(r.id) }, key || MEM.key, b64d(r.ct));
+  return JSON.parse(TD.decode(pt));
+}
+async function memApi(body){
+  const r = await fetch(M_FN, { method: "POST", headers: { "content-type": "application/json", Authorization: "Bearer " + G_KEY, apikey: G_KEY }, body: JSON.stringify(body) });
+  let j = null; try { j = await r.json(); } catch (e) {}
+  if (!j) throw new Error("réseau");
+  return j;
+}
+
+/* ---------- mémoire : ouverture, synchro, retenir, oublier ---------- */
+async function memUnlock(){
+  if (MEM.key) return true;
+  let saved = null; try { saved = await kvGet("cle"); } catch (e) {}
+  if (!saved || !saved.key || !saved.tok) return false;
+  MEM.key = saved.key; MEM.tok = saved.tok;
+  await memLoad();
+  return true;
+}
+async function memLoad(){
+  MEM.items.clear();
+  try { MEM.last = (await kvGet("last")) || "1970-01-01T00:00:00Z"; } catch (e) {}
+  for (const r of await rowsAll().catch(() => [])) { try { MEM.items.set(r.id, Object.assign(await memOpenRow(r), { id: r.id })); } catch (e) {} }
+  await cvLoad();
+}
+async function memLock(){
+  MEM.key = null; MEM.tok = null; MEM.items.clear(); MEM.last = "1970-01-01T00:00:00Z";
+  JV.msgs = []; JV.view = []; JV.loaded = false;
+  try { await kvDel("cle"); await kvDel("last"); await kvDel("conv"); await rowsDo(s => s.clear()); } catch (e) {}
+}
+async function memQueue(){ let q = null; try { q = await kvGet("file"); } catch (e) {} return q && Array.isArray(q.w) ? q : { w: [], o: [] }; }
+// la file d'envoi n'est modifiée que par un seul à la fois (sinon un ajout pendant une synchro peut se perdre)
+let MEMQ = Promise.resolve();
+function memQ(fn){ const p = MEMQ.then(async () => { const q = await memQueue(); await fn(q); await kvSet("file", q); }); MEMQ = p.catch(() => {}); return p; }
+async function memSync(){
+  if (!MEM.tok) return;
+  if (MEM.busy) { MEM.again = true; return; }
+  MEM.busy = true; MEM.again = false;
+  try {
+    let q = null; await memQ(x => { q = { w: [...x.w], o: [...x.o] }; });
+    if (q.w.length) {
+      const want = new Set(q.w), rows = (await rowsAll()).filter(r => want.has(r.id) && r.ct);
+      if (rows.length) { const j = await memApi({ action: "ecrire", jeton: MEM.tok, items: rows.map(r => ({ id: r.id, iv: r.iv, ct: r.ct })) }); if (!j.ok) throw j; }
+    }
+    if (q.o.length) { const j = await memApi({ action: "oublier", jeton: MEM.tok, ids: q.o }); if (!j.ok) throw j; }
+    await memQ(q2 => { q2.w = q2.w.filter(id => !q.w.includes(id)); q2.o = q2.o.filter(id => !q.o.includes(id)); });   // ce qui a été ajouté pendant l'envoi reste dans la file
+    for (let n = 0, plus = true; plus && n < 10; n++) {
+      const j = await memApi({ action: "liste", jeton: MEM.tok, depuis: MEM.last });
+      if (!j.ok) { if (j.error === "phrase") { await memLock(); if (cvVisible()) cvLockUI(); } throw j; }
+      const put = [], del = [];
+      for (const r of j.rows) {
+        if (r.supprime) { del.push(r.id); MEM.items.delete(r.id); }
+        else { try { MEM.items.set(r.id, Object.assign(await memOpenRow(r), { id: r.id })); put.push({ id: r.id, iv: r.iv, ct: r.ct }); } catch (e) {} }
+        MEM.last = r.maj;
+      }
+      if (put.length) await rowsPut(put);
+      if (del.length) await rowsDel(del);
+      await kvSet("last", MEM.last);
+      plus = !!j.plus;
+    }
+  } catch (e) { /* hors ligne ou serveur indisponible : la file attend, on réessaiera */ }
+  MEM.busy = false;
+  if (cvVisible() && JV.tab === "memoire") paintMem();
+  if (MEM.again) memSync();
+}
+async function memRemember(t, d, pin, src){
+  const id = uuid4(), o = { t: String(t).trim().slice(0, 2000), d: d === "pro" ? "pro" : "perso", p: !!pin, q: new Date().toISOString(), s: src || "main" };
+  await rowsPut([await memSeal(id, o)]);
+  MEM.items.set(id, Object.assign(o, { id }));
+  await memQ(q => { q.w.push(id); });
+  memSync();
+  return id;
+}
+async function memForget(ids){
+  ids = ids.filter(id => MEM.items.has(id));
+  if (!ids.length) return;
+  ids.forEach(id => MEM.items.delete(id));
+  await rowsDel(ids);
+  await memQ(q => { q.w = q.w.filter(id => !ids.includes(id)); q.o.push(...ids); });
+  memSync();
+}
+async function memPin(id){
+  const it = MEM.items.get(id); if (!it) return;
+  const o = { t: it.t, d: it.d, p: !it.p, q: it.q, s: it.s };
+  await rowsPut([await memSeal(id, o)]);
+  MEM.items.set(id, Object.assign(o, { id }));
+  await memQ(q => { if (!q.w.includes(id)) q.w.push(id); });
+  memSync();
+}
+
+/* ---------- recherche locale ---------- */
+const cvNorm = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const CV_STOP = new Set(cvNorm("les des une un le la de du et en au aux pour par sur dans avec que qui quoi est sont pas plus mon ma mes ton ta tes son sa ses nos vos leur leurs ce cet cette ces il elle ils elles je tu nous vous on se ne y à été être avoir fait faire comme mais ou donc car quand où dit tout tous toute toutes moi toi lui eux sans sous chez vers très bien aussi alors encore déjà oui non ça cela ceci quel quelle quels quelles dont peux peut veux veut faut").split(" "));
+const cvToks = s => cvNorm(s).split(/[^a-z0-9]+/).filter(w => w.length > 2 && !CV_STOP.has(w));
+const cvStem = w => w.length > 5 ? w.slice(0, 5) : w;   // pluriels, conjugaisons : on compare le début du mot
+function memSearch(q, k){
+  const all = [...MEM.items.values()]; if (!all.length) return [];
+  const qs = [...new Set(cvToks(q).map(cvStem))]; if (!qs.length) return [];
+  const docs = all.map(it => ({ it, ts: new Set(cvToks(it.t).map(cvStem)) }));
+  const df = new Map(qs.map(w => [w, docs.filter(d => d.ts.has(w)).length]));
+  const N = docs.length, now = Date.now();
+  return docs.map(d => {
+    let s = 0; qs.forEach(w => { if (d.ts.has(w)) s += Math.log(1 + N / (df.get(w) || 1)); });
+    if (s > 0) s += 0.3 * Math.exp(-(now - (Date.parse(d.it.q) || 0)) / (86400e3 * 90));
+    return { it: d.it, s };
+  }).filter(x => x.s > 0).sort((a, b) => b.s - a.s).slice(0, k || 10).map(x => x.it);
+}
+const cvShort = id => id.slice(0, 8);
+const cvFull = s => { s = String(s || "").replace(/[^0-9a-f]/gi, "").toLowerCase(); if (s.length < 6) return null; for (const id of MEM.items.keys()) if (id.replace(/-/g, "").startsWith(s)) return id; return null; };
+function cvSouvenirs(q){
+  const byDate = (a, b) => (Date.parse(b.q) || 0) - (Date.parse(a.q) || 0);
+  const all = [...MEM.items.values()];
+  const picked = new Map();
+  all.filter(i => i.p).sort(byDate).slice(0, 15).forEach(i => picked.set(i.id, i));                 // épinglés : toujours
+  const lastU = JV.view.filter(v => v.r === "u").slice(-2).map(v => v.t).join(" ");
+  memSearch(q + " " + lastU, 10).forEach(i => picked.set(i.id, i));                                  // utiles à la question
+  all.filter(i => !i.p).sort(byDate).slice(0, 3).forEach(i => picked.set(i.id, i));                 // les plus récents
+  let size = 0; const lines = [];
+  for (const i of picked.values()) {
+    const l = `[${cvShort(i.id)}] ${(i.q || "").slice(0, 10)} · ${i.d}${i.p ? " · épinglé" : ""} : ${i.t}`;
+    if (size + l.length > 7000) break; size += l.length; lines.push(l);
+  }
+  return lines.length ? lines.join("\n") : "(aucun souvenir pour l'instant)";
+}
+
+/* ---------- conversation ---------- */
+const CV_SYS = `Tu es Jarvis (nom provisoire), l'assistant personnel de ton utilisateur, pour sa vie pro et perso. Tu lui parles en français et tu le tutoies.
+
+Ton caractère
+- Pragmatique et inventif : tu vas droit à ce qui l'aide à avancer, et tu proposes des idées auxquelles il n'aurait pas pensé.
+- Contradicteur constructif : quand il a raison, dis-le simplement ; quand il se trompe ou qu'il y a mieux, dis-le clairement et propose une autre voie, avec la raison en une phrase. Tu l'orientes, mais tu ne décides jamais à sa place : c'est lui qui tranche.
+- Honnête : tu n'inventes jamais un fait. Ce que tu sais de lui vient uniquement de <souvenirs> et de cette conversation. Sur le monde extérieur (prix, horaires, actualité, règles, chiffres), si tu n'es pas sûr, dis « je ne sais pas » ou « à vérifier » plutôt que d'improviser : tu n'as pas encore accès au web. Ne cite tes sources que s'il les demande.
+- Imagination : bienvenue quand vous imaginez ensemble, mais annonce-la toujours comme telle (« idée en l'air : … »).
+
+Ta façon de répondre
+- Court et direct, comme à l'oral : quelques phrases, une liste seulement si c'en est vraiment une. Pas de formule creuse, pas de reformulation de sa question.
+- Il dicte souvent : ses messages peuvent contenir des hésitations ou des mots mal transcrits. Comprends l'intention sans relever les fautes.
+- S'il te manque une information indispensable, pose une seule question, la plus utile.
+- Ne lui fais jamais répéter ce qui est déjà dans ses souvenirs.
+
+Sa mémoire : c'est lui qui décide
+- Quand il te donne une information durable sur lui, ses proches, son travail, ses habitudes ou ses préférences, ou quand il dit « retiens », propose-la avec l'outil proposer_souvenir : une phrase autonome, compréhensible seule dans six mois, datée si la date compte. Pas pour les broutilles ni pour ce qui ne vaut que pour aujourd'hui.
+- Quand il dit « oublie… » ou qu'un souvenir est devenu faux, propose de l'effacer avec proposer_oubli, en reprenant les identifiants entre crochets de <souvenirs>, et propose si besoin le souvenir corrigé.
+- Ne dis jamais que tu as retenu ou oublié quelque chose : tu proposes, il valide d'un geste.
+- Écris toujours ta réponse en texte d'abord, puis appelle l'outil si besoin.
+
+Les balises <souvenirs>, <contexte> et <validations> sont ajoutées par l'appli : ce ne sont pas ses mots. <validations> te dit ce qu'il a accepté ou refusé parmi tes propositions précédentes.`;
+const CV_TOOLS = [
+  { name: "proposer_souvenir", description: "Propose à l'utilisateur de retenir une information durable dans sa mémoire chiffrée. Il accepte ou refuse lui-même.",
+    input_schema: { type: "object", properties: {
+      texte: { type: "string", description: "Le souvenir, en une phrase autonome à la troisième personne (« Il… »), datée si utile." },
+      domaine: { type: "string", enum: ["pro", "perso"] },
+      epingle: { type: "boolean", description: "true seulement pour un fait de base à toujours avoir en tête (identité, métier, proches, règle qu'il t'a donnée)." } },
+      required: ["texte", "domaine"] } },
+  { name: "proposer_oubli", description: "Propose à l'utilisateur d'effacer définitivement un ou plusieurs souvenirs. Il accepte ou refuse lui-même.",
+    input_schema: { type: "object", properties: {
+      ids: { type: "array", items: { type: "string" }, description: "Identifiants entre crochets dans <souvenirs>." },
+      raison: { type: "string", description: "En quelques mots." } },
+      required: ["ids"] } }
+];
+const cvMonth = () => { const u = LS.get("copilote_conso", null); return u && u.month === curMonth() ? u : { month: curMonth(), usd: 0, n: 0 }; };
+const cvCap = () => Math.max(1, +CFG.cvCap || 20);
+const cvMoney = x => x.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " $";
+async function cvSave(){
+  if (!MEM.key) return;
+  try { await kvSet("conv", await memSeal("conv", { msgs: JV.msgs, view: JV.view, notes: JV.notes, at: JV.at })); } catch (e) {}
+}
+async function cvLoad(){
+  if (JV.loaded) return;
+  try { const r = await kvGet("conv"); if (r && r.ct) { const o = await memOpenRow(r); JV.msgs = o.msgs || []; JV.view = o.view || []; JV.notes = o.notes || []; JV.at = o.at || 0; } } catch (e) {}
+  JV.loaded = true;
+  if (JV.at && Date.now() - JV.at > CV_PAUSE) cvNew(true);
+}
+function cvNew(silent){ JV.msgs = []; JV.view = []; JV.notes = []; JV.at = 0; cvSave(); if (!silent) cvPaint(); }
+function cvContexte(){
+  const d = new Date().toLocaleString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return `Nous sommes le ${d} (heure de Paris). Espace ouvert dans l'appli : ${typeof SPACE !== "undefined" ? SPACE : "pro"}.`;
+}
+async function cvCall(extras){
+  const body = { model: CV_MODEL, max_tokens: 4000, system: CV_SYS, tools: CV_TOOLS, messages: JV.msgs.slice(-CV_HIST) };
+  if (extras !== false) { body.cache_control = { type: "ephemeral" }; body.output_config = { effort: CFG.cvEffort || "medium" }; }
+  const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+    body: JSON.stringify(body) });
+  let j = null; try { j = await r.json(); } catch (e) {}
+  if (!r.ok && extras !== false && r.status === 400 && /cache_control|output_config|effort/i.test(JSON.stringify(j || ""))) return cvCall(false);
+  if (!r.ok) throw { status: r.status, j };
+  return j;
+}
+function cvCount(u){
+  if (!u) return 0;
+  const usd = ((u.input_tokens || 0) * CV_PRICE.in + (u.cache_creation_input_tokens || 0) * CV_PRICE.cw + (u.cache_read_input_tokens || 0) * CV_PRICE.cr + (u.output_tokens || 0) * CV_PRICE.out) / 1e6;
+  const m = cvMonth(); m.usd += usd; m.n++; LS.set("copilote_conso", m);
+  return usd;
+}
+async function cvSend(text){
+  text = (text || "").trim(); if (!text || JV.busy) return;
+  if (!CFG.key) { JV.view.push({ r: "a", t: "Il me faut ta clé Claude : réglages > Claude." }); cvPaint(); return; }
+  if (cvMonth().usd >= cvCap()) { JV.view.push({ r: "a", t: `Plafond du mois atteint (${cvMoney(cvCap())}). Tu peux le changer dans l'onglet mémoire.` }); cvPaint(); return; }
+  if (JV.at && Date.now() - JV.at > CV_PAUSE) cvNew(true);
+  const val = JV.notes.length ? `<validations>\n${JV.notes.join("\n")}\n</validations>\n` : "";
+  JV.notes = [];
+  JV.msgs.push({ role: "user", content: `<souvenirs>\n${cvSouvenirs(text)}\n</souvenirs>\n<contexte>${cvContexte()}</contexte>\n${val}\n${text}` });
+  JV.view.push({ r: "u", t: text });
+  JV.busy = true; cvPaint(); cvStatus("je réfléchis…");
+  try {
+    const j = await cvCall();
+    const usd = cvCount(j.usage);
+    const txt = (j.content || []).filter(b => b.type === "text").map(b => b.text).join("\n").trim();
+    const tools = (j.content || []).filter(b => b.type === "tool_use");
+    JV.msgs.push({ role: "assistant", content: txt || "(je te propose quelque chose ci-dessous)" });
+    if (txt) JV.view.push({ r: "a", t: txt, usd });
+    for (const t of tools) {
+      const x = t.input || {};
+      if (t.name === "proposer_souvenir" && x.texte) JV.view.push({ r: "p", k: "retenir", t: String(x.texte).slice(0, 2000), d: x.domaine === "pro" ? "pro" : "perso", pin: !!x.epingle, st: "" });
+      if (t.name === "proposer_oubli") {
+        const ids = (Array.isArray(x.ids) ? x.ids : []).map(cvFull).filter(Boolean);
+        if (ids.length) JV.view.push({ r: "p", k: "oublier", ids, t: ids.map(id => (MEM.items.get(id) || {}).t).filter(Boolean).join(" · "), why: x.raison || "", st: "" });
+      }
+    }
+    JV.at = Date.now();
+  } catch (e) {
+    JV.msgs.pop();   // la question non répondue ne reste pas dans l'historique envoyé
+    const s = e && e.status, m = e && e.j && e.j.error && e.j.error.message || "";
+    const why = !s ? "pas de réseau" : s === 401 ? "clé Claude refusée" : s === 429 ? "Claude est saturé, réessaie dans un instant" : s === 529 ? "Claude est surchargé, réessaie dans un instant" : `erreur ${s}${m ? " : " + m.slice(0, 120) : ""}`;
+    JV.view.push({ r: "e", t: `Je n'ai pas pu répondre (${why}).`, retry: text });
+  }
+  JV.busy = false; cvStatus(""); await cvSave(); cvPaint();
+}
+async function cvDecide(i, ok){
+  const p = JV.view[i]; if (!p || p.r !== "p" || p.st) return;
+  if (ok && p.k === "retenir") { await memRemember(p.t, p.d, p.pin, "conversation"); JV.notes.push(`retenu : « ${p.t} »`); }
+  if (ok && p.k === "oublier") { await memForget(p.ids); JV.notes.push(`oublié : « ${p.t} »`); }
+  if (!ok) JV.notes.push(`refusé (${p.k}) : « ${p.t} »`);
+  p.st = ok ? "ok" : "non";
+  await cvSave(); cvPaint();
+}
+
+/* ---------- affichage ---------- */
+const cvHtml = t => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+function cvStatus(t){ const e = $("cvStat"); if (e) e.textContent = t || ""; }
+function cvPaint(){
+  if (!cvVisible()) return;
+  const L = $("cvList");
+  if (!JV.view.length) L.innerHTML = `<p class="small" style="margin:0">Parle-moi de ce que tu veux : une idée à creuser, une décision, ta journée… Je m'appuie sur ta mémoire et je te dis franchement ce que j'en pense. Touche le rond pour dicter.</p>`;
+  else L.innerHTML = JV.view.map((v, i) => {
+    if (v.r === "u") return `<div class="cv-m u">${esc(v.t)}</div>`;
+    if (v.r === "a") return `<div class="cv-m a">${cvHtml(v.t)}</div>`;
+    if (v.r === "e") return `<div class="cv-m a cv-e">${esc(v.t)}${v.retry ? ` <button data-retry="${i}">réessayer</button>` : ""}</div>`;
+    const head = v.k === "retenir" ? `Je retiens${v.pin ? " (épinglé)" : ""} · ${v.d}` : "J'efface de ta mémoire";
+    const act = v.st === "ok" ? `<div class="act">${v.k === "retenir" ? "retenu ✓" : "effacé ✓"}</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">${v.k === "retenir" ? "oui, retiens" : "oui, efface"}</button></div>`;
+    return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">${head}</div><div>${esc(v.t)}</div>${v.why ? `<div class="sub">${esc(v.why)}</div>` : ""}${act}</div>`;
+  }).join("") + (JV.view.length ? `<button class="cv-new" id="cvNew">nouvelle conversation</button>` : "");
+  const m = cvMonth();
+  $("cvCost").textContent = `Claude Sonnet · ce mois : ${cvMoney(m.usd)} sur ${cvMoney(cvCap())} · ${MEM.items.size} souvenir${MEM.items.size > 1 ? "s" : ""}`;
+  L.querySelectorAll("[data-ok]").forEach(b => b.onclick = () => cvDecide(+b.dataset.ok, true));
+  L.querySelectorAll("[data-no]").forEach(b => b.onclick = () => cvDecide(+b.dataset.no, false));
+  L.querySelectorAll("[data-retry]").forEach(b => b.onclick = () => { const v = JV.view[+b.dataset.retry]; JV.view.splice(+b.dataset.retry, 1); const u = JV.view.length && JV.view[JV.view.length - 1]; if (u && u.r === "u" && u.t === v.retry) JV.view.pop(); cvSend(v.retry); });
+  const nb = $("cvNew"); if (nb) nb.onclick = () => cvNew();
+  requestAnimationFrame(() => { const s = $("conv"); s.scrollTop = s.scrollHeight; });
+}
+function paintMem(){
+  const q = $("cvQ").value.trim();
+  const all = [...MEM.items.values()].sort((a, b) => (b.p - a.p) || ((Date.parse(b.q) || 0) - (Date.parse(a.q) || 0)));
+  const list = q ? memSearch(q, 50) : all;
+  $("cvMemList").innerHTML = list.length ? list.map(i => `<div class="it" style="padding:10px 0"><span class="dot" style="opacity:${i.p ? 1 : .45}"></span><div class="tx" style="flex:1"><div class="tt" style="font-size:15.5px">${esc(i.t)}</div><div class="sub">${(i.q || "").slice(0, 10)} · ${i.d}${i.p ? " · épinglé" : ""}${i.s === "conversation" ? " · vu en conversation" : ""}</div><div class="sub" style="display:flex;gap:18px;margin-top:6px"><button data-pin="${i.id}">${i.p ? "désépingler" : "épingler"}</button><button data-del="${i.id}">oublier</button></div></div></div>`).join("")
+    : `<p class="small">${q ? "rien trouvé." : "Ta mémoire est vide. Ajoute ce que tu veux ci-dessous, ou parle avec Jarvis : il te proposera quoi retenir."}</p>`;
+  $("cvMemList").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const it = MEM.items.get(b.dataset.del); if (!it) return; if (b.dataset.sure) { memForget([it.id]).then(paintMem); } else { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; b.style.color = "var(--u3)"; } });
+  $("cvMemList").querySelectorAll("[data-pin]").forEach(b => b.onclick = () => memPin(b.dataset.pin).then(paintMem));
+  $("cvCapIn").value = cvCap();
+}
+function cvTab(t){
+  JV.tab = t;
+  document.querySelectorAll("#cvTabs button").forEach(b => b.classList.toggle("on", b.dataset.t === t));
+  $("cvChat").style.display = t === "parler" ? "" : "none";
+  $("cvMem").style.display = t === "memoire" ? "" : "none";
+  if (t === "memoire") paintMem(); else cvPaint();
+}
+
+/* ---------- phrase secrète ---------- */
+async function cvLockUI(){
+  const box = $("cvLock"); box.style.display = ""; $("cvChat").style.display = "none"; $("cvMem").style.display = "none";
+  box.innerHTML = `<p class="small" style="margin-top:24px">J'ouvre ta mémoire…</p>`;
+  let st = null; try { st = await memApi({ action: "etat" }); } catch (e) {}
+  if (!st || !st.ok) { box.innerHTML = `<p style="margin-top:24px;line-height:1.5">Pas de réseau : je ne peux pas ouvrir ta mémoire pour l'instant.</p><div class="foot"><span></span><button class="ok" id="cvRetry">réessayer</button></div>`; $("cvRetry").onclick = cvLockUI; return; }
+  const first = !st.init;
+  box.innerHTML = first
+    ? `<p style="margin-top:20px;font-size:18px;line-height:1.45">Choisis ta phrase secrète.</p>
+       <p class="small">Elle chiffre ta mémoire sur ce téléphone : sans elle, personne ne peut la lire, ni le serveur, ni Claude. Elle ne te sera redemandée que sur un nouvel appareil. <b>Si tu la perds, ta mémoire est perdue</b> : garde-la dans ton gestionnaire de mots de passe. Plusieurs mots, au moins 14 caractères.</p>
+       <input type="password" id="cvP1" placeholder="phrase secrète" autocomplete="new-password">
+       <input type="password" id="cvP2" placeholder="encore une fois" autocomplete="new-password">
+       <p class="small" id="cvPMsg"></p>
+       <div class="foot"><span></span><button class="ok" id="cvPGo">créer ma mémoire</button></div>`
+    : `<p style="margin-top:20px;font-size:18px;line-height:1.45">Ta phrase secrète</p>
+       <p class="small">Pour ouvrir ta mémoire sur cet appareil. Elle reste ici, elle ne part nulle part.</p>
+       <input type="password" id="cvP1" placeholder="phrase secrète" autocomplete="current-password">
+       <p class="small" id="cvPMsg"></p>
+       <div class="foot"><span></span><button class="ok" id="cvPGo">ouvrir</button></div>`;
+  const msg = t => { $("cvPMsg").textContent = t; };
+  $("cvPGo").onclick = async () => {
+    const p1 = $("cvP1").value;
+    if (first) {
+      if (p1.trim().length < 14) return msg("Au moins 14 caractères : plusieurs mots, c'est le plus simple à retenir.");
+      if (p1 !== $("cvP2").value) return msg("Les deux phrases ne sont pas identiques.");
+    } else if (!p1.trim()) return msg("");
+    $("cvPGo").disabled = true; msg("je fabrique la clé… (quelques secondes)");
+    try {
+      const sel = first ? b64e(crypto.getRandomValues(new Uint8Array(16))) : st.sel;
+      const k = await memDerive(p1, sel);
+      const j = await memApi(first ? { action: "init", jeton: k.tok, sel } : { action: "ouvrir", jeton: k.tok });
+      if (!j.ok) { $("cvPGo").disabled = false; return msg(j.error === "phrase" ? "Ce n'est pas la bonne phrase." : j.error === "rate" ? "Trop d'essais : réessaie dans une heure." : j.error === "deja" ? "Une mémoire existe déjà : ferme et rouvre pour entrer ta phrase." : "Le serveur refuse (" + (j.error || "?") + ")."); }
+      await kvSet("cle", { key: k.key, tok: k.tok });
+      MEM.key = k.key; MEM.tok = k.tok;
+      await memLoad();
+      box.style.display = "none"; box.innerHTML = "";
+      cvTab("parler"); memSync();
+    } catch (e) { $("cvPGo").disabled = false; msg("Pas de réseau, réessaie."); }
+  };
+}
+
+/* ---------- ouverture, micro, branchements ---------- */
+async function openConv(){
+  hide();
+  setTimeout(async () => {
+    show("conv");
+    $("cvLock").style.display = "none";
+    if (!(await memUnlock())) { cvLockUI(); return; }
+    cvTab("parler"); memSync();
+  }, 60);
+}
+const _cvIdle = idle;
+idle = function(){ const r = _cvIdle.apply(this, arguments); const b = $("cvMic"); if (b) b.classList.remove("on"); if (cvVisible() && !JV.busy) cvStatus(""); return r; };
+$("mConv").onclick = openConv;
+$("bConv").onclick = openConv;
+$("cvClose").onclick = () => hide();
+document.querySelectorAll("#cvTabs button").forEach(b => b.onclick = () => { if (MEM.key) cvTab(b.dataset.t); });
+$("cvGo").onclick = () => { const t = $("cvIn").value; $("cvIn").value = ""; cvSend(t); };
+$("cvIn").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("cvGo").click(); } });
+$("cvMic").onclick = () => {
+  if (listening) { cvStatus("je transcris…"); validate(); return; }
+  if (JV.busy) return;
+  $("cvMic").classList.add("on"); cvStatus("je t'écoute… touche le rond pour envoyer");
+  startListen({ conv: true });
+};
+$("cvQ").oninput = paintMem;
+document.querySelectorAll("#cvAddDom button").forEach(b => b.onclick = () => {
+  if (b.dataset.d === "pin") b.classList.toggle("on");
+  else document.querySelectorAll("#cvAddDom button[data-d=pro],#cvAddDom button[data-d=perso]").forEach(x => x.classList.toggle("on", x === b));
+});
+$("cvAddGo").onclick = async () => {
+  const t = $("cvAdd").value.trim(); if (!t || !MEM.key) return;
+  const d = document.querySelector("#cvAddDom button[data-d=pro].on") ? "pro" : "perso", pin = !!document.querySelector("#cvAddDom button[data-d=pin].on");
+  await memRemember(t, d, pin, "main"); $("cvAdd").value = ""; paintMem(); toast("retenu");
+};
+$("cvCapIn").onchange = () => { CFG.cvCap = Math.min(200, Math.max(1, Math.round(+$("cvCapIn").value) || 20)); saveCfg(); paintMem(); };
+$("cvLockBtn").onclick = async () => { const b = $("cvLockBtn"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; return; } await memLock(); cvLockUI(); };
 </script>
 </body>
 </html>

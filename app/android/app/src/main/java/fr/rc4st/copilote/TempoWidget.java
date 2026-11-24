@@ -1,4 +1,4 @@
-package fr.rc4st.tempo;
+package fr.rc4st.copilote;
 
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -43,7 +43,7 @@ public class TempoWidget extends AppWidgetProvider {
         int img = Math.max(20, Math.min(100, p.getInt("w_img", 100)));
         v.setInt(R.id.w_img, "setImageAlpha", Math.round(img * 2.55f));
 
-        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("tempo://ecoute"), c, MainActivity.class);
+        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("copilote://ecoute"), c, MainActivity.class);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent pi = PendingIntent.getActivity(c, 7, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         v.setOnClickPendingIntent(R.id.w_root, pi);
