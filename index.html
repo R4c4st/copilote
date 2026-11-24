@@ -395,7 +395,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v22 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v23 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -487,6 +487,10 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <p class="small" id="cvNetSt" style="margin-top:4px"></p>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvChauffeChk" style="width:auto"> selon ma présence : absent quand je pars, planning quand je rentre</label>
     <div class="foot" style="margin-top:10px"><button id="cvNetOff" style="color:var(--mut);display:none">déconnecter</button><button class="ok" id="cvNetGo">connecter Netatmo</button></div>
+    <div class="lab">Santé</div>
+    <p class="small" id="cvSanteSt" style="margin-top:4px"></p>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvSanteBriefChk" style="width:auto"> dans le brief du matin, seulement ce qui sort de mes habitudes</label>
+    <div class="foot" style="margin-top:10px"><button id="cvSanteOff" style="color:var(--mut);display:none">couper</button><button id="cvSanteGerer" style="display:none">autorisations</button><button class="ok" id="cvSanteGo">relier ma montre et ma balance</button></div>
     <div class="lab">Bêta</div>
     <p class="small" style="margin-top:4px">Des essais : décoche ce qui t'encombre. Si tu n'en veux plus, je les retire.</p>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBetaMatchChk" style="width:auto"> Cote &amp; Match : ta sélection le jeudi soir et le vendredi matin</label>
@@ -642,7 +646,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 22;
+const TEMPO_BUILD = 23;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4454,8 +4458,9 @@ const cvCap = () => Math.max(1, +CFG.cvCap || 20);
 const cvMoney = x => x.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " $";
 async function cvSave(){
   if (!MEM.key) return;
-  const prev = JV.prev && Date.now() - JV.prev.at < CV_GARDE ? JV.prev : null;
-  try { await kvSet("conv", await memSeal("conv", { msgs: JV.msgs, view: JV.view, notes: JV.notes, at: JV.at, prev })); } catch (e) {}
+  const sansLoc = v => (v || []).filter(x => !x.loc);
+  const prev = JV.prev && Date.now() - JV.prev.at < CV_GARDE ? Object.assign({}, JV.prev, { view: sansLoc(JV.prev.view) }) : null;
+  try { await kvSet("conv", await memSeal("conv", { msgs: JV.msgs, view: sansLoc(JV.view), notes: JV.notes, at: JV.at, prev })); } catch (e) {}
 }
 async function cvLoad(){
   if (JV.loaded) return;
@@ -4571,7 +4576,8 @@ const jvSys = () => CV_SYS.replace(/\{NOM\}/g, jvNom()).replace(/\{PRENOM\}/g, (
   + (cvNorm(jvNom()) !== "jarvis" ? "\n\nTon nom\n- Il lui arrive encore de t'appeler Jarvis, ton ancien nom : c'est bien à toi qu'il parle." : "")
   + (jvEstNestor() ? "\n- Ton nom s'écrit N.E.S.T.O.R. en sigle. C'est un acronyme à géométrie variable : s'il te demande ce qu'il veut dire, donne avec flegme une seule de ces versions, jamais une autre : " + jvAcroListe().map(a => "« " + a + " »").join(", ") + "." : "")
   + (jvBetaMatchOn() || jvBetaCineOn() ? "\n\nBêta (essais qu'il peut couper)\n- Quand il demande son brief, et seulement là, termine par les blocs bêta présents dans <contexte> (Cote & Match, Ciné du week-end) : francs, courts, sans les délayer.\n- S'il annonce son pari Cote & Match, note-le avec cote_match_choix, puis propose en une ligne le message prêt à envoyer au groupe : c'est lui qui l'envoie." : "")
-  + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Ne touche jamais au chauffage de ta propre initiative, sauf s'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets alors la maison en absent jusqu'à son retour, et dis-le.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "");
+  + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Ne touche jamais au chauffage de ta propre initiative, sauf s'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets alors la maison en absent jusqu'à son retour, et dis-le.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "")
+  + (jvSanteOn() ? "\n\nSa santé (sa montre et sa balance)\n- Pour un bilan santé, son sommeil, son poids, son pouls ou son activité, appelle sante_bilan (jours : 7 par défaut, 30 pour le mois, davantage pour suivre le poids).\n- Le bilan : court et parlé, quelques chiffres seulement. Compare sa période à ses propres habitudes (la référence), pas à des normes générales. Termine par un point positif et un point à surveiller.\n- Tu commentes des tendances, jamais de diagnostic. Si un signal dure (pouls au repos haut plusieurs jours, poids qui baisse sans qu'il le cherche, nuits très courtes en série), conseille-lui simplement d'en parler à son médecin.\n- N'en parle jamais de toi-même : seulement quand il le demande." : "");
 /* début de la fenêtre envoyée à Claude, fixé pour toute une réponse : si on le décale pendant qu'il utilise ses outils,
    sa réflexion (signée pour ce début de conversation) est refusée (erreur 400 « bound to a different conversation ») */
 function cvFenetre(){
@@ -4995,7 +5001,7 @@ const JV_BETA_TOOLS = [
   { name: "cote_match_choix", description: "Note le pari qu'il a choisi cette semaine pour Cote & Match (ça coupe la relance de 11h du vendredi).",
     input_schema: { type: "object", properties: { pari: { type: "string", description: "match et pari, ex. « Lens - Brest, victoire de Lens »" } }, required: ["pari"] } }
 ];
-const jvOutils = () => { let t = jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS; if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); return t; };
+const jvOutils = () => { let t = jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS; if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); return t; };
 /* zones de la maison pour le chauffage selon la présence (l'appli Android les déclenche, même fermée) */
 const jvMaisonLieu = () => jvLieux().find(l => l.g.type === "maison");
 const jvChauffeAuto = () => jvNetOn() && CFG.jvChauffe !== false && !!jvMaisonLieu();
@@ -5689,6 +5695,166 @@ async function toolCoteChoix(x){
 }
 JV_LOCAL.cote_match_choix = toolCoteChoix;
 JV_ATTENTE.cote_match_choix = "je note ton pari…";
+/* ---------- lot 18 · santé : sa montre (Garmin) et sa balance (Withings), lues dans Health Connect ----------
+   Tout est lu et calculé dans le téléphone, et la lecture reste en mémoire (rien n'est rangé ailleurs).
+   Le brief n'en parle que si quelque chose sort de ses habitudes : calcul local, rien n'est envoyé.
+   Seul le bilan qu'il demande envoie à Claude des chiffres résumés (moyennes, tendances), jamais le détail. */
+const JV_SANTE_NATIF = 12;
+const jvSanteOn = () => typeof NATIVE !== "undefined" && !!NATIVE && CFG.jvSante === true;
+const jvSanteBriefOn = () => jvSanteOn() && CFG.jvSanteBrief !== false;
+let JV_SANTE_MEM = null;   // la dernière lecture : { at, j, d }
+async function jvSanteLire(jours, force){
+  if (!jvSanteOn() || (await jvNative()) < JV_SANTE_NATIF) return null;
+  const j = Math.max(7, Math.min(400, Math.round(jours || 35))), c = JV_SANTE_MEM;
+  if (!force && c && c.j >= j && Date.now() - c.at < 10 * 60e3) return c.d;
+  const d = await tn("santeLire", { jours: j });
+  if (d && Array.isArray(d.nuits)) { JV_SANTE_MEM = { at: Date.now(), j, d }; return d; }
+  return null;
+}
+const jvDuree = m => { m = Math.max(0, Math.round(m || 0)); const h = Math.floor(m / 60), r = m % 60; return h ? `${h} h${r ? " " + String(r).padStart(2, "0") : ""}` : `${r} min`; };
+const jvKg = x => (Math.round(x * 10) / 10).toFixed(1).replace(".", ",");
+const jvMoy = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : null;
+const jvMed = a => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y), k = b.length >> 1; return b.length % 2 ? b[k] : (b[k - 1] + b[k]) / 2; };
+const jvMinDuJour = t => { const x = new Date(t); return x.getHours() * 60 + x.getMinutes(); };
+const jvHeureTxt = m => { m = ((Math.round(m) % 1440) + 1440) % 1440; return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}`; };
+/* une nuit = la plus longue session de sommeil (3 h ou plus) qui se termine ce jour-là ; les siestes restent à part */
+function jvSanteNuits(d){
+  const par = new Map();
+  for (const s of (d && d.nuits) || []) {
+    const tot = (s.fin - s.debut) / 60000; if (!(tot >= 180)) continue;
+    const ph = (s.profond || 0) + (s.paradoxal || 0) + (s.leger || 0) + (s.dort || 0);
+    const n = { jour: ymd(new Date(s.fin)), debut: s.debut, fin: s.fin, tot, dort: ph > 0 ? ph : Math.max(0, tot - (s.eveil || 0)), eveil: s.eveil || 0, eveils: s.eveils || 0,
+      profond: s.profond || 0, paradoxal: s.paradoxal || 0, phases: ph > 0 && !!(s.profond || s.paradoxal), fc: s.fcMoy || null };
+    const k = par.get(n.jour); if (!k || tot > k.tot) par.set(n.jour, n);
+  }
+  return [...par.values()].sort((a, b) => a.jour.localeCompare(b.jour));
+}
+/* pouls au repos par jour : celui de la montre s'il est écrit, sinon le pouls moyen de la nuit (comparé à lui-même, ça suffit) */
+function jvSantePouls(d, nuits){
+  const par = new Map();
+  for (const r of (d && d.repos) || []) if (r.bpm > 25 && r.bpm < 150) par.set(ymd(new Date(r.t)), r.bpm);
+  if (par.size >= 3) return { src: "repos", v: [...par].map(([jour, bpm]) => ({ jour, bpm })).sort((a, b) => a.jour.localeCompare(b.jour)) };
+  return { src: "nuit", v: (nuits || []).filter(n => n.fc > 25 && n.fc < 150).map(n => ({ jour: n.jour, bpm: n.fc })) };
+}
+/* pesées, sans le double (la balance écrit, Garmin recopie parfois la même mesure) */
+function jvSantePoids(d){
+  const out = [];
+  for (const p of ((d && d.poids) || []).filter(p => p.kg > 20 && p.kg < 400).sort((a, b) => a.t - b.t)) {
+    const pr = out[out.length - 1]; if (pr && p.t - pr.t < 15 * 60e3) continue;
+    out.push({ t: p.t, jour: ymd(new Date(p.t)), kg: p.kg });
+  }
+  return out;
+}
+/* ce qui sort de ses habitudes (sa référence : ses 4 dernières semaines, pas une norme générale) ; p = priorité */
+function jvSanteAlertes(d, tod){
+  tod = tod || ymd(new Date());
+  const out = [], N = jvSanteNuits(d), n = N.find(x => x.jour === tod), ref = N.filter(x => x.jour < tod && x.jour >= jvAjoute(tod, -28));
+  if (n && ref.length >= 7) {
+    const m = jvMoy(ref.map(x => x.dort)), me = jvMoy(ref.map(x => x.eveil));
+    if (n.dort < 360 || n.dort < m - 90) out.push({ k: "nuit", p: 2, t: `Nuit courte : ${jvDuree(n.dort)} de sommeil (d'habitude ${jvDuree(m)})` });
+    else if (n.eveil >= 45 && n.eveil >= 2 * me) out.push({ k: "nuit", p: 2, t: `Nuit agitée : ${jvDuree(n.eveil)} éveillé (d'habitude ${jvDuree(me)})` });
+    else if (n.dort >= Math.max(420, m + 45) && n.eveil <= me + 5) out.push({ k: "belle", p: 4, t: `Belle nuit : ${jvDuree(n.dort)} de sommeil, ${jvDuree(n.dort - m)} de mieux que d'habitude` });
+  }
+  // pouls : 2 jours de suite bien au-dessus de sa référence (souvent de la fatigue, ou un rhume qui arrive)
+  const P = jvSantePouls(d, N), pv = P.v.filter(x => x.jour <= tod), der = pv.slice(-2);
+  const base = pv.filter(x => x.jour < jvAjoute(tod, -1) && x.jour >= jvAjoute(tod, -29)).map(x => x.bpm);
+  if (base.length >= 7 && der.length === 2 && der[1].jour >= jvAjoute(tod, -1) && jvEcart(der[0].jour, der[1].jour) === 1) {
+    const b = jvMed(base);
+    if (der.every(x => x.bpm >= b + 7)) out.push({ k: "pouls", p: 1, t: `${P.src === "repos" ? "Pouls au repos" : "Pouls de nuit"} à ${Math.round(der[1].bpm)} au lieu de ${Math.round(b)} depuis 2 jours : souvent de la fatigue ou un rhume qui arrive, lève le pied` });
+  }
+  // poids : la moyenne de la semaine contre celle d'avant (le poids d'un seul jour varie trop pour dire quelque chose)
+  const W = jvSantePoids(d), s1 = W.filter(x => x.jour > jvAjoute(tod, -7) && x.jour <= tod).map(x => x.kg), s0 = W.filter(x => x.jour > jvAjoute(tod, -14) && x.jour <= jvAjoute(tod, -7)).map(x => x.kg);
+  if (s1.length && s0.length) {
+    const dif = jvMoy(s1) - jvMoy(s0), seuil = s1.length >= 3 && s0.length >= 3 ? 1 : 1.5;
+    if (Math.abs(dif) >= seuil) out.push({ k: "poids", p: 3, t: `Poids : ${dif > 0 ? "+" : "−"}${jvKg(Math.abs(dif))} kg en une semaine (moyenne ${jvKg(jvMoy(s1))} kg)` });
+  }
+  return out.sort((a, b) => a.p - b.p);
+}
+/* la ligne santé du brief du matin (notification et conversation) : vide quand tout est dans ses habitudes.
+   Elle se calcule quand l'appli est ouverte (Health Connect ne se lit pas appli fermée) ; la même alerte pouls ou poids ne revient pas tous les matins. */
+const JV_SANTE_GARDE = { pouls: 3, poids: 7 };
+async function jvSantePrep(force){
+  if (!jvSanteBriefOn()) return "";
+  const now = new Date(), tod = ymd(now), h = now.getHours(), st = LS.get("copilote_sante_brief", null), deja = st && st.d === tod ? st.txt : "";
+  if (!force && (h < 4 || h >= 12)) return deja;
+  if (!force && st && st.d === tod && (st.nuit || Date.now() - st.at < 45 * 60e3)) return deja;
+  const d = await jvSanteLire(35, true); if (!d) return deja;
+  const vu = LS.get("copilote_sante_vu", null) || {};
+  const A = jvSanteAlertes(d, tod).filter(a => !JV_SANTE_GARDE[a.k] || !vu[a.k] || vu[a.k] === tod || jvEcart(vu[a.k], tod) >= JV_SANTE_GARDE[a.k]).slice(0, 2);
+  A.forEach(a => { if (JV_SANTE_GARDE[a.k]) vu[a.k] = tod; }); LS.set("copilote_sante_vu", vu);
+  const txt = A.length ? "Santé · " + A.map(a => a.t).join(" · ") : "";
+  LS.set("copilote_sante_brief", { d: tod, at: Date.now(), txt, nuit: jvSanteNuits(d).some(n => n.jour === tod) });
+  if (txt !== deja) { try { schedulePushSync(); } catch (e) {} }
+  return txt;
+}
+const jvSanteBriefTxt = () => { const s = LS.get("copilote_sante_brief", null); return jvSanteBriefOn() && s && s.d === ymd(new Date()) ? s.txt || "" : ""; };
+/* le bilan qu'il demande : des chiffres résumés, chacun avec sa référence (les 4 semaines d'avant) */
+function jvSanteResume(d, jours, tod){
+  tod = tod || ymd(new Date());
+  const a = jvAjoute(tod, -(jours - 1)), r0 = jvAjoute(a, -28), dans = j => j >= a && j <= tod, avant = j => j >= r0 && j < a, detail = jours <= 14;
+  const out = { periode: `${jours} derniers jours, du ${a} au ${tod}`, reference: "ses 4 semaines d'avant", manque: [] };
+  const N = jvSanteNuits(d), np = N.filter(n => dans(n.jour)), nr = N.filter(n => avant(n.jour));
+  if (np.length) {
+    const couch = np.map(n => { const m = jvMinDuJour(n.debut); return m < 720 ? m + 1440 : m; }), mc = jvMoy(couch), ph = np.filter(n => n.phases);
+    const tri = [...np].sort((x, y) => x.dort - y.dort), dp = tri[0], dl = tri[tri.length - 1];
+    out.sommeil = {
+      nuits: np.length, moyenne: jvDuree(jvMoy(np.map(n => n.dort))), reference: nr.length >= 5 ? jvDuree(jvMoy(nr.map(n => n.dort))) : "pas assez de nuits pour comparer",
+      plus_courte: `${jvDuree(dp.dort)} (nuit du ${jvAjoute(dp.jour, -1)})`, plus_longue: `${jvDuree(dl.dort)} (nuit du ${jvAjoute(dl.jour, -1)})`,
+      nuits_sous_6h: np.filter(n => n.dort < 360).length, coucher_moyen: jvHeureTxt(mc), lever_moyen: jvHeureTxt(jvMoy(np.map(n => jvMinDuJour(n.fin)))),
+      regularite_du_coucher: "± " + jvDuree(Math.sqrt(jvMoy(couch.map(m => (m - mc) ** 2)))), eveil_moyen: jvDuree(jvMoy(np.map(n => n.eveil))),
+      eveil_moyen_reference: nr.length >= 5 ? jvDuree(jvMoy(nr.map(n => n.eveil))) : null
+    };
+    if (ph.length) { const t = ph.reduce((s, n) => s + n.dort, 0); out.sommeil.profond_pct = Math.round(100 * ph.reduce((s, n) => s + n.profond, 0) / t); out.sommeil.paradoxal_pct = Math.round(100 * ph.reduce((s, n) => s + n.paradoxal, 0) / t); }
+    if (detail) out.sommeil.detail = np.map(n => ({ nuit_du: jvAjoute(n.jour, -1), sommeil: jvDuree(n.dort), coucher: jvHeureTxt(jvMinDuJour(n.debut)), lever: jvHeureTxt(jvMinDuJour(n.fin)), eveil: jvDuree(n.eveil), ...(n.phases ? { profond: jvDuree(n.profond), paradoxal: jvDuree(n.paradoxal) } : {}) }));
+  } else out.manque.push("aucune nuit sur la période : montre portée la nuit, et Health Connect activé dans Garmin Connect ?");
+  const P = jvSantePouls(d, N), pp = P.v.filter(x => dans(x.jour)), pr = P.v.filter(x => avant(x.jour));
+  if (pp.length) {
+    const hi = pp.reduce((m, x) => x.bpm > m.bpm ? x : m, pp[0]);
+    out.pouls_repos = { mesure: P.src === "repos" ? "pouls au repos donné par la montre" : "pouls moyen pendant la nuit", moyenne: Math.round(jvMoy(pp.map(x => x.bpm))), reference: pr.length >= 5 ? Math.round(jvMed(pr.map(x => x.bpm))) : null, plus_haut: `${Math.round(hi.bpm)} (${hi.jour})` };
+    if (detail) out.pouls_repos.detail = pp.map(x => `${x.jour} : ${Math.round(x.bpm)}`);
+  }
+  const pas = (d && d.pas) || [], sp = pas.filter(x => dans(x.d)), sr = pas.filter(x => avant(x.d));
+  if (sp.length) {
+    const best = sp.reduce((m, x) => x.n > m.n ? x : m, sp[0]);
+    out.pas = { moyenne_par_jour: Math.round(jvMoy(sp.map(x => x.n))), reference: sr.length >= 5 ? Math.round(jvMoy(sr.map(x => x.n))) : null, jours_sous_3000: sp.filter(x => x.n < 3000).length, meilleur_jour: `${best.n} (${best.d})` };
+    if (detail) out.pas.detail = sp.map(x => `${x.d} : ${x.n}`);
+  }
+  const E = ((d && d.seances) || []).filter(s => dans(ymd(new Date(s.debut))));
+  out.seances = E.length ? { nombre: E.length, minutes: Math.round(E.reduce((s, x) => s + (x.fin - x.debut) / 60000, 0)), liste: E.slice(-15).map(s => `${ymd(new Date(s.debut))} · ${s.titre || s.type} · ${jvDuree((s.fin - s.debut) / 60000)}`) } : "aucune séance enregistrée";
+  const W = jvSantePoids(d), wp = W.filter(x => dans(x.jour));
+  if (wp.length) {
+    const p0 = wp[0], p1 = wp[wp.length - 1], kgs = wp.map(x => x.kg), m7 = W.filter(x => x.jour > jvAjoute(tod, -7)).map(x => x.kg), m14 = W.filter(x => x.jour > jvAjoute(tod, -14) && x.jour <= jvAjoute(tod, -7)).map(x => x.kg);
+    out.poids = { pesees: wp.length, premiere: `${jvKg(p0.kg)} kg (${p0.jour})`, derniere: `${jvKg(p1.kg)} kg (${p1.jour})`, variation_kg: Math.round((p1.kg - p0.kg) * 10) / 10, plus_bas: jvKg(Math.min(...kgs)) + " kg", plus_haut: jvKg(Math.max(...kgs)) + " kg",
+      moyenne_7_derniers_jours: m7.length ? jvKg(jvMoy(m7)) + " kg" : null, moyenne_7_jours_d_avant: m14.length ? jvKg(jvMoy(m14)) + " kg" : null, note: "le poids d'un seul jour varie de 1 à 2 kg (eau, repas) : seules les moyennes comptent" };
+    if (jours > 28) { const sem = new Map(); wp.forEach(x => { const k = jvAjoute(x.jour, -((new Date(x.jour + "T12:00").getDay() + 6) % 7)); (sem.get(k) || sem.set(k, []).get(k)).push(x.kg); }); out.poids.par_semaine = [...sem].slice(-53).map(([k, v]) => `semaine du ${k} : ${jvKg(jvMoy(v))} kg`); }
+  } else out.manque.push("aucune pesée sur la période : Health Connect activé dans l'appli Withings ?");
+  for (const [k, v] of Object.entries((d && d.manque) || {})) if (v === "refus") out.manque.push(`${k} : accès non autorisé dans Health Connect`);
+  if (jours > 30 && !((d && d.perms) || []).includes("HEALTH_DATA_HISTORY")) out.manque.push("historique limité : au-delà de 30 jours avant l'autorisation, Health Connect ne donne rien");
+  if (!out.manque.length) delete out.manque;
+  return out;
+}
+const JV_SANTE_TOOLS = [{ name: "sante_bilan", description: "Ses données de santé lues dans son téléphone (montre Garmin, balance Withings, via Health Connect), résumées : sommeil, pouls au repos, pas, séances de sport, poids, chacun avec sa référence (ses 4 semaines d'avant). À appeler quand il demande un bilan santé, comment il dort, son poids, son pouls ou son activité.", input_schema: { type: "object", properties: { jours: { type: "integer", minimum: 3, maximum: 365, description: "la période jusqu'à aujourd'hui : 7 par défaut, 30 pour « le mois », jusqu'à 365 pour suivre le poids" } } } }];
+async function toolSanteBilan(x){
+  const jours = Math.max(3, Math.min(365, Math.round(+(x && x.jours) || 7)));
+  if (!jvSanteOn()) return { erreur: "santé pas encore reliée : réglages de " + jvNom() + ", section Santé" };
+  const d = await jvSanteLire(Math.max(35, jours + 29));
+  if (!d) return { erreur: (await jvNative()) < JV_SANTE_NATIF ? "il faut la nouvelle version de l'appli" : "Health Connect ne répond pas pour l'instant" };
+  return jvSanteResume(d, jours);
+}
+JV_LOCAL.sante_bilan = toolSanteBilan;
+JV_ATTENTE.sante_bilan = "je regarde ta montre…";
+/* en une ligne, pour les réglages */
+function jvSanteCourt(d){
+  const tod = ymd(new Date()), N = jvSanteNuits(d), n = N[N.length - 1], W = jvSantePoids(d), w = W[W.length - 1], pas = ((d && d.pas) || []).find(x => x.d === jvAjoute(tod, -1)), L = [];
+  if (n) L.push(`dernière nuit ${jvDuree(n.dort)}${n.jour === tod ? "" : " (" + jvJourTxt(n.jour) + ")"}`);
+  if (pas) L.push(`${pas.n.toLocaleString("fr-FR")} pas hier`);
+  if (w) L.push(`dernière pesée ${jvKg(w.kg)} kg (${jvJourTxt(w.jour)})`);
+  const aide = [];
+  if (!N.length) aide.push("aucune nuit trouvée : dans Garmin Connect, active Health Connect (Paramètres > Partenaires connectés)");
+  if (!W.length) aide.push("aucune pesée : active Health Connect dans l'appli Withings");
+  if (Object.values((d && d.manque) || {}).includes("refus")) aide.push("des accès manquent : touche « autorisations »");
+  return (L.length ? "Relié ✓ · " + L.join(" · ") : "Relié ✓") + (aide.length ? ". " + aide.join(". ") + "." : "");
+}
 function jvBriefNotif(d, quand){
   try {
     const tod = ymd(new Date()), jour = quand === "soir" ? jvAjoute(d, 1) : d, L = [], items = [];
@@ -5708,6 +5874,7 @@ function jvBriefNotif(d, quand){
     if (quand === "matin" && jour === tod) { const n = jvRelancesListe().length; if (n) L.push(`${n} tâche${n > 1 ? "s traînent" : " traîne"} depuis plus d'une semaine`); }
     if (quand === "soir" && d === tod) { const n = items.filter(i => i.due && i.due <= tod && i.cat !== "rdv").length; if (n) L.push(`Ce soir, il reste ${n} tâche${n > 1 ? "s" : ""} ouverte${n > 1 ? "s" : ""}`); }
     const m = jvMeteoJour(jour); if (m) L.push(m);
+    try { if (quand === "matin" && jour === tod) { const s = jvSanteBriefTxt(); if (s) L.push(s); } } catch (e) {}
     try { L.push(...jvBetaBrief(d, quand)); } catch (e) {}
     return { title: (quand === "soir" ? "Demain · " : "Ta journée · ") + jvJourTxt(jour), body: L.join("\n") || (quand === "soir" ? "Rien de prévu demain" : "Rien de prévu aujourd'hui") };
   } catch (e) { return null; }
@@ -5719,6 +5886,7 @@ async function jvJournalier(){
   try { jvRelancesAuto(); } catch (e) {}
   try { await jvMatchPrep(); } catch (e) {}
   try { await jvCinePrep(); } catch (e) {}
+  try { await jvSantePrep(); } catch (e) {}
 }
 /* branché sur l'agenda : chaque création ou modification d'une tâche passe par calSync */
 function jvSortieCheck(it){
@@ -5752,6 +5920,7 @@ function paintLieux(){
   jvAlertesState().then(s => { const e = $("cvAlSt"); if (e) e.textContent = s.txt; });
   try { paintNet(); } catch (e) {}
   try { paintBeta(); } catch (e) {}
+  try { paintSante(); } catch (e) {}
 }
 
 /* ---------- le tri des dictées s'appuie sur la mémoire (une seule source) ---------- */
@@ -5811,7 +5980,10 @@ async function jvBrief(){
   if (JV.busy) return;
   LS.set("copilote_brief", ymd(new Date()));
   const we = [0, 6].includes(new Date().getDay());
+  let sante = ""; try { sante = await jvSantePrep(); } catch (e) {}
   await cvSend("Mon brief du jour." + (we ? " C'est le week-end : rien de pro." : ""));
+  // calculée dans le téléphone, montrée telle quelle : elle ne part pas chez Claude, et n'est pas gardée avec la conversation
+  if (sante) { JV.view.push({ r: "a", t: sante.replace(/^Santé · /, "**Santé** · "), loc: 1 }); cvPaint(); }
 }
 
 /* ---------- affichage ---------- */
@@ -5962,6 +6134,53 @@ $("cvBetaCineChk").onchange = () => { CFG.jvBetaCine = $("cvBetaCineChk").checke
 $("cvBetaClub").onchange = () => { CFG.jvBetaClub = $("cvBetaClub").value.trim().slice(0, 60); saveCfg(); paintBeta(); };
 $("cvBetaCinema").onchange = () => { CFG.jvBetaCinema = $("cvBetaCinema").value.trim().slice(0, 80); saveCfg(); paintBeta(); jvCinePrep(); };
 $("cvList").addEventListener("click", e => { if (e.target.closest("#cvReprendre")) cvReprendre(); });
+/* lot 18 : réglages Santé (relier, autorisations, couper) */
+async function paintSante(){
+  const st = $("cvSanteSt"); if (!st) return;
+  const on = jvSanteOn(), go = $("cvSanteGo");
+  $("cvSanteBriefChk").checked = on && CFG.jvSanteBrief !== false; $("cvSanteBriefChk").disabled = !on;
+  $("cvSanteOff").style.display = on ? "" : "none"; $("cvSanteGerer").style.display = on ? "" : "none";
+  go.style.display = NATIVE ? "" : "none"; go.textContent = on ? "actualiser" : "relier ma montre et ma balance";
+  if (!NATIVE) { st.textContent = "Seulement dans l'appli Android : ta montre et ta balance y passent par Health Connect."; return; }
+  if (!on) { st.textContent = "Ta montre Garmin et ta balance Withings, lues dans Health Connect, sur le téléphone. Le brief n'en parle que si quelque chose sort de tes habitudes ; le bilan, c'est quand tu le demandes."; return; }
+  if ((await jvNative()) < JV_SANTE_NATIF) { st.textContent = "Installe la nouvelle version de l'appli (réglages) pour que je lise ta montre."; return; }
+  if (JV_SANTE_MEM) { st.textContent = jvSanteCourt(JV_SANTE_MEM.d); return; }
+  st.textContent = "je regarde…";
+  const d = await jvSanteLire(35); st.textContent = d ? jvSanteCourt(d) : "Health Connect ne répond pas pour l'instant.";
+}
+async function jvSanteRelier(){
+  if (!NATIVE) return;
+  if ((await jvNative()) < JV_SANTE_NATIF) { toast("installe d'abord la nouvelle version de l'appli (réglages)", "", null, 6000); return; }
+  const e = await tn("santeEtat");
+  if (!e || !e.dispo) { toast("Health Connect introuvable sur ce téléphone (il faut Android 14 ou plus)", "", null, 7000); return; }
+  let p = e.perms || [];
+  if (p.length < 7) { const r = await tn("santeDemander"); if (r && r.perms) p = r.perms; }
+  if (!p.length) { toast("aucun accès accordé : touche « autorisations » pour choisir dans Health Connect", "", null, 8000); $("cvSanteGerer").style.display = ""; return; }
+  CFG.jvSante = true; saveCfg(); JV_SANTE_MEM = null;
+  const d = await jvSanteLire(35, true);
+  toast(d && (d.nuits.length || (d.poids || []).length) ? "montre et balance reliées ✓" : "relié ✓ · rien à lire pour l'instant : active Health Connect dans Garmin Connect et dans Withings", "", null, 8000);
+  paintSante(); jvSantePrep(true).catch(() => {});
+}
+$("cvSanteGo").onclick = () => { if (jvSanteOn()) { JV_SANTE_MEM = null; paintSante(); jvSantePrep(true).catch(() => {}); } else jvSanteRelier(); };
+$("cvSanteGerer").onclick = () => { JV_SANTE_MEM = null; tn("santeGerer"); };
+$("cvSanteOff").onclick = () => {
+  const b = $("cvSanteOff"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; b.style.color = "var(--u3)"; return; }
+  delete b.dataset.sure; b.textContent = "couper"; b.style.color = "";
+  CFG.jvSante = false; saveCfg(); JV_SANTE_MEM = null; LS.set("copilote_sante_brief", null); LS.set("copilote_sante_vu", {});
+  try { schedulePushSync(); } catch (e) {}
+  paintSante(); toast("santé coupée : je ne lis plus rien · l'accès lui-même se retire dans Health Connect", "", null, 7000);
+};
+$("cvSanteBriefChk").onchange = () => {
+  CFG.jvSanteBrief = $("cvSanteBriefChk").checked; saveCfg();
+  if (!CFG.jvSanteBrief) LS.set("copilote_sante_brief", null); else jvSantePrep(true).catch(() => {});
+  try { schedulePushSync(); } catch (e) {}
+};
+/* au retour dans l'appli (le matin, ou depuis Health Connect) : la ligne du brief et les réglages se remettent à jour */
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible" || !jvSanteOn()) return;
+  jvSantePrep().catch(() => {});
+  const m = $("cvMem"); if (m && m.style.display !== "none") paintSante();
+});
 /* lot 16 : connexion Netatmo (comme Google : Chrome dans l'appli, retour par copilote://gauth) et réglages */
 async function jvNetConnecter(){
   if (!MEM.tok) { toast("ouvre d'abord ta mémoire, puis recommence", "", null, 6000); return; }
