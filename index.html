@@ -390,7 +390,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center">Jarvis v7 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center">Jarvis v8 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -433,6 +433,12 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <div id="mList" style="margin-top:6px"></div>
 </div>
 
+<div class="sheet" id="jvRel">
+  <div class="lab" style="margin-top:0">Elles traînent depuis plus d'une semaine</div>
+  <p class="small" style="margin:4px 0 0">Je ne te les ressortirai pas une deuxième fois.</p>
+  <div id="jvRelList"></div>
+  <div class="foot" style="margin-top:14px"><div class="l"></div><button class="ok" id="jvRelOk">fermer</button></div>
+</div>
 <div class="sheet full" id="colis">
   <div style="display:flex;justify-content:space-between;align-items:center">
     <div class="tabs"><button class="on">colis</button></div>
@@ -474,6 +480,10 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <p class="small" id="cvAlSt" style="margin-top:4px"></p>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBriefChk" style="width:auto"> brief du jour à la première ouverture du matin</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvProChk" style="width:auto"> Jarvis anticipe aussi le pro</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBnChk" style="width:auto"> brief en notification, le matin et le soir (aux heures des rituels)</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvMeteoChk" style="width:auto"> météo automatique dans les briefs (sinon, demande-la à Jarvis)</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvEchChk" style="width:auto"> repérer les échéances dans mes mails et SMS</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvRelChk" style="width:auto"> relancer une fois les tâches qui traînent</label>
     <div class="lab">Mes souvenirs</div>
     <input id="cvQ" placeholder="chercher dans ma mémoire…" style="margin-top:4px">
     <div id="cvMemList" style="margin-top:6px"></div>
@@ -601,7 +611,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 7;
+const TEMPO_BUILD = 8;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -2047,6 +2057,7 @@ async function processInbox(){
     rest.push(e);
   }
   msgs = rest;
+  try { if (typeof jvEchMessages === "function") await jvEchMessages(rest.filter(e => e.kind === "sms" && !knownContact(isNumLike(e.who) ? "" : e.who, e.num))); } catch (er) {}
   /* seulement les gens que tu connais : tes contacts Jarvis, ou un nom enregistré dans le téléphone (pas un numéro, pas « ~pseudo ») */
   const scope = CFG.msgScope || "connus";
   const known = e => { const w = (e.who || "").trim(); if (knownContact(isNumLike(w) ? "" : w, e.num)) return true; return !!w && !isNumLike(w) && !/^~/.test(w) && !/^\d{3,6}$/.test(w) && !(e.kind === "sms" && /^[A-Z0-9 .&_-]{2,11}$/.test(w)); };
@@ -3385,7 +3396,7 @@ async function nativeSchedule(list){
     const now = Date.now(), used = new Set();
     const ns = list.filter(r => Date.parse(r.at) > now + 3000).slice(0, 250).map(r => {
       let id = nid((r.tag || "") + "|" + r.at); while (used.has(id)) id++; used.add(id);
-      return { id, title: r.title, body: r.body || "", schedule: { at: new Date(r.at), allowWhileIdle: true }, channelId: "rappels", smallIcon: "ic_stat_tempo", iconColor: "#2EB8C4", autoCancel: true, extra: { url: r.url || "./" } };
+      return { id, title: r.title, body: r.body || "", largeBody: r.body || "", schedule: { at: new Date(r.at), allowWhileIdle: true }, channelId: "rappels", smallIcon: "ic_stat_tempo", iconColor: "#2EB8C4", autoCancel: true, extra: { url: r.url || "./" } };
     });
     if (ns.length) await LN.schedule({ notifications: ns });
   } catch (e) {}
@@ -3450,13 +3461,15 @@ async function syncReminders(healed){
       list.push({ at: at.toISOString(), title: i.title, body: i.wz && i.place ? "touche pour lancer Waze" : tag || "c'est l'heure", url: i.wz && i.place ? "./?waze=" + encodeURIComponent(i.place) : `./?task=${i.id}&sp=${sp}`, tag: i.id });
     }
   }
-  const R = RIT(), rs = LS.get("tempo_rit", {});
-  if (R.on) for (let k = 0; k < 8; k++) {
-    const d = ymd(addDays(k)), dow = addDays(k).getDay();
-    if (!(k === 0 && rs.matin === d)) list.push({ at: dt(d, R.matin).toISOString(), title: "Ton point du matin", body: "1 minute pour choisir tes 3 priorités", url: "./?ritual=matin", tag: "rit-matin" });
-    if (dow === 0) { if (!(k === 0 && rs.semaine === d)) list.push({ at: dt(d, R.semaine).toISOString(), title: "Ton bilan de la semaine", body: "Regarde le chemin parcouru", url: "./?ritual=semaine", tag: "rit-semaine" }); }
-    else if (!(k === 0 && rs.soir === d)) list.push({ at: dt(d, R.soir).toISOString(), title: "On ferme la journée ?", body: "1 minute : ce qui est fait, ce qui glisse à demain", url: "./?ritual=soir", tag: "rit-soir" });
+  const R = RIT(), rs = LS.get("tempo_rit", {}), BR = typeof jvBriefOn === "function" && jvBriefOn();
+  try { if (BR) await jvBriefPrep(); } catch (e) {}
+  if (R.on || BR) for (let k = 0; k < 8; k++) {
+    const d = ymd(addDays(k)), dow = addDays(k).getDay(), bm = BR ? jvBriefNotif(d, "matin") : null, bs = BR ? jvBriefNotif(d, "soir") : null;
+    if (!(k === 0 && rs.matin === d)) list.push({ at: dt(d, R.matin).toISOString(), title: bm ? bm.title : "Ton point du matin", body: bm ? bm.body : "1 minute pour choisir tes 3 priorités", url: R.on ? "./?ritual=matin" : "./", tag: "rit-matin" });
+    if (dow === 0 && R.on) { if (!(k === 0 && rs.semaine === d)) list.push({ at: dt(d, R.semaine).toISOString(), title: "Ton bilan de la semaine", body: "Regarde le chemin parcouru", url: "./?ritual=semaine", tag: "rit-semaine" }); }
+    if ((dow !== 0 && R.on) || bs) { if (!(k === 0 && rs.soir === d)) list.push({ at: dt(d, R.soir).toISOString(), title: bs ? bs.title : "On ferme la journée ?", body: bs ? bs.body : "1 minute : ce qui est fait, ce qui glisse à demain", url: R.on && dow !== 0 ? "./?ritual=soir" : "./", tag: "rit-soir" }); }
   }
+  try { if (typeof jvRappelsEnPlus === "function") list.push(...jvRappelsEnPlus()); } catch (e) {}
   /* colis : 2 jours après l'arrivée, la veille de la date limite et le dernier jour (une seule fois par jour) */
   for (const c of colisOpen()) {
     const body = [c.code ? "code " + fmtCode(c.code) : "", c.place].filter(Boolean).join(" · ") || "touche pour voir le colis", url = "./?colis=" + c.id, days = new Set();
@@ -4172,6 +4185,7 @@ async function memRememberMany(list, src, onStep){
   for (let i = 0; i < list.length; i++) {
     const x = list[i], id = uuid4(), o = { t: String(x.t).trim().slice(0, 2000), d: x.d === "pro" ? "pro" : "perso", p: !!x.pin, q: now, s: src || "import" };
     if (x.g) o.g = x.g;
+    if (x.an) o.an = x.an;
     rows.push(await memSeal(id, o)); MEM.items.set(id, Object.assign(o, { id })); ids.push(id);
     if (onStep && (i % 10 === 9 || i === list.length - 1)) onStep(i + 1);
   }
@@ -4635,6 +4649,7 @@ function jvAddTask(p){
   const sp = p.sp === "pro" ? "pro" : "perso";
   const it = { id: uid(), created: Date.now(), done: false, doneAt: null, src: "jarvis", raw: "", title: p.t, cat: p.rdv ? "rdv" : (sp === "pro" ? "remarque" : "tache"), ch: "", u: 2, due: p.date || null, time: p.heure || null, note: p.note || "", place: p.lieu || "" };
   if (p.lieuId) it.lieuId = p.lieuId;
+  if (p.extra) Object.assign(it, p.extra);
   try { it.orig = { cat: it.cat, ch: "", u: 2, slot: bucket(it) }; } catch (e) {}
   if (sp === SPACE) { S.items.unshift(it); save(); try { render([it.id]); } catch (e) {} if (p.rdv) calSync(it); }
   else { const st = spaceState(sp); st.items = st.items || []; st.items.unshift(it); LS.set(SKEY(sp), st); schedulePushSync(); }
@@ -4887,6 +4902,251 @@ async function jvSortieFaire(it, m){
   jvBusWatch({ date: it.due, bus: { arret: x.dep, dep: jvHeure(x.depMin).slice(0, 5), ligne: x.ligne } });
   jvSortieToast(it, sig, `bus ${x.ligne} à ${jvH(x.depMin)} · ${x.dep} → ${x.arr} ${jvH(x.arrMin)} · rappel ${heure.replace(":", "h")}`);
 }
+/* ---------- lot 6 : briefs du matin et du soir, anniversaires, échéances, relances ---------- */
+const JV_MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const JV_JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+const jvJourTxt = d => { const x = new Date(d + "T12:00"); return `${JV_JOURS[x.getDay()]} ${x.getDate()}`; };
+const jvAjoute = (d, n) => ymd(addDays(n, new Date(d + "T12:00")));
+const jvEcart = (a, b) => Math.round((new Date(b + "T12:00") - new Date(a + "T12:00")) / 864e5);
+const jvOuvert = i => !!(i && !i.done && !isMemo(i) && !isList(i));
+const jvBriefOn = () => CFG.jvBriefAuto !== false;
+const jvEspaces = d => { const we = [0, 6].includes(new Date(d + "T12:00").getDay()); return CFG.jvPro && !we ? ["perso", "pro"] : ["perso"]; };
+const JV_ECH_RX = /(?<![\p{L}])(?:échéances?|echeances?|factures?|à payer|a payer|payer|régler|regler|date limite|expire|expiration|renouvel\p{L}*|résili\p{L}*|contrôle technique|controle technique|assurances?|impôts?|impots?|taxe|loyer|abonnement|prélèvement|prelevement|cotisation|amende)(?![\p{L}])/iu;
+const jvEstEch = i => !!(i && (i.ech || i.cat === "facture" || JV_ECH_RX.test(i.title || "")));
+
+/* anniversaires : ceux de son agenda Google, gardés ensuite dans sa mémoire chiffrée */
+const jvQuand = a => `${a.j === 1 ? "1er" : a.j} ${JV_MOIS[a.m - 1]}`;
+const jvMoisNum = s => ["janvier", "fevrier", "mars", "avril", "mai", "juin", "juillet", "aout", "septembre", "octobre", "novembre", "decembre"].indexOf(cvNorm(s)) + 1;
+const JV_AN_RX = /anniversaire (?:de |d['’]\s*)(.+?)\s*(?::|,|le)?\s*(\d{1,2})(?:er)?\s+(janvier|f[ée]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[ée]cembre)/iu;
+function jvAnnivs(){
+  const out = new Map();
+  for (const m of MEM.items.values()) {
+    let a = m.an;
+    if (!a) { const x = JV_AN_RX.exec(m.t || ""); if (x) a = { nom: x[1].replace(/\s*[:,-]\s*$/, "").trim(), j: +x[2], m: jvMoisNum(x[3]) }; }
+    if (a && a.nom && a.m >= 1 && a.m <= 12 && a.j >= 1 && a.j <= 31) out.set(busKey(a.nom) + "|" + a.m + "|" + a.j, a);
+  }
+  return [...out.values()];
+}
+function jvProchain(a, from){
+  let y = +from.slice(0, 4);
+  for (let k = 0; k < 2; k++, y++) {
+    let j = a.j; if (a.m === 2 && j === 29 && !(y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0))) j = 28;
+    const d = `${y}-${pad(a.m)}-${pad(j)}`; if (d >= from) return d;
+  }
+  return null;
+}
+async function jvAnnivAgenda(force){
+  if (!gOn() || !MEM.key) return 0;
+  const tod = ymd(new Date()); if (!force && LS.get("copilote_anlast", "") === tod) return 0;
+  const t = await gToken(); if (!t) return 0;
+  LS.set("copilote_anlast", tod);
+  const H = { Authorization: "Bearer " + t }, base = "https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&maxResults=250"
+    + "&timeMin=" + encodeURIComponent(new Date().toISOString()) + "&timeMax=" + encodeURIComponent(addDays(366).toISOString());
+  const evs = [];
+  for (const u of [base + "&eventTypes=birthday", base + "&q=" + encodeURIComponent("anniversaire")]) {
+    try { const r = await fetch(u, { headers: H }); if (r.ok) evs.push(...((await r.json()).items || [])); } catch (e) {}
+  }
+  const deja = new Set(jvAnnivs().map(a => busKey(a.nom) + "|" + a.m + "|" + a.j)), neufs = [];
+  for (const e of evs) {
+    if (e.status === "cancelled") continue;
+    const bp = e.birthdayProperties || {}, sum = String(e.summary || "");
+    if (bp.type === "self") continue;
+    if (!(bp.type === "birthday" || bp.type === "anniversary" || (/anniv|birthday/i.test(sum) && e.recurringEventId))) continue;
+    const d = (e.start && (e.start.date || String(e.start.dateTime || "").slice(0, 10))) || ""; if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+    const nom = sum.replace(/^[^\p{L}]+/u, "").replace(/^anniversaire\s+(?:de\s+|d['’]\s*)?/i, "").replace(/['’]s birthday$/i, "").replace(/\s*\(.*\)\s*$/, "").trim();
+    if (!nom || nom.length > 60) continue;
+    const a = { nom, m: +d.slice(5, 7), j: +d.slice(8, 10) }, k = busKey(nom) + "|" + a.m + "|" + a.j;
+    if (deja.has(k)) continue; deja.add(k);
+    neufs.push({ t: `Anniversaire de ${nom} : ${jvQuand(a)} (vu dans son agenda)`, d: "perso", pin: false, an: a });
+  }
+  if (neufs.length) await memRememberMany(neufs, "agenda");
+  return neufs.length;
+}
+/* rappels d'anniversaire : 7 jours avant (cadeau) et le jour même, à 9 h, une seule fois chacun */
+function jvAnnivTaches(){
+  const tod = ymd(new Date()), cles = new Set(LS.get("copilote_cles", [])); let n = 0;
+  for (const a of jvAnnivs()) {
+    const d = jvProchain(a, tod); if (!d) continue;
+    const k = jvEcart(tod, d); if (k > 7) continue;
+    const quand = jvQuand(a);
+    const add = (due, t, key) => { if (cles.has(key)) return; cles.add(key); jvAddTask({ t, date: due, heure: "09:00", sp: "perso", note: "anniversaire", extra: { jvAn: key } }); n++; };
+    if (k >= 1) add(jvAjoute(d, -Math.min(7, k)), `Anniversaire de ${a.nom} le ${quand} : pense au cadeau`, `an|${busKey(a.nom)}|${d}|7`);
+    add(d, `Anniversaire de ${a.nom} aujourd'hui`, `an|${busKey(a.nom)}|${d}|0`);
+  }
+  if (n) LS.set("copilote_cles", [...cles].slice(-400));
+  return n;
+}
+
+/* échéances : 7 jours avant et le jour même (celles qu'il dicte, et celles trouvées dans ses mails et SMS) */
+function jvRappelsEnPlus(){
+  const out = [], tod = ymd(new Date()), dt = (d, t) => new Date(`${d}T${t}:00`).toISOString();
+  for (const sp of (CFG.jvPro ? ["perso", "pro"] : ["perso"])) for (const i of spaceState(sp).items || []) {
+    if (!jvOuvert(i) || !/^\d{4}-\d{2}-\d{2}$/.test(i.due || "") || !jvEstEch(i)) continue;
+    const j7 = jvAjoute(i.due, -7), url = `./?task=${i.id}&sp=${sp}`, mt = i.amount ? i.amount + " € · " : "";
+    if (j7 >= tod) out.push({ at: dt(j7, "09:00"), title: "Dans 7 jours · " + i.title, body: mt + "échéance le " + jvJourTxt(i.due), url, tag: i.id + "-j7" });
+    if (!i.time && i.due >= tod) out.push({ at: dt(i.due, "09:00"), title: "Aujourd'hui · " + i.title, body: mt + "c'est l'échéance", url, tag: i.id + "-j0" });
+  }
+  return out;
+}
+async function jvEchExtraire(src, kind){
+  if (!src.length || !CFG.key || CFG.jvEch === false) return 0;
+  const tod = ymd(new Date());
+  const sys = `Tu repères des échéances dans des ${kind === "mail" ? "mails" : "SMS"} reçus par ton utilisateur. Aujourd'hui : ${tod}.
+Ne garde que les vraies échéances qui lui demandent une action avant une date : payer une facture ou une amende, renouveler ou résilier un contrat, envoyer un document, un délai administratif, une date d'expiration (carte, assurance, contrôle technique, garantie).
+Ignore : publicités, newsletters, confirmations de paiement déjà fait, prélèvements automatiques sans action à faire, colis, rendez-vous, codes de connexion.
+Si la date n'est pas écrite dans le message, ignore-le : n'invente jamais une date.
+Réponds UNIQUEMENT en JSON : {"echeances":[{"n":numéro du message,"titre":"court, à l'infinitif, ex. Payer la facture EDF","date":"AAAA-MM-JJ","montant":nombre ou null}]}`;
+  const user = src.map((x, k) => `[${k + 1}] De : ${x.de}${x.objet ? " · Objet : " + x.objet : ""}\n${String(x.texte || "").slice(0, 1500)}`).join("\n\n");
+  let j; try { const t = await claudeText(sys, user, 700); j = JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1)); } catch (e) { return -1; }
+  const st = spaceState("perso"), ouverts = (SPACE === "perso" ? S.items : st.items || []).filter(jvOuvert), ids = [];
+  for (const e of (j && j.echeances) || []) {
+    const x = src[(+e.n || 0) - 1]; if (!x || !e.titre || !/^\d{4}-\d{2}-\d{2}$/.test(e.date || "")) continue;
+    if (e.date < tod || jvEcart(tod, e.date) > 400) continue;
+    const k = busKey(e.titre).slice(0, 14);
+    if (ouverts.some(i => i.due === e.date && busKey(i.title).slice(0, 14) === k)) continue;
+    const it = jvAddTask({ t: String(e.titre).slice(0, 120), date: e.date, sp: "perso", note: `Trouvé dans ${kind === "mail" ? "un mail" : "un SMS"} de ${x.de}${x.objet ? " : « " + x.objet + " »" : ""}`, extra: { ech: true, amount: +e.montant || null, cat: +e.montant ? "facture" : "tache" } });
+    ouverts.push(it); ids.push(it.id);
+  }
+  if (ids.length) setTimeout(() => toast(`${ids.length} échéance${ids.length > 1 ? "s" : ""} ajoutée${ids.length > 1 ? "s" : ""} depuis tes ${kind === "mail" ? "mails" : "SMS"}`, "annuler", () => jvRetireIds("perso", ids), 9000), 600);
+  return ids.length;
+}
+function jvRetireIds(sp, ids){
+  if (sp === SPACE) { const gone = S.items.filter(x => ids.includes(x.id)); S.items = S.items.filter(x => !ids.includes(x.id)); save(); try { render(); } catch (e) {} gone.forEach(x => { if (x.gId || x.evId) calDel(x); }); }
+  else { const st = spaceState(sp); st.items = (st.items || []).filter(x => !ids.includes(x.id)); LS.set(SKEY(sp), st); schedulePushSync(); }
+}
+const JV_ECH_Q = 'facture OR échéance OR "à régler" OR "à payer" OR "date limite" OR "avis d\'échéance" OR expire OR expiration OR renouvellement OR résiliation OR "rappel de paiement" OR impayé OR "avant le"';
+let jvEchBusy = false;
+async function jvEchMails(manual){
+  if (CFG.jvEch === false || !CFG.key || !gMailOk() || jvEchBusy) return;
+  if (!manual && Date.now() - LS.get("copilote_echlast", 0) < 6 * 3600e3) return;
+  jvEchBusy = true; LS.set("copilote_echlast", Date.now());
+  try {
+    const t = await gToken(); if (!t) return;
+    const H = { Authorization: "Bearer " + t }, old = LS.get("copilote_echseen", null), seen = new Set(old || []);
+    const q = `newer_than:${old ? 7 : 21}d -in:spam -in:trash -category:promotions -category:social (${JV_ECH_Q})`;
+    const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=25&q=" + encodeURIComponent(q), { headers: H }); if (!r.ok) return;
+    const ids = ((await r.json()).messages || []).map(m => m.id).filter(id => !seen.has(id)).slice(0, 15), src = [];
+    for (const id of ids) {
+      seen.add(id);
+      const mr = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`, { headers: H }); if (!mr.ok) continue;
+      const m = await mr.json(), hd = k => (((m.payload && m.payload.headers) || []).find(h => h.name.toLowerCase() === k) || {}).value || "";
+      src.push({ de: hd("from").replace(/<[^>]*>/, "").replace(/"/g, "").trim() || "?", objet: hd("subject"), texte: gmText(m.payload) || m.snippet || "" });
+    }
+    const n = src.length ? await jvEchExtraire(src, "mail") : 0;
+    if (n >= 0) LS.set("copilote_echseen", [...seen].slice(-400));
+    if (manual && !n) toast("aucune nouvelle échéance dans tes mails");
+  } catch (e) {} finally { jvEchBusy = false; }
+}
+/* SMS des services (numéros courts, expéditeurs inconnus) : seulement ceux qui parlent d'échéance */
+async function jvEchMessages(list){
+  if (CFG.jvEch === false || !CFG.key) return;
+  const seen = new Set(LS.get("copilote_echsms", [])), src = [];
+  for (const e of list || []) {
+    const b = String(e.body || ""); if (!JV_ECH_RX.test(b) || !/\d/.test(b)) continue;
+    const k = busKey((e.who || e.num || "") + " " + b).slice(0, 120); if (seen.has(k)) continue; seen.add(k);
+    src.push({ de: e.who || e.num || "SMS", objet: "", texte: b });
+  }
+  if (!src.length) return;
+  LS.set("copilote_echsms", [...seen].slice(-300));
+  await jvEchExtraire(src.slice(0, 10), "sms");
+}
+
+/* relances : une tâche qui traîne depuis plus de 7 jours ressort une fois */
+function jvRelancesListe(){
+  if (CFG.jvRel === false) return [];
+  const tod = ymd(new Date()), lim = Date.now() - 7 * 864e5, out = [];
+  for (const sp of (CFG.jvPro ? ["perso", "pro"] : ["perso"])) for (const i of spaceState(sp).items || []) {
+    if (!jvOuvert(i) || i.jvRel || i.jvFor || i.jvAn || i.cat === "rdv" || !(i.created < lim)) continue;
+    if (i.due && i.due >= tod) continue;
+    out.push({ sp, id: i.id, title: i.title });
+  }
+  return out.slice(0, 8);
+}
+function jvItemDo(sp, id, fn){
+  if (sp === SPACE) { const k = S.items.findIndex(x => x.id === id); if (k < 0) return; fn(S.items[k], S.items, k); save(); try { render(); } catch (e) {} }
+  else { const st = spaceState(sp); st.items = st.items || []; const k = st.items.findIndex(x => x.id === id); if (k < 0) return; fn(st.items[k], st.items, k); LS.set(SKEY(sp), st); schedulePushSync(); }
+}
+let JV_REL = [];
+function paintRelances(){
+  const box = $("jvRelList"); if (!box) return;
+  box.innerHTML = JV_REL.map((r, k) => `<div class="cv-p" style="margin-top:8px"><div>${esc(r.title)}</div><div class="sub" style="margin:2px 0 0">${r.sp}</div>`
+    + (r.fait ? `<div class="act">${esc(r.fait)} ✓</div>` : `<div class="act"><button data-rd="${k}">supprimer</button><button data-rw="${k}">dans 1 semaine</button><button class="y" data-rt="${k}">aujourd'hui</button></div>`) + `</div>`).join("");
+  const act = (k, quoi) => {
+    const r = JV_REL[k]; if (!r || r.fait) return;
+    const tod = ymd(new Date());
+    if (quoi === "suppr") jvItemDo(r.sp, r.id, (it, arr, i) => { arr.splice(i, 1); if (r.sp === SPACE) calDel(it); });
+    else jvItemDo(r.sp, r.id, it => { it.due = quoi === "auj" ? tod : jvAjoute(tod, 7); it.jvRel = tod; if (r.sp === SPACE) calSync(it); });
+    r.fait = quoi === "suppr" ? "supprimée" : quoi === "auj" ? "pour aujourd'hui" : "dans une semaine";
+    paintRelances();
+  };
+  box.querySelectorAll("[data-rd]").forEach(b => b.onclick = () => act(+b.dataset.rd, "suppr"));
+  box.querySelectorAll("[data-rw]").forEach(b => b.onclick = () => act(+b.dataset.rw, "sem"));
+  box.querySelectorAll("[data-rt]").forEach(b => b.onclick = () => act(+b.dataset.rt, "auj"));
+}
+function jvRelancesAuto(){
+  const tod = ymd(new Date());
+  if (LS.get("copilote_rellast", "") === tod || document.hidden || listening || typing || document.querySelector(".sheet.show")) return false;
+  const L = jvRelancesListe(); if (!L.length) return false;
+  LS.set("copilote_rellast", tod);
+  L.forEach(r => jvItemDo(r.sp, r.id, it => { it.jvRel = tod; }));   // elles ne ressortent qu'une fois
+  JV_REL = L; paintRelances(); show("jvRel");
+  return true;
+}
+
+/* briefs : préparés dans le téléphone, envoyés à l'heure des rituels (matin : la journée ; soir : demain) */
+function jvMeteoJour(d){
+  if (!CFG.jvMeteo) return "";
+  const c = LS.get("copilote_meteo", null); if (!c || !c.d || !c.d.time) return "";
+  const k = c.d.time.indexOf(d); if (k < 0) return "";
+  const p = c.d.precipitation_probability_max[k], ciel = METEO_CODE(c.d.weather_code[k]);
+  const pl = p >= 40 ? (/pluie|averse|bruine|orage|neige/.test(ciel) ? ` (${p} %)` : `, pluie ${p} %`) : "";
+  return `Météo : ${Math.round(c.d.temperature_2m_min[k])} à ${Math.round(c.d.temperature_2m_max[k])} °C, ${ciel}${pl}`;
+}
+function jvMeteoAlerte(d, hhmm){
+  if (!CFG.jvMeteo) return "";
+  const c = LS.get("copilote_meteo", null); if (!c || !c.h || !c.h.time) return "";
+  const k = c.h.time.indexOf(`${d}T${hhmm.slice(0, 2)}:00`); if (k < 0) return "";
+  const pl = c.h.precipitation_probability[k], tp = c.h.temperature_2m[k], vt = c.h.wind_speed_10m[k];
+  const w = [pl >= 60 ? `pluie ${pl} %` : "", tp <= 2 ? `${Math.round(tp)} °C` : "", vt >= 40 ? `vent ${Math.round(vt)} km/h` : ""].filter(Boolean);
+  return w.length ? w.join(", ") : "";
+}
+async function jvBriefPrep(){
+  if (!jvBriefOn() || !CFG.jvMeteo) return;
+  const c = LS.get("copilote_meteo", null); if (c && Date.now() - c.at < 3 * 3600e3) return;
+  const home = jvLieux().find(l => l.g.type === "maison"), p = home ? home.g : JV_CENTRE;
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.lat.toFixed(2)}&longitude=${p.lon.toFixed(2)}&hourly=temperature_2m,precipitation_probability,wind_speed_10m&daily=temperature_2m_min,temperature_2m_max,precipitation_probability_max,weather_code&timezone=Europe%2FParis&forecast_days=8`);
+    const j = await r.json(); if (j.daily) LS.set("copilote_meteo", { at: Date.now(), d: j.daily, h: j.hourly });
+  } catch (e) {}
+}
+function jvBriefNotif(d, quand){
+  try {
+    const tod = ymd(new Date()), jour = quand === "soir" ? jvAjoute(d, 1) : d, L = [], items = [];
+    for (const sp of jvEspaces(jour)) for (const i of spaceState(sp).items || []) if (jvOuvert(i)) items.push(i);
+    const timed = items.filter(i => i.due === jour && i.time).sort((a, b) => a.time.localeCompare(b.time));
+    timed.slice(0, 6).forEach(i => {
+      const al = (i.cat === "rdv" || i.jvFor) ? jvMeteoAlerte(jour, i.time) : "";
+      L.push(`${i.time.replace(":", "h")} · ${i.title}${al ? " (" + al + ")" : ""}`);
+    });
+    if (timed.length > 6) L.push(`et ${timed.length - 6} autres moments`);
+    const todo = items.filter(i => !i.time && i.due && i.due <= jour && !jvEstEch(i)).length;
+    if (todo) L.push(`${todo} chose${todo > 1 ? "s" : ""} à faire`);
+    for (const a of jvAnnivs()) { const n = jvProchain(a, jour), k = n ? jvEcart(jour, n) : 99; if (k === 0) L.push(`Anniversaire de ${a.nom} ${jour === tod ? "aujourd'hui" : "ce jour-là"}`); else if (k === 1) L.push(`Anniversaire de ${a.nom} demain`); else if (k === 7) L.push(`Anniversaire de ${a.nom} dans 7 jours`); }
+    items.filter(i => jvEstEch(i) && i.due && i.due >= jour && i.due <= jvAjoute(jour, 7)).sort((a, b) => a.due.localeCompare(b.due)).slice(0, 3)
+      .forEach(i => { const k = jvEcart(jour, i.due); L.push(`Échéance : ${i.title}${k === 0 ? " (ce jour)" : ` (dans ${k} j)`}`); });
+    const co = colisOpen(); if (co.length) L.push(`Colis à retirer : ${co.slice(0, 2).map(c => colisName(c) + (c.until ? ` (jusqu'au ${+c.until.slice(8, 10)})` : "")).join(", ")}${co.length > 2 ? ` et ${co.length - 2} autres` : ""}`);
+    if (quand === "matin" && jour === tod) { const n = jvRelancesListe().length; if (n) L.push(`${n} tâche${n > 1 ? "s traînent" : " traîne"} depuis plus d'une semaine`); }
+    if (quand === "soir" && d === tod) { const n = items.filter(i => i.due && i.due <= tod && i.cat !== "rdv").length; if (n) L.push(`Ce soir, il reste ${n} tâche${n > 1 ? "s" : ""} ouverte${n > 1 ? "s" : ""}`); }
+    const m = jvMeteoJour(jour); if (m) L.push(m);
+    return { title: (quand === "soir" ? "Demain · " : "Ta journée · ") + jvJourTxt(jour), body: L.join("\n") || (quand === "soir" ? "Rien de prévu demain" : "Rien de prévu aujourd'hui") };
+  } catch (e) { return null; }
+}
+/* tâches de fond : au démarrage puis toutes les 30 min (anniversaires une fois par jour, mails toutes les 6 h) */
+async function jvJournalier(){
+  try { if (MEM.key) { await jvAnnivAgenda(); jvAnnivTaches(); } } catch (e) {}
+  try { await jvEchMails(false); } catch (e) {}
+  try { jvRelancesAuto(); } catch (e) {}
+}
 /* branché sur l'agenda : chaque création ou modification d'une tâche passe par calSync */
 function jvSortieCheck(it){
   if (!it || !it.id || JV_EN_COURS.has(it.id) || !S.items.includes(it)) return null;
@@ -4912,6 +5172,8 @@ function paintLieux(){
   box.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (b.dataset.sure) { memForget([b.dataset.del]).then(() => { paintLieux(); jvGeoSync(); }); } else { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; b.style.color = "var(--u3)"; } });
   $("cvProChk").checked = !!CFG.jvPro;
   $("cvBriefChk").checked = CFG.jvBrief !== false;
+  $("cvBnChk").checked = CFG.jvBriefAuto !== false; $("cvMeteoChk").checked = !!CFG.jvMeteo;
+  $("cvEchChk").checked = CFG.jvEch !== false; $("cvRelChk").checked = CFG.jvRel !== false;
   $("cvAlChk").checked = !!CFG.jvAlertes;
   jvAlertesState().then(s => { const e = $("cvAlSt"); if (e) e.textContent = s.txt; });
 }
@@ -5140,6 +5402,11 @@ $("cvLieuGo").onclick = async () => {
 };
 $("cvBriefChk").onchange = () => { CFG.jvBrief = $("cvBriefChk").checked; saveCfg(); };
 $("cvProChk").onchange = () => { CFG.jvPro = $("cvProChk").checked; saveCfg(); jvGeoSync(); };
+$("cvBnChk").onchange = () => { CFG.jvBriefAuto = $("cvBnChk").checked; saveCfg(); schedulePushSync(); };
+$("cvMeteoChk").onchange = async () => { CFG.jvMeteo = $("cvMeteoChk").checked; saveCfg(); if (CFG.jvMeteo) { LS.set("copilote_meteo", null); await jvBriefPrep(); } schedulePushSync(); };
+$("cvEchChk").onchange = () => { CFG.jvEch = $("cvEchChk").checked; saveCfg(); schedulePushSync(); if (CFG.jvEch) jvEchMails(true); };
+$("cvRelChk").onchange = () => { CFG.jvRel = $("cvRelChk").checked; saveCfg(); schedulePushSync(); };
+$("jvRelOk").onclick = () => hide();
 $("cvAlChk").onchange = async () => {
   CFG.jvAlertes = $("cvAlChk").checked; saveCfg();
   if (CFG.jvAlertes && (await jvNative()) >= 6) { const s = await jvAlertesState(); if (!s.ok) await tn("locAsk"); }
@@ -5152,7 +5419,9 @@ $("cvImpIn").onchange = async e => { const f = e.target.files && e.target.files[
 $("cvImpGo").onclick = impRead;
 $("cvCapIn").onchange = () => { CFG.cvCap = Math.min(200, Math.max(1, Math.round(+$("cvCapIn").value) || 20)); saveCfg(); paintMem(); };
 $("cvLockBtn").onclick = async () => { const b = $("cvLockBtn"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; return; } await memLock(); cvLockUI(); };
-setTimeout(() => { memUnlock().then(ok => { if (ok) { memSync(); jvGeoSync(); } }).catch(() => {}); }, 2500);
+setTimeout(() => { memUnlock().then(ok => { if (ok) { memSync(); jvGeoSync(); } }).catch(() => {}).finally(() => setTimeout(jvJournalier, 3000)); }, 2500);
+setInterval(jvJournalier, 30 * 60000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(() => { try { jvRelancesAuto(); } catch (e) {} }, 2500); });
 </script>
 </body>
 </html>
