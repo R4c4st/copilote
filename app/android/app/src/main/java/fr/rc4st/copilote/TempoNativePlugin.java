@@ -27,6 +27,7 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
+import android.speech.tts.Voice;
 import androidx.activity.result.ActivityResult;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
@@ -84,11 +85,11 @@ import org.json.JSONObject;
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 6;
+    static final int NATIVE_BUILD = 7;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
-    private PluginCall pendingSpeak = null;
+    private final List<Runnable> ttsWaiting = new ArrayList<>();
     private final Map<String, PluginCall> speakCalls = new HashMap<>();
     private SpeechRecognizer sr;
 
@@ -412,10 +413,12 @@ public class TempoNativePlugin extends Plugin {
 
     // ------------------------------------------------------------------ synthèse vocale
 
-    @PluginMethod
-    public void speak(PluginCall call) {
-        if (tts == null) {
-            pendingSpeak = call;
+    /* le moteur de synthèse vocale démarre une fois ; les demandes arrivées pendant le démarrage attendent */
+    private void ttsInit(Runnable then) {
+        synchronized (ttsWaiting) {
+            if (tts != null && ttsReady) { then.run(); return; }
+            ttsWaiting.add(then);
+            if (tts != null) return;
             tts = new TextToSpeech(getContext().getApplicationContext(), status -> {
                 ttsReady = status == TextToSpeech.SUCCESS;
                 if (ttsReady) {
@@ -437,26 +440,65 @@ public class TempoNativePlugin extends Plugin {
                         }
                     });
                 }
-                PluginCall c = pendingSpeak;
-                pendingSpeak = null;
-                if (c != null) {
-                    if (ttsReady) doSpeak(c);
-                    else c.reject("tts_indisponible");
-                }
+                List<Runnable> w;
+                synchronized (ttsWaiting) { w = new ArrayList<>(ttsWaiting); ttsWaiting.clear(); }
+                for (Runnable r : w) r.run();
             });
-            return;
         }
-        if (!ttsReady) {
-            call.reject("tts_indisponible");
-            return;
-        }
-        doSpeak(call);
+    }
+
+    @PluginMethod
+    public void speak(PluginCall call) {
+        ttsInit(() -> {
+            if (ttsReady) doSpeak(call);
+            else call.reject("tts_indisponible");
+        });
+    }
+
+    /* les voix françaises du téléphone, pour choisir celle de l'assistant */
+    @PluginMethod
+    public void voices(PluginCall call) {
+        ttsInit(() -> {
+            JSObject r = new JSObject();
+            JSArray arr = new JSArray();
+            if (ttsReady) {
+                try {
+                    Set<Voice> vs = tts.getVoices();
+                    if (vs != null) for (Voice v : vs) {
+                        Locale l = v.getLocale();
+                        if (l == null || !"fr".equals(l.getLanguage())) continue;
+                        JSObject o = new JSObject();
+                        o.put("name", v.getName());
+                        o.put("locale", l.toString());
+                        o.put("quality", v.getQuality());
+                        o.put("network", v.isNetworkConnectionRequired());
+                        Set<String> f = v.getFeatures();
+                        o.put("notInstalled", f != null && f.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED));
+                        arr.put(o);
+                    }
+                } catch (Exception e) {}
+            }
+            r.put("ready", ttsReady);
+            r.put("voices", arr);
+            call.resolve(r);
+        });
     }
 
     private void doSpeak(PluginCall call) {
         String text = call.getString("text", "");
         Float rate = call.getFloat("rate", 1.05f);
+        Float pitch = call.getFloat("pitch", 1.0f);
+        String vn = call.getString("voice", "");
         tts.setSpeechRate(rate != null ? rate : 1.05f);
+        tts.setPitch(pitch != null ? pitch : 1.0f);
+        boolean set = false;
+        if (vn != null && !vn.isEmpty()) {
+            try {
+                Set<Voice> vs = tts.getVoices();
+                if (vs != null) for (Voice v : vs) if (vn.equals(v.getName())) { set = tts.setVoice(v) == TextToSpeech.SUCCESS; break; }
+            } catch (Exception e) {}
+        }
+        if (!set) tts.setLanguage(Locale.FRANCE);
         String id = UUID.randomUUID().toString();
         speakCalls.put(id, call);
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, id);
