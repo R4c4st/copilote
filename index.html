@@ -294,7 +294,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   </div>
   <button id="eMk" style="margin-top:18px;font-size:14px;color:rgb(var(--glow))">préparer un message</button>
   <div class="foot">
-    <div class="l"><button id="eFocus" style="color:rgb(var(--glow))">focus</button><button id="eFiche">fiche</button><button id="eCal">agenda</button><button id="eShare">envoyer</button><button id="eDel" class="del">supprimer</button></div>
+    <div class="l"><button id="eFocus" style="color:rgb(var(--glow))">focus</button><button id="eFiche">fiche</button><button id="eCal">agenda</button><button id="eShare">envoyer</button><button id="eSpace">→ perso</button><button id="eDel" class="del">supprimer</button></div>
     <button class="ok" id="eSave">OK</button>
   </div>
 </div>
@@ -390,7 +390,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center">Jarvis v9 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center">Jarvis v10 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -484,6 +484,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvMeteoChk" style="width:auto"> météo automatique dans les briefs (sinon, demande-la à Jarvis)</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvEchChk" style="width:auto"> repérer les échéances dans mes mails et SMS</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvRelChk" style="width:auto"> relancer une fois les tâches qui traînent</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvEspChk" style="width:auto"> ranger tout seul chaque chose en pro ou en perso</label>
     <div class="lab">Mes souvenirs</div>
     <input id="cvQ" placeholder="chercher dans ma mémoire…" style="margin-top:4px">
     <div id="cvMemList" style="margin-top:6px"></div>
@@ -611,7 +612,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 9;
+const TEMPO_BUILD = 10;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -930,8 +931,7 @@ async function aiParse(text, kind, ctx){
 QUI IL EST
 ${CFG.profile}
 ${jvTriMemo(text)}
-${SPACE === "perso" ? "ESPACE : VIE PRIVÉE.\nThèmes" : "ESPACE : TRAVAIL.\nChantiers connus"} : ${chantiers().map(c => c.name).join(", ")}.
-${SPACE === "perso" ? "Proches" : "Équipe / contacts"} : ${CFG.team || (SPACE === "perso" ? jvProches() : "")}.
+${jvTriEspaces()}
 Maintenant : ${WD[d.getDay()]} ${ymd(d)}, ${nowHM()}.
 ${learn ? "\nSES CORRECTIONS PASSÉES (respecte sa façon de classer) :\n" + learn : ""}
 ${open ? "\nDÉJÀ DANS SA LISTE (avec leur id) :\n" + open : ""}
@@ -953,9 +953,9 @@ RÈGLES
 - PENSÉE À VOIX HAUTE : il réfléchit souvent en parlant. Filtre sans pitié : garde uniquement ce qui sert à FAIRE la tâche (quoi, qui, où, quand, combien, contrainte). Supprime les hésitations, les justifications, les « je pense que », le récit de sa journée, les répétitions. La note doit tenir en une ligne quand c'est possible, et peut rester vide.
 - CONTEXTE : s'il explique sa journée (« je serai à Lyon vers 19h après Grenoble »), garde seulement ce qui aide à faire la tâche (« de retour à Lyon vers 19h »), pas le récit.
 - PLUSIEURS CHOSES PRÉCISES dans une même mission (plusieurs colis avec des points relais, plusieurs pièces à récupérer…) : crée UNE action par chose identifiable (ex. « Récupérer le colis Vinted au relais du Tabac Saint-Max »), sinon une seule action globale.
-${SPACE === "perso" ? `- VIE PRIVÉE : cat "rdv" pour un rendez-vous à prendre ou à honorer ; "facture" pour payer/régler (date limite dans due si dite) ; "tache" pour une chose à faire ; "remarque" pour une idée ou une info.
+${SPACE === "perso" || CFG.jvEsp !== false ? `- VIE PRIVÉE (éléments perso) : cat "rdv" pour un rendez-vous à prendre ou à honorer ; "facture" pour payer/régler (date limite dans due si dite) ; "tache" pour une chose à faire ; "remarque" pour une idée ou une info.
 - COURSES : chaque article à acheter = UNE entrée séparée, cat "courses", title = juste l'article avec la quantité si dite (« Lait », « 6 œufs »), sans verbe, due null.
-- "ch" contient le thème (Enfants, Maison, Voiture…) au lieu d'un chantier.
+- Pour un élément perso, "ch" contient le thème (Enfants, Maison, Voiture…) au lieu d'un chantier.
 ` : ""}- TEXTOS / WHATSAPP : s'il veut envoyer un texto, SMS, message ou WhatsApp à quelqu'un, cat "message" et "mail":{"to":"prénom","subject":"","body":"le message, court, avec SES mots, comme il parle","via":"wa" si WhatsApp sinon "sms"}. Si une heure/date est donnée, c'est le moment où il doit l'envoyer (due/time).
 - RÉCURRENCE : si c'est répétitif (« tous les lundis », « chaque mois le 5 », « tous les jours »), ajoute "rec":"jour|ouvre|semaine|mois|an" et mets la PROCHAINE occurrence dans due (et time si dite). "ouvre" = du lundi au vendredi. Le title ne contient pas la fréquence.
 - MAILS : s'il demande d'écrire, d'envoyer, de demander, de prévenir ou de faire un compte rendu à un contact clé (ex. « demande à Julie… », « mail à Paul pour… »), mets cat "mail" et ajoute "mail":{"to":"prénom du contact","subject":"objet court et clair (avec le chantier si connu)","body":"le mail complet, rédigé exactement dans SA façon d'écrire, avec seulement ce qu'il a dit"}. Pas de signature longue, termine par « ${myName()} ». N'invente ni quantité, ni référence, ni date.
@@ -964,7 +964,7 @@ ${SPACE === "perso" ? `- VIE PRIVÉE : cat "rdv" pour un rendez-vous à prendre 
 - C'EST FAIT : s'il dit qu'une ou plusieurs choses sont faites, réglées, envoyées, appelées, commandées, livrées, bouclées (« Julie c'est fait », « le devis Martin est parti », « j'ai eu Durand »), retrouve CHAQUE tâche correspondante dans sa liste, même formulée autrement, et mets-la dans "updates" avec done:true. Il peut en citer plusieurs d'affilée. Ne crée JAMAIS de nouvelle tâche pour une chose déjà faite. Si une chose faite ne correspond à aucune tâche, ignore-la.
 - J'Y SUIS / C'EST EN COURS : s'il dit qu'il est arrivé, qu'il y est, qu'il commence ou qu'il est en train (« je suis arrivé à la salle de sport », « je suis chez le médecin », « je commence le devis Dupont »), retrouve la tâche ou le rendez-vous correspondant et marque-le done:true (c'est honoré, il n'a plus besoin du rappel). Ne crée rien d'autre.
 - MODIFICATIONS : s'il parle d'une tâche DÉJÀ dans sa liste (« le truc Dupont c'est pour jeudi », « c'est fait pour Julie », « annule le rappel Durand »), ne crée pas de nouvelle action : ajoute une entrée dans "updates" avec l'id et seulement les champs qui changent (title, u, due, time, note, ch, done:true, delete:true).
-Réponds UNIQUEMENT en JSON : {"items":[{"title":"","cat":"${Object.keys(CATS).join("|")}","ch":"","u":1,"due":null,"time":null,"note":"","mail":null,"rec":null,"rb":null,"amount":null}],"updates":[{"id":"","due":"…"}]}`;
+Réponds UNIQUEMENT en JSON : {"items":[{"title":"","sp":"pro|perso","cat":"${(CFG.jvEsp !== false ? [...new Set([...Object.keys(CATS_PRO), ...Object.keys(CATS_PERSO)])] : Object.keys(CATS)).join("|")}","ch":"","u":1,"due":null,"time":null,"note":"","mail":null,"rec":null,"rb":null,"amount":null}],"updates":[{"id":"","due":"…"}]}`;
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
@@ -978,14 +978,14 @@ ICI C'EST UN COMPTE RENDU qu'il dicte juste après un appel${cr && cr.who ? " av
   const j = await r.json();
   const raw = (j.content || []).map(c => c.text || "").join("");
   const obj = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
-  const items = (obj.items || []).map(it => ({
-    title: it.title || "", cat: CATS[it.cat] ? it.cat : "remarque", ch: it.ch || "",
+  const items = (obj.items || []).map(it => { const sp = CFG.jvEsp !== false && (it.sp === "pro" || it.sp === "perso") ? it.sp : SPACE, CX = sp === "perso" ? CATS_PERSO : CATS_PRO; return ({
+    sp, title: it.title || "", cat: CX[it.cat] ? it.cat : "remarque", ch: it.ch || "",
     u: [1, 2, 3].includes(+it.u) ? +it.u : 1, due: it.due || null, time: it.time || null, note: it.note || "", ai: true,
     mail: it.mail && (it.mail.body || (kind === "phone" && it.cat === "message" && it.mail.to)) ? { to: it.mail.to || "", subject: it.mail.subject || (it.cat === "message" ? "" : it.title), body: it.mail.body || "", via: ["wa", "snap"].includes(it.mail.via) ? it.mail.via : typeof it.mail.via === "string" && /^[\p{L}][\p{L} ]{2,20}$/u.test(it.mail.via) && !/^(sms|texto|mail|e-?mail)$/i.test(it.mail.via) ? it.mail.via : "sms" } : null,
     rec: REC[it.rec] ? it.rec : null,
     rb: it.cat === "memo" ? (["depense", "info", "idee"].includes(it.rb) ? it.rb : (it.amount ? "depense" : "info")) : undefined,
     amount: it.cat === "memo" && it.amount != null && !isNaN(+it.amount) ? +it.amount : undefined
-  })).filter(it => it.title);
+  }); }).filter(it => it.title);
   return { items, updates: Array.isArray(obj.updates) ? obj.updates.filter(u => u && u.id) : [], summary: typeof obj.summary === "string" ? obj.summary.trim() : "" };
 }
 async function aiMail(it){
@@ -1107,11 +1107,13 @@ async function capture(text, src, kind, ctx){
   }
   const now = Date.now();
   const added = (parsed || []).map(p => Object.assign({ id: uid(), created: now, done: false, doneAt: null, src: src || "voix", raw: text, orig: { cat: p.cat, ch: p.ch, u: p.u, slot: bucket(p) } }, p));
+  const moved = typeof jvRanger === "function" ? jvRanger(added, kind) : [], versSp = SPACE === "pro" ? "perso" : "pro";
   if (added.length) { S.items.unshift(...added); added.forEach(calSync); }
   save(); flashOk(); idle(); render(added.map(a => a.id));
   vib(U.done.length ? [12, 50, 18] : 18);
   const ids = added.map(a => a.id), nm = added.filter(a => a.mail).length, other = U.n - U.done.length;
   const parts = [];
+  if (moved.length) parts.push(`${moved.length} en ${versSp}`);
   const mem = added.filter(isMemo);
   const dep = mem.filter(m => m.rb === "depense"), oth = mem.length - dep.length;
   if (dep.length) parts.push(`${dep.length > 1 ? dep.length + " frais" : "frais"} · ${eur(dep.reduce((a, m) => a + (+m.amount || 0), 0))}`);
@@ -1134,6 +1136,7 @@ async function capture(text, src, kind, ctx){
   if (ag.length && CFG.agenda !== false && canOpen) { addToAgenda(ag[0]); toast("rendez-vous noté · agenda ouvert"); }
   else if (ag.length && CFG.agenda !== false) toast((ag[0].cat === "rdv" ? "rendez-vous noté" : parts.join(" · ")) + " · l'ajouter à l'agenda ?", "ajouter", () => addToAgenda(ag[0]), 9000);
   else toast(parts.join(" · ") || (viaAI ? "rien à noter là-dedans · dis ce qu'il faut faire ou ce qui est fait" : "rien compris, redis-le"), parts.length ? "annuler" : "", () => {
+    if (moved.length) jvRetireIds(versSp, moved.map(m => m.id));
     S.items = S.items.filter(i => !ids.includes(i.id)); U.undo.reverse().forEach(f => f()); save(); render();
   });
   if (CFG.key && !viaAI) setTimeout(() => toast("Claude injoignable · rangé par règles"), 2600);
@@ -4802,10 +4805,10 @@ function jvLieuDans(it){
   return best;
 }
 /* bus (sans voiture) ou voiture (lieu habituel connu) ; rien sinon */
-function jvSortieMode(it){
+function jvSortieMode(it, sp0){
   if (!(it && !it.done && it.cat === "rdv" && it.src !== "jarvis" && /^\d{4}-\d{2}-\d{2}$/.test(it.due || "") && /^\d{1,2}:\d{2}$/.test(it.time || ""))) return null;
   if (JV_SANS_VOITURE.test([it.raw, it.title, jvSansPlan(it.note)].join(" "))) return { mode: "bus", sig: `bus|${it.due}|${it.time}|${it.place || ""}` };
-  if (SPACE === "pro" && !CFG.jvPro) return null;
+  if ((sp0 || SPACE) === "pro" && !CFG.jvPro) return null;
   const l = jvLieuDans(it);
   return l ? { mode: "voiture", l, sig: `voiture|${it.due}|${it.time}|${l.id}` } : null;
 }
@@ -4870,41 +4873,114 @@ function jvSortieToast(it, sig, msg){
   }, 9000), 4300);
 }
 async function jvSortieFaire(it, m){
-  const sig = m.sig;
+  let x = null;
+  if (m.mode === "bus") {
+    try { x = await jvSortiePlan(it); } catch (e) { x = { err: "calcul impossible" }; }
+    if (!S.items.includes(it) || (jvSortieMode(it) || {}).sig !== m.sig) return;   // annulé ou changé entre-temps
+  }
+  jvSortieApplique(it, m, x, false);
+}
+/* application synchrone (sur l'espace ouvert) ; muet = posé depuis l'autre espace, sans bouton annuler */
+function jvSortieApplique(it, m, x, muet){
+  const sig = m.sig, info = msg => setTimeout(() => toast(msg, "", null, 6000), 4300);
   if (m.mode === "voiture") {
     const home = jvLieux().find(l => l.g.type === "maison"), n = new Date();
-    if (!home) { it.jvBus = { sig, err: "maison" }; save(); setTimeout(() => toast(`rendez-vous noté · ajoute ta maison dans Mes lieux (onglet mémoire de Jarvis) et je calcule l'heure de départ`, "", null, 6000), 4300); return; }
+    if (!home) { it.jvBus = { sig, err: "maison" }; save(); info("rendez-vous noté · ajoute ta maison dans Mes lieux (onglet mémoire de Jarvis) et je calcule l'heure de départ"); return; }
     const r = jvRoute(home.g, m.l.g), part = tMin(it.time) - r.min - JV_MARGE, rap = Math.max(0, part - 5), heure = jvHeure(rap).slice(0, 5);
     const nom = m.l.g.nom, placed = !it.place;
     if (placed) it.place = nom;
     it.note = [jvSansPlan(it.note), `Route : ~${r.min} min depuis chez toi (estimation sans trafic), pars à ${jvH(part)}`].filter(Boolean).join("\n");
     const late = it.due === ymd(n) && rap < n.getHours() * 60 + n.getMinutes();
-    const t = late ? null : jvAddTask({ t: `Pars à ${jvH(part)} pour ${nom}`, date: it.due, heure, sp: SPACE, note: `~${r.min} min de route · Waze donne le temps réel`, lieu: nom });
-    if (t) { t.jvFor = it.id; t.wz = true; }
+    const t = late ? null : jvAddTask({ t: `Pars à ${jvH(part)} pour ${nom}`, date: it.due, heure, sp: SPACE, note: `~${r.min} min de route · Waze donne le temps réel`, lieu: nom, extra: { jvFor: it.id, wz: true } });
     it.jvBus = { sig, task: t ? t.id : null, place: placed ? nom : null };
     save(); try { render(); } catch (e) {}
-    jvSortieToast(it, sig, late ? `${nom} · ~${r.min} min de route : pars maintenant (Waze sur le rendez-vous)` : `${nom} à ${it.time.replace(":", "h")} · ~${r.min} min de route · rappel ${heure.replace(":", "h")}, Waze en un geste`);
+    const msg = late ? `${nom} · ~${r.min} min de route : pars maintenant (Waze sur le rendez-vous)` : `${nom} à ${it.time.replace(":", "h")} · ~${r.min} min de route · rappel ${heure.replace(":", "h")}, Waze en un geste`;
+    if (muet) info(msg); else jvSortieToast(it, sig, msg);
     return;
   }
-  let x; try { x = await jvSortiePlan(it); } catch (e) { x = { err: "calcul impossible" }; }
-  if (!S.items.includes(it) || (jvSortieMode(it) || {}).sig !== sig) return;   // annulé ou changé entre-temps
-  if (x.err) {
-    it.jvBus = { sig, err: x.err }; save();
-    const msg = x.err === "arret" ? "sortie sans voiture notée · dis une fois ton arrêt de bus habituel à Jarvis et je m'occupe des bus"
-      : x.err === "trop tard" ? "sortie sans voiture notée · plus de bus pour y être à l'heure"
-      : x.err === "aucun" ? `sortie sans voiture notée · aucun bus depuis ${x.dep} pour y être à l'heure` : "sortie notée · " + x.err;
-    setTimeout(() => toast(msg, "", null, 6000), 4300);
+  if (!x || x.err) {
+    const e = (x && x.err) || "calcul impossible";
+    it.jvBus = { sig, err: e }; save();
+    info(e === "arret" ? "sortie sans voiture notée · dis une fois ton arrêt de bus habituel à Jarvis et je m'occupe des bus"
+      : e === "trop tard" ? "sortie sans voiture notée · plus de bus pour y être à l'heure"
+      : e === "aucun" ? `sortie sans voiture notée · aucun bus depuis ${x.dep} pour y être à l'heure` : "sortie notée · " + e);
     return;
   }
   const rap = Math.max(0, x.depMin - jvMarche() - 5), heure = jvHeure(rap).slice(0, 5);
   it.note = [jvSansPlan(it.note), "Bus aller : " + x.desc].filter(Boolean).join("\n");
-  const t = jvAddTask({ t: `Pars pour le bus de ${jvH(x.depMin)} (${x.ligne}, ${x.dep})`, date: it.due, heure, sp: SPACE, note: x.desc });
-  t.jvFor = it.id;
+  const t = jvAddTask({ t: `Pars pour le bus de ${jvH(x.depMin)} (${x.ligne}, ${x.dep})`, date: it.due, heure, sp: SPACE, note: x.desc, extra: { jvFor: it.id } });
   it.jvBus = { sig, task: t.id, w: "bus-" + new Date(`${it.due}T${jvHeure(x.depMin).slice(0, 5)}:00`).getTime() };
   save(); try { render(); } catch (e) {}
   jvBusWatch({ date: it.due, bus: { arret: x.dep, dep: jvHeure(x.depMin).slice(0, 5), ligne: x.ligne } });
-  jvSortieToast(it, sig, `bus ${x.ligne} à ${jvH(x.depMin)} · ${x.dep} → ${x.arr} ${jvH(x.arrMin)} · rappel ${heure.replace(":", "h")}`);
+  const msg = `bus ${x.ligne} à ${jvH(x.depMin)} · ${x.dep} → ${x.arr} ${jvH(x.arrMin)} · rappel ${heure.replace(":", "h")}`;
+  if (muet) info(msg); else jvSortieToast(it, sig, msg);
 }
+
+/* ---------- lot 7 : chaque chose dans son espace, même mélangées dans une phrase ---------- */
+const jvAutre = () => SPACE === "pro" ? "perso" : "pro";
+const jvPer = (sp, k) => sp === SPACE ? (CFG[k] || "") : ((CFG.sp && CFG.sp[sp] && CFG.sp[sp][k]) || "");
+const jvNomsCh = sp => String(jvPer(sp, "ch")).split("\n").map(l => l.split(":")[0].trim()).filter(Boolean).join(", ");
+function jvTriEspaces(){
+  if (CFG.jvEsp === false) return `${SPACE === "perso" ? "ESPACE : VIE PRIVÉE.\nThèmes" : "ESPACE : TRAVAIL.\nChantiers connus"} : ${chantiers().map(c => c.name).join(", ")}.\n${SPACE === "perso" ? "Proches" : "Équipe / contacts"} : ${CFG.team || (SPACE === "perso" ? jvProches() : "")}.`;
+  const appr = (CFG.jvSpLearn || []).slice(-20).map(l => `- « ${l.t} » → ${l.sp}`).join("\n");
+  return `DEUX ESPACES : il a une vie pro et une vie perso, et il les mélange souvent dans une même phrase. L'espace ouvert dans l'appli est ${SPACE === "perso" ? "PERSO" : "PRO"}. Range CHAQUE élément dans le bon espace avec "sp".
+- "pro" = son travail : chantiers, clients, collègues et équipe, matériel, interventions, devis, dépenses à se faire rembourser.
+- "perso" = sa vie privée : ses enfants, sa famille, ses amis, la maison, sa voiture, le golf, les courses, la santé, ses factures et papiers perso, ses sorties.
+- En cas de vrai doute, garde l'espace ouvert (${SPACE}). Un plein d'essence ou un trajet : perso s'il parle de sa voiture, du soir ou du week-end ; pro s'il parle de la camionnette ou d'un chantier.
+- Élément pro : cat parmi ${Object.keys(CATS_PRO).join("|")}, ch = un chantier. Élément perso : cat parmi ${Object.keys(CATS_PERSO).join("|")}, ch = un thème.
+Chantiers pro : ${jvNomsCh("pro") || "(aucun)"}.
+Thèmes perso : ${jvNomsCh("perso") || "(aucun)"}.
+Équipe / contacts pro : ${jvPer("pro", "team") || "(aucun)"}.
+Proches (perso) : ${jvPer("perso", "team") || jvProches("perso") || "(aucun)"}.${appr ? "\nSES CORRECTIONS D'ESPACE (respecte-les) :\n" + appr : ""}`;
+}
+/* après le tri : ce qui va dans l'autre espace y part directement, avec l'agenda et le bus/voiture */
+function jvRanger(added, kind){
+  const vers = jvAutre(), moved = [];
+  for (let k = added.length - 1; k >= 0; k--) { const a = added[k], sp = a.sp; delete a.sp; if (CFG.jvEsp !== false && sp === vers) { moved.unshift(a); added.splice(k, 1); } }
+  if (!moved.length) return moved;
+  const st = spaceState(vers); st.items = st.items || []; st.items.unshift(...moved); LS.set(SKEY(vers), st); schedulePushSync();
+  (async () => { for (const a of moved) await jvApresDeplacement(a.id, vers); })();
+  return moved;
+}
+async function jvApresDeplacement(id, sp){
+  try { const o = (LS.get(SKEY(sp), null) || { items: [] }).items.find(i => i.id === id); if (o && jvSortieMode(o, sp)) await jvSortieAilleurs(o, sp); } catch (e) {}
+  try {
+    const o = (LS.get(SKEY(sp), null) || { items: [] }).items.find(i => i.id === id);
+    if (o && gOn() && gWants(o)) {
+      await gSync(o);
+      const s3 = LS.get(SKEY(sp), null), o3 = s3 && s3.items.find(i => i.id === id);
+      if (o3 && o.gId && o3.gId !== o.gId) { o3.gId = o.gId; LS.set(SKEY(sp), s3); }
+    }
+  } catch (e) {}
+}
+/* bus ou voiture pour un rendez-vous rangé dans l'autre espace : calcul d'abord, puis application d'un bloc dans cet espace */
+async function jvSortieAilleurs(it, sp){
+  const m = jvSortieMode(it, sp); if (!m) return false;
+  let x = null;
+  if (m.mode === "bus") { try { x = await jvSortiePlan(it); } catch (e) { x = { err: "calcul impossible" }; } }
+  if (sp === SPACE) { const o = S.items.find(i => i.id === it.id); if (o && !o.jvBus) jvSortieApplique(o, m, x, true); return true; }
+  const st = LS.get(SKEY(sp), null) || { items: [], doneDays: [] }, o = (st.items || []).find(i => i.id === it.id);
+  if (!o || o.jvBus) return false;
+  const sv = SPACE, sS = S;
+  SPACE = sp; S = st;
+  try { jvSortieApplique(o, m, x, true); } finally { LS.set(SKEY(sp), S); SPACE = sv; S = sS; try { render(); } catch (e) {} }
+  return true;
+}
+/* corriger d'un geste depuis la fiche : il retient la correction */
+function jvChangeEspace(it){
+  if (!it || !S.items.includes(it)) return;
+  const vers = jvAutre();
+  if (it.jvBus) jvSortieRetire(it);
+  const CX = vers === "perso" ? CATS_PERSO : CATS_PRO; if (!CX[it.cat]) it.cat = vers === "perso" ? "tache" : "remarque";
+  it.ch = "";
+  S.items.splice(S.items.indexOf(it), 1); save();
+  const st = spaceState(vers); st.items = st.items || []; st.items.unshift(it); LS.set(SKEY(vers), st); schedulePushSync();
+  const L = (CFG.jvSpLearn || []).filter(l => l.t !== it.title); L.push({ t: it.title, sp: vers }); CFG.jvSpLearn = L.slice(-30); saveCfg();
+  hide(); try { render(); } catch (e) {}
+  jvApresDeplacement(it.id, vers);
+  toast(`passée en ${vers} · je m'en souviendrai`, "voir", () => switchSpace(vers), 6000);
+}
+
 /* ---------- lot 6 : briefs du matin et du soir, anniversaires, échéances, relances ---------- */
 const JV_MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 const JV_JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
@@ -5014,8 +5090,11 @@ Réponds UNIQUEMENT en JSON : {"echeances":[{"n":numéro du message,"titre":"cou
   return ids.length;
 }
 function jvRetireIds(sp, ids){
-  if (sp === SPACE) { const gone = S.items.filter(x => ids.includes(x.id)); S.items = S.items.filter(x => !ids.includes(x.id)); save(); try { render(); } catch (e) {} gone.forEach(x => { if (x.gId || x.evId) calDel(x); }); }
-  else { const st = spaceState(sp); st.items = (st.items || []).filter(x => !ids.includes(x.id)); LS.set(SKEY(sp), st); schedulePushSync(); }
+  const st = spaceState(sp), arr = st.items || [], gone = arr.filter(x => ids.includes(x.id)), all = new Set(ids);
+  gone.forEach(x => { const b = x.jvBus; if (b && b.task) all.add(b.task); if (b && b.w) LS.set("copilote_bus_watch", (LS.get("copilote_bus_watch", []) || []).filter(w => w.id !== b.w)); });
+  const rest = arr.filter(x => !all.has(x.id));
+  if (sp === SPACE) { S.items = rest; save(); try { render(); } catch (e) {} } else { st.items = rest; LS.set(SKEY(sp), st); schedulePushSync(); }
+  gone.forEach(x => { if (x.gId || x.evId) _jvCalDel(x); });
 }
 const JV_ECH_Q = 'facture OR échéance OR "à régler" OR "à payer" OR "date limite" OR "avis d\'échéance" OR expire OR expiration OR renouvellement OR résiliation OR "rappel de paiement" OR impayé OR "avant le"';
 let jvEchBusy = false;
@@ -5176,7 +5255,7 @@ function paintLieux(){
   $("cvProChk").checked = !!CFG.jvPro;
   $("cvBriefChk").checked = CFG.jvBrief !== false;
   $("cvBnChk").checked = CFG.jvBriefAuto !== false; $("cvMeteoChk").checked = !!CFG.jvMeteo;
-  $("cvEchChk").checked = CFG.jvEch !== false; $("cvRelChk").checked = CFG.jvRel !== false;
+  $("cvEchChk").checked = CFG.jvEch !== false; $("cvRelChk").checked = CFG.jvRel !== false; $("cvEspChk").checked = CFG.jvEsp !== false;
   $("cvAlChk").checked = !!CFG.jvAlertes;
   jvAlertesState().then(s => { const e = $("cvAlSt"); if (e) e.textContent = s.txt; });
 }
@@ -5196,10 +5275,10 @@ function jvTriMemo(text){
     return out.length ? "\nCE QUE TU SAIS AUSSI DE LUI (sa mémoire, à utiliser pour reconnaître ses proches, ses lieux et ses habitudes) :\n" + out.join("\n") + "\n" : "";
   } catch (e) { return ""; }
 }
-function jvProches(){
+function jvProches(sp0){
   try {
     if (!MEM.key) return "";
-    const sp = typeof SPACE !== "undefined" ? SPACE : "pro";
+    const sp = sp0 || (typeof SPACE !== "undefined" ? SPACE : "pro");
     return [...MEM.items.values()].filter(i => (i.p || i.d === sp) && !i.g && JV_LIENS.test(i.t)).slice(0, 10).map(i => i.t).join(" ");
   } catch (e) { return ""; }
 }
@@ -5410,6 +5489,10 @@ $("cvMeteoChk").onchange = async () => { CFG.jvMeteo = $("cvMeteoChk").checked; 
 $("cvEchChk").onchange = () => { CFG.jvEch = $("cvEchChk").checked; saveCfg(); schedulePushSync(); if (CFG.jvEch) jvEchMails(true); };
 $("cvRelChk").onchange = () => { CFG.jvRel = $("cvRelChk").checked; saveCfg(); schedulePushSync(); };
 $("jvRelOk").onclick = () => hide();
+$("cvEspChk").onchange = () => { CFG.jvEsp = $("cvEspChk").checked; saveCfg(); };
+$("eSpace").onclick = () => jvChangeEspace(cur);
+const _jvOpenEdit = openEdit;
+openEdit = function(it){ const r = _jvOpenEdit.apply(this, arguments); const b = $("eSpace"); if (b) b.textContent = "→ " + jvAutre(); return r; };
 $("cvAlChk").onchange = async () => {
   CFG.jvAlertes = $("cvAlChk").checked; saveCfg();
   if (CFG.jvAlertes && (await jvNative()) >= 6) { const s = await jvAlertesState(); if (!s.ok) await tn("locAsk"); }
