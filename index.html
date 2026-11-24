@@ -390,7 +390,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center">Jarvis v6 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center">Jarvis v7 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -601,7 +601,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 6;
+const TEMPO_BUILD = 7;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -3447,7 +3447,7 @@ async function syncReminders(healed){
         list.push({ at: new Date(at.getTime() - pre * 60000).toISOString(), title: (i.book ? "Dans 1 h · " : "Dans 30 min · ") + i.title, body: (i.place ? i.place + " · " : tag ? tag + " · " : "") + "touche pour ta fiche avant d'y aller", url: `./?fiche=${i.id}&sp=${sp}`, tag: i.id + "-" + pre });
         if (i.book) list.push({ at: dt(ymd(addDays(-1, new Date(i.due + "T12:00"))), "20:00").toISOString(), title: "Demain " + i.time.replace(":", "h") + " · " + i.title, body: i.place || tag || "réservation", url: `./?fiche=${i.id}&sp=${sp}`, tag: i.id + "-veille" });
       }
-      list.push({ at: at.toISOString(), title: i.title, body: tag || "c'est l'heure", url: `./?task=${i.id}&sp=${sp}`, tag: i.id });
+      list.push({ at: at.toISOString(), title: i.title, body: i.wz && i.place ? "touche pour lancer Waze" : tag || "c'est l'heure", url: i.wz && i.place ? "./?waze=" + encodeURIComponent(i.place) : `./?task=${i.id}&sp=${sp}`, tag: i.id });
     }
   }
   const R = RIT(), rs = LS.get("tempo_rit", {});
@@ -3881,6 +3881,7 @@ function handleShare(){
     const it = S.items.find(i => i.id === p.get("task")); if (it) setTimeout(() => openEdit(it), 300);
   }
   else if (p.get("focus")) { history.replaceState(null, "", location.pathname); const F = LS.get("tempo_focus", null); if (F) { startFocus(F.id, F.sp); } }
+  else if (p.get("waze")) { history.replaceState(null, "", location.pathname); const q = p.get("waze"); setTimeout(() => jvWaze(q), 300); }
   else return false;
   return true;
 }
@@ -4278,13 +4279,15 @@ Anticiper sa vie : c'est ton rôle principal
 - Sorties sans voiture, règle fixe qu'il a choisie : l'aller se fait toujours en bus, de son arrêt habituel vers Nancy ; le retour toujours en VTC, qu'il commande lui-même. Donc pour l'aller, appelle horaires_bus (arriver avant l'heure du rendez-vous) et pose directement le rappel de départ avec proposer_rappel (bus_arret, bus_depart, bus_ligne) : il s'ajoute tout seul, ne demande pas s'il le veut. Pour le retour, ne propose rien : ni bus, ni VTC, ni dernier bus. Si un rappel « Pars pour le bus… » existe déjà dans ses tâches datées pour ce rendez-vous, l'appli l'a déjà posé : ne le refais pas.
 - N'utilise proposer_vtc que s'il te demande explicitement un Uber ou un Bolt.
 - Pour horaires_bus, donne des noms d'arrêts du réseau Stan. Pour « Nancy » ou « en ville » sans précision, prends un grand arrêt du centre adapté au lieu du rendez-vous ; si l'outil te renvoie une liste d'arrêts, choisis-en un et rappelle-le.
-- Rappels avec proposer_rappel : l'heure de partir pour attraper le bus en comptant son temps de marche jusqu'à l'arrêt (s'il est inconnu, compte 5 minutes), et le rendez-vous lui-même (rendez_vous: true) s'il n'est pas déjà dans ses tâches ou son agenda. Les rendez-vous et les rappels de bus s'ajoutent tout seuls et le rendez-vous part dans son agenda ; les autres rappels, il les valide. Un rappel par moment clé, pas plus.
+- Rappels avec proposer_rappel : l'heure de partir pour attraper le bus en comptant son temps de marche jusqu'à l'arrêt (s'il est inconnu, compte 5 minutes), et le rendez-vous lui-même (rendez_vous: true) s'il n'est pas déjà dans ses tâches ou son agenda. Un rappel par moment clé, pas plus.
+- Ce qui s'ajoute tout seul, sans lui demander (il peut annuler d'un geste) : rappels, rendez-vous (qui partent dans son agenda), rappels de lieu et listes de courses. N'écris donc pas « tu veux que je… ? » pour ça : fais-le et dis-le en une phrase. Seuls les souvenirs, les oublis et les nouveaux lieux habituels attendent sa validation.
+- Quand un rendez-vous dicté depuis le rond cite un de ses lieux habituels (golf, médecin…), l'appli pose seule le rappel « Pars à … » en voiture avec Waze : s'il est déjà dans ses tâches datées, ne le refais pas.
 - La météo (outil meteo) seulement quand elle change quelque chose : pluie, froid, vent pour une sortie.
 - N'invente jamais un horaire de bus ni une météo : uniquement ce que renvoient les outils. Si un outil échoue, dis-le simplement.
 - Ses lieux habituels (maison, arrêt, golf, médecin, magasins, relais colis…) sont dans ses souvenirs, marqués « Lieu habituel ». S'il t'en donne un nouveau, propose-le avec proposer_lieu (avec l'adresse la plus précise possible) ; s'il en manque un dont tu as besoin, demande-le une fois.
 - En voiture : appelle trajet_voiture pour estimer le temps de route (c'est une estimation sans trafic, Waze donnera le temps réel), puis propose le rappel « pars à … » et le rendez-vous avec son lieu : la carte lui offrira d'ouvrir Waze.
 - Pour une chose à faire quelque part sans heure précise (« quand je passe à Intermarché »), utilise proposer_rappel_lieu : il sera prévenu en arrivant.
-- Courses : quand il donne une liste (ou des articles), range-la par rayon et propose-la avec proposer_courses, avec le magasin s'il le dit (s'il est dans ses lieux habituels, il aura sa liste en arrivant). Regarde aussi ses colis en attente et ses choses à faire en passant : si un relais ou un lieu est sur le chemin ou à quelques minutes du magasin (trajet_voiture), propose d'y passer (proposer_rappel_lieu ou proposer_rappel).
+- Courses : quand il donne une liste (ou des articles), range-la par rayon et crée-la avec proposer_courses, avec le magasin s'il le dit (s'il est dans ses lieux habituels, il aura sa liste en arrivant). Regarde aussi ses colis en attente et ses choses à faire en passant : si un relais ou un lieu est sur le chemin ou à quelques minutes du magasin (trajet_voiture), ajoute le passage (proposer_rappel_lieu ou proposer_rappel).
 - Brief du jour : quand il le demande, en 5 à 8 lignes maximum, dans cet ordre : ce qui l'attend aujourd'hui avec les heures de départ utiles, la météo chez lui si elle change quelque chose, les colis à retirer (d'abord ceux qui expirent), les anniversaires ou échéances proches que tu vois dans ses souvenirs, puis une idée pour grouper ses déplacements. Propose ensuite les rappels utiles. Le week-end, rien de pro.
 - Le <contexte> te dit si son mode pro est activé. S'il est désactivé, ne propose rien côté pro de ta propre initiative (ni rappel, ni trajet, ni alerte) : réponds seulement à ce qu'il demande.
 
@@ -4315,7 +4318,7 @@ const CV_TOOLS = [
       date: { type: "string", description: "AAAA-MM-JJ" },
       heure: { type: "string", description: "HH:MM, le moment qui compte." } },
       required: ["lieu", "date"] } },
-  { name: "proposer_rappel", description: "Ajoute une tâche datée qui sonnera (rendez-vous, heure de départ…). Un rendez-vous ou un rappel de bus s'ajoute tout seul (il peut annuler) ; les autres rappels, il les valide.",
+  { name: "proposer_rappel", description: "Ajoute une tâche datée qui sonnera (rendez-vous, heure de départ…). Elle s'ajoute tout de suite, il peut annuler d'un geste.",
     input_schema: { type: "object", properties: {
       titre: { type: "string", description: "Court et clair, ex. « Pars pour le bus de 18h52 (Cinéma) »." },
       date: { type: "string", description: "AAAA-MM-JJ" },
@@ -4340,13 +4343,13 @@ const CV_TOOLS = [
       type: { type: "string", enum: ["maison", "arret", "golf", "medecin", "magasin", "relais", "travail", "autre"] },
       espace: { type: "string", enum: ["pro", "perso"] } },
       required: ["nom", "adresse", "type"] } },
-  { name: "proposer_rappel_lieu", description: "Propose une chose à faire en passant par un lieu habituel, sans heure : il sera prévenu en arrivant sur place.",
+  { name: "proposer_rappel_lieu", description: "Ajoute une chose à faire en passant par un lieu habituel, sans heure : il sera prévenu en arrivant sur place. S'ajoute tout de suite, annulable.",
     input_schema: { type: "object", properties: {
       titre: { type: "string" },
       lieu: { type: "string", description: "Nom d'un de ses lieux habituels." },
       espace: { type: "string", enum: ["pro", "perso"] } },
       required: ["titre", "lieu"] } },
-  { name: "proposer_courses", description: "Propose de créer sa liste de courses, rangée par rayon (il valide). Si le magasin est un de ses lieux habituels, la liste lui sera rappelée en y arrivant.",
+  { name: "proposer_courses", description: "Crée sa liste de courses, rangée par rayon (tout de suite, annulable). Si le magasin est un de ses lieux habituels, la liste lui sera rappelée en y arrivant.",
     input_schema: { type: "object", properties: {
       magasin: { type: "string", description: "Le magasin, s'il le dit (ex. Intermarché)." },
       articles: { type: "array", items: { type: "object", properties: {
@@ -4444,7 +4447,7 @@ async function cvSend(text){
       for (const t of uses) {
         let out;
         if (JV_LOCAL[t.name]) { cvStatus(t.name === "horaires_bus" ? "je regarde les bus…" : t.name === "meteo" ? "je regarde la météo…" : "je calcule le trajet…"); try { out = await JV_LOCAL[t.name](t.input || {}); } catch (e) { out = { erreur: "indisponible pour l'instant" }; } }
-        else out = { ok: "proposé à l'utilisateur : il validera lui-même" };
+        else out = /^proposer_(rappel|rappel_lieu|courses)$/.test(t.name) ? { ok: "ajouté tout de suite (il peut annuler)" } : { ok: "proposé à l'utilisateur : il validera lui-même" };
         results.push({ type: "tool_result", tool_use_id: t.id, content: JSON.stringify(out).slice(0, 8000) });
       }
       JV.msgs.push({ role: "user", content: results });
@@ -4469,8 +4472,9 @@ async function cvSend(text){
         if (ids.length) JV.view.push({ r: "p", k: "oublier", ids, t: ids.map(id => (MEM.items.get(id) || {}).t).filter(Boolean).join(" · "), why: x.raison || "", st: "" });
       }
     }
-    // délégué par lui : les rendez-vous (agenda) et les rappels de bus s'ajoutent sans validation, annulables d'un geste
-    for (let i = v0; i < JV.view.length; i++) { const p = JV.view[i]; if (p.r === "p" && p.k === "rappel" && (p.rdv || p.bus)) { p.auto = true; try { await cvDecide(i, true); } catch (e) {} } }
+    // délégué par lui : ce qui reste dans le téléphone s'ajoute sans validation, annulable d'un geste
+    // (souvenirs, oublis et lieux habituels attendent toujours son accord : c'est sa mémoire)
+    for (let i = v0; i < JV.view.length; i++) { const p = JV.view[i]; if (p.r === "p" && JV_AUTO.has(p.k)) { p.auto = true; try { await cvDecide(i, true); } catch (e) {} } }
     JV.at = Date.now();
   } catch (e) {
     JV.msgs.splice(base);   // la question non répondue ne reste pas dans l'historique envoyé
@@ -4480,6 +4484,7 @@ async function cvSend(text){
   }
   JV.busy = false; cvStatus(""); await cvSave(); cvPaint();
 }
+const JV_AUTO = new Set(["rappel", "courses", "ici"]);
 async function cvDecide(i, ok){
   const p = JV.view[i]; if (!p || p.r !== "p" || p.st) return;
   if (ok && p.k === "retenir") { await memRemember(p.t, p.d, p.pin, "conversation"); JV.notes.push(`retenu : « ${p.t} »`); }
@@ -4490,11 +4495,11 @@ async function cvDecide(i, ok){
     if (!l) { p.st = ""; await cvSave(); cvPaint(); toast("adresse introuvable : précise-la (rue, ville)"); return; }
     p.label = l.label; JV.notes.push(`lieu habituel ajouté : « ${p.t} » (${l.label})`);
   }
-  if (ok && p.k === "courses") { const n = jvAddCourses(p); JV.notes.push(`liste de courses créée (${n} articles${p.t ? ", " + p.t : ""})`); }
+  if (ok && p.k === "courses") { const its = jvAddCourses(p); p.tids = its.map(x => x.id); JV.notes.push(`liste de courses créée (${its.length} articles${p.t ? ", " + p.t : ""})`); }
   if (ok && p.k === "ici") {
     const l = jvLieu(p.lieu);
     if (!l) { toast("ce lieu n'est pas encore dans tes lieux habituels"); return; }
-    jvAddTask({ t: p.t, sp: p.sp, lieuId: l.id, lieu: l.g.nom }); JV.notes.push(`rappel de lieu ajouté : « ${p.t} » à ${l.g.nom}`);
+    p.tid = jvAddTask({ t: p.t, sp: p.sp, lieuId: l.id, lieu: l.g.nom }).id; JV.notes.push(`rappel de lieu ajouté : « ${p.t} » à ${l.g.nom}`);
   }
   if (ok && p.k === "vtc") { jvVtc(ok, p.t); JV.notes.push(`VTC ouvert (${ok}) vers « ${p.t} »`); }
   if (!ok) JV.notes.push(`refusé (${p.k}) : « ${p.t} »`);
@@ -4504,13 +4509,15 @@ async function cvDecide(i, ok){
 
 /* annuler ce qui s'est ajouté tout seul */
 async function cvUndo(i){
-  const p = JV.view[i]; if (!p || p.k !== "rappel" || p.st !== "ok") return;
-  if (p.tid) {
-    if (p.sp === SPACE) { const k = S.items.findIndex(x => x.id === p.tid); if (k >= 0) { const it = S.items[k]; S.items.splice(k, 1); save(); try { render(); } catch (e) {} calDel(it); } }
-    else { const st = spaceState(p.sp); st.items = (st.items || []).filter(x => x.id !== p.tid); LS.set(SKEY(p.sp), st); schedulePushSync(); }
+  const p = JV.view[i]; if (!p || p.st !== "ok" || !JV_AUTO.has(p.k)) return;
+  const ids = p.tids || (p.tid ? [p.tid] : []), sp = p.k === "courses" ? "perso" : p.sp;
+  if (ids.length) {
+    if (sp === SPACE) { const gone = S.items.filter(x => ids.includes(x.id)); S.items = S.items.filter(x => !ids.includes(x.id)); save(); try { render(); } catch (e) {} gone.forEach(x => { if (x.cat === "rdv") calDel(x); }); }
+    else { const st = spaceState(sp); st.items = (st.items || []).filter(x => !ids.includes(x.id)); LS.set(SKEY(sp), st); schedulePushSync(); }
   }
-  if (p.bus) { const w = "bus-" + new Date(`${p.date}T${p.bus.dep}:00`).getTime(); LS.set("copilote_bus_watch", (LS.get("copilote_bus_watch", []) || []).filter(x => x.id !== w)); jvGeoSync(); }
-  p.st = "non"; JV.notes.push(`annulé : « ${p.t} »`);
+  if (p.bus) { const w = "bus-" + new Date(`${p.date}T${p.bus.dep}:00`).getTime(); LS.set("copilote_bus_watch", (LS.get("copilote_bus_watch", []) || []).filter(x => x.id !== w)); }
+  jvGeoSync();
+  p.st = "non"; JV.notes.push(`annulé : « ${p.t || p.k} »`);
   await cvSave(); cvPaint();
 }
 
@@ -4647,7 +4654,7 @@ function jvAddCourses(p){
   if (SPACE === "perso") { S.items.unshift(...items); save(); try { render(items.map(i => i.id)); } catch (e) {} }
   else { st.items = st.items || []; st.items.unshift(...items); LS.set(SKEY("perso"), st); }
   if (l) jvGeoSync();
-  return items.length;
+  return items;
 }
 function jvVtc(app, dest){
   if (app === "Uber") { const url = "https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]=" + encodeURIComponent(dest); if (NATIVE) tn("openUrl", { url }); else window.open(url, "_blank"); return; }
@@ -4699,8 +4706,8 @@ async function toolVoiture(x){
   const a = await jvPoint(x.depart || "maison"), b = await jvPoint(x.arrivee || "");
   if (!a) return { erreur: `je ne trouve pas « ${x.depart || "maison"} » (lieu habituel ou adresse)` };
   if (!b) return { erreur: `je ne trouve pas « ${x.arrivee} »` };
-  const km = jvKm(a, b) * 1.3, vit = km < 8 ? 25 : km < 30 ? 45 : 75, min = Math.round(km / vit * 60 + 5);
-  return { depart: a.label, arrivee: b.label, km_route: Math.round(km), minutes: min, remarque: "estimation à vol d'oiseau corrigée, sans trafic ; Waze donnera le temps réel" };
+  const r = jvRoute(a, b);
+  return { depart: a.label, arrivee: b.label, km_route: r.km, minutes: r.min, remarque: "estimation à vol d'oiseau corrigée, sans trafic ; Waze donnera le temps réel" };
 }
 function jvWaze(q){
   const l = jvLieu(q);
@@ -4766,11 +4773,26 @@ const JV_CENTRE = { lat: 48.6936, lon: 6.1832 };   // Nancy, place Stanislas : �
 const JV_MARGE = 10;                                // arriver au moins 10 min avant le rendez-vous
 const JV_EN_COURS = new Set();
 const jvH = m => jvHeure(m).replace(":", "h");
-const jvSansBus = s => String(s || "").replace(/\n?Bus aller : .*$/m, "").trim();
-function jvSortieVeut(it){
-  return !!(it && !it.done && it.cat === "rdv" && it.src !== "jarvis" && /^\d{4}-\d{2}-\d{2}$/.test(it.due || "") && /^\d{1,2}:\d{2}$/.test(it.time || "")
-    && JV_SANS_VOITURE.test([it.raw, it.title, jvSansBus(it.note)].join(" ")));
+const jvSansPlan = s => String(s || "").replace(/\n?(?:Bus aller|Route) : .*$/gm, "").trim();
+/* un lieu habituel cité dans le rendez-vous (golf, médecin, Intermarché…) : par son nom, sinon par son type */
+function jvLieuDans(it){
+  const txt = " " + busKey([it.place, it.title, it.raw].join(" ")) + " ";
+  const L = jvLieux().filter(l => l.g.type !== "maison" && l.g.type !== "arret" && (CFG.jvPro || l.d !== "pro"));
+  let best = null;
+  for (const l of L) { const n = busKey(l.g.nom); if (n.length > 2 && txt.includes(" " + n + " ") && (!best || n.length > busKey(best.g.nom).length)) best = l; }
+  if (!best) best = L.find(l => { const ty = busKey(JV_TYPES[l.g.type] || ""); return l.g.type !== "autre" && ty.length > 2 && txt.includes(" " + ty + " "); }) || null;
+  return best;
 }
+/* bus (sans voiture) ou voiture (lieu habituel connu) ; rien sinon */
+function jvSortieMode(it){
+  if (!(it && !it.done && it.cat === "rdv" && it.src !== "jarvis" && /^\d{4}-\d{2}-\d{2}$/.test(it.due || "") && /^\d{1,2}:\d{2}$/.test(it.time || ""))) return null;
+  if (JV_SANS_VOITURE.test([it.raw, it.title, jvSansPlan(it.note)].join(" "))) return { mode: "bus", sig: `bus|${it.due}|${it.time}|${it.place || ""}` };
+  if (SPACE === "pro" && !CFG.jvPro) return null;
+  const l = jvLieuDans(it);
+  return l ? { mode: "voiture", l, sig: `voiture|${it.due}|${it.time}|${l.id}` } : null;
+}
+const jvSortieVeut = it => !!jvSortieMode(it);
+const jvRoute = (a, b) => { const km = jvKm(a, b) * 1.3, vit = km < 8 ? 25 : km < 30 ? 45 : 75; return { km: Math.round(km), min: Math.round(km / vit * 60 + 5) }; };
 /* son arrêt habituel : le lieu « arrêt de bus » de sa mémoire, sinon un souvenir qui cite un arrêt Stan */
 function jvMonArret(D){
   const names = busNames(D);
@@ -4821,11 +4843,33 @@ function jvSortieRetire(it){
   const b = it.jvBus; if (!b) return;
   if (b.task) { const k = S.items.findIndex(i => i.id === b.task); if (k >= 0 && !S.items[k].done) S.items.splice(k, 1); }
   if (b.w) { LS.set("copilote_bus_watch", (LS.get("copilote_bus_watch", []) || []).filter(x => x.id !== b.w)); jvGeoSync(); }
-  it.note = jvSansBus(it.note); delete it.jvBus;
+  if (b.place && it.place === b.place) it.place = "";
+  it.note = jvSansPlan(it.note); delete it.jvBus;
 }
-async function jvSortieFaire(it, sig){
+function jvSortieToast(it, sig, msg){
+  setTimeout(() => toast(msg, "annuler", () => {
+    jvSortieRetire(it); it.jvBus = { sig, off: true }; save(); try { render(); } catch (e) {} _jvCalSync(it);
+  }, 9000), 4300);
+}
+async function jvSortieFaire(it, m){
+  const sig = m.sig;
+  if (m.mode === "voiture") {
+    const home = jvLieux().find(l => l.g.type === "maison"), n = new Date();
+    if (!home) { it.jvBus = { sig, err: "maison" }; save(); setTimeout(() => toast(`rendez-vous noté · ajoute ta maison dans Mes lieux (onglet mémoire de Jarvis) et je calcule l'heure de départ`, "", null, 6000), 4300); return; }
+    const r = jvRoute(home.g, m.l.g), part = tMin(it.time) - r.min - JV_MARGE, rap = Math.max(0, part - 5), heure = jvHeure(rap).slice(0, 5);
+    const nom = m.l.g.nom, placed = !it.place;
+    if (placed) it.place = nom;
+    it.note = [jvSansPlan(it.note), `Route : ~${r.min} min depuis chez toi (estimation sans trafic), pars à ${jvH(part)}`].filter(Boolean).join("\n");
+    const late = it.due === ymd(n) && rap < n.getHours() * 60 + n.getMinutes();
+    const t = late ? null : jvAddTask({ t: `Pars à ${jvH(part)} pour ${nom}`, date: it.due, heure, sp: SPACE, note: `~${r.min} min de route · Waze donne le temps réel`, lieu: nom });
+    if (t) { t.jvFor = it.id; t.wz = true; }
+    it.jvBus = { sig, task: t ? t.id : null, place: placed ? nom : null };
+    save(); try { render(); } catch (e) {}
+    jvSortieToast(it, sig, late ? `${nom} · ~${r.min} min de route : pars maintenant (Waze sur le rendez-vous)` : `${nom} à ${it.time.replace(":", "h")} · ~${r.min} min de route · rappel ${heure.replace(":", "h")}, Waze en un geste`);
+    return;
+  }
   let x; try { x = await jvSortiePlan(it); } catch (e) { x = { err: "calcul impossible" }; }
-  if (!S.items.includes(it) || !jvSortieVeut(it)) return;   // annulé ou changé entre-temps
+  if (!S.items.includes(it) || (jvSortieMode(it) || {}).sig !== sig) return;   // annulé ou changé entre-temps
   if (x.err) {
     it.jvBus = { sig, err: x.err }; save();
     const msg = x.err === "arret" ? "sortie sans voiture notée · dis une fois ton arrêt de bus habituel à Jarvis et je m'occupe des bus"
@@ -4835,29 +4879,28 @@ async function jvSortieFaire(it, sig){
     return;
   }
   const rap = Math.max(0, x.depMin - jvMarche() - 5), heure = jvHeure(rap).slice(0, 5);
-  it.note = [jvSansBus(it.note), "Bus aller : " + x.desc].filter(Boolean).join("\n");
+  it.note = [jvSansPlan(it.note), "Bus aller : " + x.desc].filter(Boolean).join("\n");
   const t = jvAddTask({ t: `Pars pour le bus de ${jvH(x.depMin)} (${x.ligne}, ${x.dep})`, date: it.due, heure, sp: SPACE, note: x.desc });
   t.jvFor = it.id;
   it.jvBus = { sig, task: t.id, w: "bus-" + new Date(`${it.due}T${jvHeure(x.depMin).slice(0, 5)}:00`).getTime() };
   save(); try { render(); } catch (e) {}
   jvBusWatch({ date: it.due, bus: { arret: x.dep, dep: jvHeure(x.depMin).slice(0, 5), ligne: x.ligne } });
-  setTimeout(() => toast(`bus ${x.ligne} à ${jvH(x.depMin)} · ${x.dep} → ${x.arr} ${jvH(x.arrMin)} · rappel ${heure.replace(":", "h")}`, "annuler", () => {
-    jvSortieRetire(it); it.jvBus = { sig, off: true }; save(); try { render(); } catch (e) {} _jvCalSync(it);
-  }, 9000), 4300);
+  jvSortieToast(it, sig, `bus ${x.ligne} à ${jvH(x.depMin)} · ${x.dep} → ${x.arr} ${jvH(x.arrMin)} · rappel ${heure.replace(":", "h")}`);
 }
 /* branché sur l'agenda : chaque création ou modification d'une tâche passe par calSync */
 function jvSortieCheck(it){
   if (!it || !it.id || JV_EN_COURS.has(it.id) || !S.items.includes(it)) return null;
-  const veut = jvSortieVeut(it), sig = veut ? `${it.due}|${it.time}|${it.place || ""}` : "", b = it.jvBus;
+  const m = jvSortieMode(it), sig = m ? m.sig : "", b = it.jvBus;
   if (b && (b.off || b.sig === sig)) return null;
-  if (!veut && !b) return null;
+  if (!m && !b) return null;
   if (b) { jvSortieRetire(it); save(); try { render(); } catch (e) {} }
-  if (!veut) return null;
+  const m2 = jvSortieMode(it);   // une fois l'ancien plan retiré (le lieu qu'on avait posé n'influence plus)
+  if (!m2) return null;
   JV_EN_COURS.add(it.id);
-  return jvSortieFaire(it, sig).catch(() => {}).finally(() => JV_EN_COURS.delete(it.id));
+  return jvSortieFaire(it, m2).catch(() => {}).finally(() => JV_EN_COURS.delete(it.id));
 }
 const _jvCalSync = calSync, _jvCalDel = calDel;
-// le bus est choisi avant l'envoi à l'agenda : l'événement part une seule fois, avec la ligne « Bus aller »
+// le trajet est calculé avant l'envoi à l'agenda : l'événement part une seule fois, avec la ligne « Bus aller » ou « Route »
 calSync = function(it){ let p = null; try { p = jvSortieCheck(it); } catch (e) {} return p ? p.then(() => _jvCalSync(it)) : _jvCalSync(it); };
 calDel = function(it){ try { if (it && it.jvBus && !it.jvBus.off && !S.items.includes(it)) { jvSortieRetire(it); save(); try { render(); } catch (e) {} } } catch (e) {} return _jvCalDel(it); };
 function paintLieux(){
@@ -4920,6 +4963,7 @@ async function jvBrief(){
 /* ---------- affichage ---------- */
 const cvHtml = t => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
 function cvStatus(t){ const e = $("cvStat"); if (e) e.textContent = t || ""; }
+const cvUndoBtn = (v, i) => v.auto && (v.tid || (v.tids && v.tids.length)) ? `<button data-undo="${i}">annuler</button>` : "";
 function cvPaint(){
   if (!cvVisible()) return;
   const L = $("cvList");
@@ -4931,7 +4975,7 @@ function cvPaint(){
     if (v.k === "rappel") {
       const quand = new Date(v.date + "T12:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + " à " + v.heure.replace(":", "h");
       const wz = v.lieu ? `<button class="y" data-waze="${esc(v.lieu)}">Waze</button>` : "";
-      const act = v.st === "ok" ? `<div class="act">${wz}<span>${v.rdv && gOn() ? "ajouté, et dans l'agenda" : "ajouté, il sonnera"} ✓</span>${v.auto && v.tid ? `<button data-undo="${i}">annuler</button>` : ""}</div>` : v.st === "non" ? `<div class="act">${v.auto ? "annulé" : "laissé de côté"}</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
+      const act = v.st === "ok" ? `<div class="act">${wz}<span>${v.rdv && gOn() ? "ajouté, et dans l'agenda" : "ajouté, il sonnera"} ✓</span>${cvUndoBtn(v, i)}</div>` : v.st === "non" ? `<div class="act">${v.auto ? "annulé" : "laissé de côté"}</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
       return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">${v.rdv ? "Rendez-vous" : "Rappel"} · ${v.sp} · ${quand}</div><div>${esc(v.t)}</div>${v.lieu ? `<div class="sub">${esc(v.lieu)}</div>` : ""}${act}</div>`;
     }
     if (v.k === "lieu") {
@@ -4940,11 +4984,11 @@ function cvPaint(){
     }
     if (v.k === "courses") {
       const g = JV_RAYONS.map(r => [r, v.art.filter(a => a.r === r).map(a => a.a)]).filter(e => e[1].length);
-      const act = v.st === "ok" ? `<div class="act">liste créée ✓</div>` : v.st === "non" ? `<div class="act">laissée de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, crée la liste</button></div>`;
+      const act = v.st === "ok" ? `<div class="act"><span>liste créée ✓</span>${cvUndoBtn(v, i)}</div>` : v.st === "non" ? `<div class="act">${v.auto ? "annulée" : "laissée de côté"}</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, crée la liste</button></div>`;
       return `<div class="cv-p"><div class="sub" style="margin:0 0 6px">Courses${v.t ? " · " + esc(v.t) : ""} · ${v.art.length} article${v.art.length > 1 ? "s" : ""}</div>${g.map(([r, l]) => `<div style="margin-top:4px"><span class="sub" style="margin:0">${esc(r)} : </span>${esc(l.join(", "))}</div>`).join("")}${act}</div>`;
     }
     if (v.k === "ici") {
-      const act = v.st === "ok" ? `<div class="act">ajouté, je te préviens sur place ✓</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
+      const act = v.st === "ok" ? `<div class="act"><span>ajouté, je te préviens sur place ✓</span>${cvUndoBtn(v, i)}</div>` : v.st === "non" ? `<div class="act">${v.auto ? "annulé" : "laissé de côté"}</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
       return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">En passant · ${esc(v.lieu)}</div><div>${esc(v.t)}</div>${act}</div>`;
     }
     if (v.k === "vtc") {
