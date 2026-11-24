@@ -390,7 +390,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center">Jarvis v4 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center">Jarvis v5 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -472,6 +472,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <div class="foot" style="margin-top:12px"><select id="cvLieuType" style="width:auto"><option value="maison">maison</option><option value="arret">arrêt de bus</option><option value="golf">golf</option><option value="medecin">médecin</option><option value="magasin">magasin</option><option value="relais">relais colis</option><option value="autre" selected>autre</option></select><button class="ok" id="cvLieuGo">ajouter</button></div>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:16px"><input type="checkbox" id="cvAlChk" style="width:auto"> me prévenir quand j'arrive à un lieu (bus, colis, choses à faire)</label>
     <p class="small" id="cvAlSt" style="margin-top:4px"></p>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBriefChk" style="width:auto"> brief du jour à la première ouverture du matin</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvProChk" style="width:auto"> Jarvis anticipe aussi le pro</label>
     <div class="lab">Mes souvenirs</div>
     <input id="cvQ" placeholder="chercher dans ma mémoire…" style="margin-top:4px">
@@ -600,7 +601,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 4;
+const TEMPO_BUILD = 5;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -918,9 +919,9 @@ async function aiParse(text, kind, ctx){
 
 QUI IL EST
 ${CFG.profile}
-
+${jvTriMemo(text)}
 ${SPACE === "perso" ? "ESPACE : VIE PRIVÉE.\nThèmes" : "ESPACE : TRAVAIL.\nChantiers connus"} : ${chantiers().map(c => c.name).join(", ")}.
-${SPACE === "perso" ? "Proches" : "Équipe / contacts"} : ${CFG.team}.
+${SPACE === "perso" ? "Proches" : "Équipe / contacts"} : ${CFG.team || (SPACE === "perso" ? jvProches() : "")}.
 Maintenant : ${WD[d.getDay()]} ${ymd(d)}, ${nowHM()}.
 ${learn ? "\nSES CORRECTIONS PASSÉES (respecte sa façon de classer) :\n" + learn : ""}
 ${open ? "\nDÉJÀ DANS SA LISTE (avec leur id) :\n" + open : ""}
@@ -2905,7 +2906,7 @@ const openSettings = () => {
   const P = SPACE === "perso";
   $("lProf").textContent = (P ? "Qui je suis — vie privée" : "Qui je suis — travail") + " (lu par Claude à chaque tri)";
   $("lChs").textContent = P ? "Mes thèmes — Nom : mots-clés" : "Mes chantiers — Nom : mots-clés";
-  $("lTeam").textContent = P ? "Mes proches" : "Mon équipe";
+  $("lTeam").textContent = P ? "Mes proches (Jarvis complète avec ta mémoire)" : "Mon équipe";
   $("lStyle").textContent = P ? "Ma façon d'écrire mes textos et mails perso" : "Ma façon d'écrire mes mails";
   $("sContacts").value = CFG.contacts; $("sPick").style.display = PICK ? "" : "none"; $("sStyle").value = CFG.style; $("sSil").value = String(CFG.silence); { const R = RIT(); $("rOn").checked = R.on; $("rM").value = R.matin; $("rS").value = R.soir; $("rW").value = R.semaine; $("sFoc").value = String(CFG.focusMin || 25); } $("sVis").value = CFG.visual === "rond" ? "rond" : "const"; $("sAg").checked = CFG.agenda !== false;
   const n = (CFG.learn || []).length; $("sLearn").textContent = n ? `Jarvis a retenu ${n} correction${n > 1 ? "s" : ""} de ta part.` : "Quand tu corriges un classement, Jarvis le retient pour la suite.";
@@ -4280,6 +4281,8 @@ Anticiper sa vie : c'est ton rôle principal
 - Ses lieux habituels (maison, arrêt, golf, médecin, magasins, relais colis…) sont dans ses souvenirs, marqués « Lieu habituel ». S'il t'en donne un nouveau, propose-le avec proposer_lieu (avec l'adresse la plus précise possible) ; s'il en manque un dont tu as besoin, demande-le une fois.
 - En voiture : appelle trajet_voiture pour estimer le temps de route (c'est une estimation sans trafic, Waze donnera le temps réel), puis propose le rappel « pars à … » et le rendez-vous avec son lieu : la carte lui offrira d'ouvrir Waze.
 - Pour une chose à faire quelque part sans heure précise (« quand je passe à Intermarché »), utilise proposer_rappel_lieu : il sera prévenu en arrivant.
+- Courses : quand il donne une liste (ou des articles), range-la par rayon et propose-la avec proposer_courses, avec le magasin s'il le dit (s'il est dans ses lieux habituels, il aura sa liste en arrivant). Regarde aussi ses colis en attente et ses choses à faire en passant : si un relais ou un lieu est sur le chemin ou à quelques minutes du magasin (trajet_voiture), propose d'y passer (proposer_rappel_lieu ou proposer_rappel).
+- Brief du jour : quand il le demande, en 5 à 8 lignes maximum, dans cet ordre : ce qui l'attend aujourd'hui avec les heures de départ utiles, la météo chez lui si elle change quelque chose, les colis à retirer (d'abord ceux qui expirent), les anniversaires ou échéances proches que tu vois dans ses souvenirs, puis une idée pour grouper ses déplacements. Propose ensuite les rappels utiles. Le week-end, rien de pro.
 - Le <contexte> te dit si son mode pro est activé. S'il est désactivé, ne propose rien côté pro de ta propre initiative (ni rappel, ni trajet, ni alerte) : réponds seulement à ce qu'il demande.
 
 Les balises <souvenirs>, <contexte> et <validations> sont ajoutées par l'appli : ce ne sont pas ses mots. <validations> te dit ce qu'il a accepté ou refusé parmi tes propositions précédentes.`;
@@ -4340,6 +4343,14 @@ const CV_TOOLS = [
       lieu: { type: "string", description: "Nom d'un de ses lieux habituels." },
       espace: { type: "string", enum: ["pro", "perso"] } },
       required: ["titre", "lieu"] } },
+  { name: "proposer_courses", description: "Propose de créer sa liste de courses, rangée par rayon (il valide). Si le magasin est un de ses lieux habituels, la liste lui sera rappelée en y arrivant.",
+    input_schema: { type: "object", properties: {
+      magasin: { type: "string", description: "Le magasin, s'il le dit (ex. Intermarché)." },
+      articles: { type: "array", items: { type: "object", properties: {
+        article: { type: "string" },
+        rayon: { type: "string", enum: ["fruits et légumes", "boulangerie", "boucherie / poissonnerie", "frais", "surgelés", "épicerie", "boissons", "hygiène / beauté", "entretien / maison", "autre"] } },
+        required: ["article", "rayon"] } } },
+      required: ["articles"] } },
   { name: "proposer_vtc", description: "Propose d'ouvrir Uber ou Bolt vers une destination, en solution de secours. Il commande lui-même.",
     input_schema: { type: "object", properties: {
       destination: { type: "string", description: "Adresse ou lieu de destination." },
@@ -4445,6 +4456,7 @@ async function cvSend(text){
       const x = t.input || {};
       if (t.name === "proposer_souvenir" && x.texte) JV.view.push({ r: "p", k: "retenir", t: String(x.texte).slice(0, 2000), d: x.domaine === "pro" ? "pro" : "perso", pin: !!x.epingle, st: "" });
       if (t.name === "proposer_rappel" && x.titre && /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") && /^\d{1,2}:\d{2}$/.test(x.heure || "")) JV.view.push({ r: "p", k: "rappel", t: String(x.titre).slice(0, 200), date: x.date, heure: x.heure.padStart(5, "0"), sp: x.espace === "pro" ? "pro" : "perso", rdv: !!x.rendez_vous, lieu: x.lieu || "", note: x.note || "", bus: x.bus_arret && /^\d{1,2}:\d{2}$/.test(x.bus_depart || "") ? { arret: x.bus_arret, dep: x.bus_depart.padStart(5, "0"), ligne: x.bus_ligne || "" } : null, st: "" });
+      if (t.name === "proposer_courses" && Array.isArray(x.articles) && x.articles.length) JV.view.push({ r: "p", k: "courses", t: x.magasin ? String(x.magasin).slice(0, 80) : "", art: x.articles.slice(0, 80).map(a => ({ a: String(a.article || "").slice(0, 80), r: JV_RAYONS.includes(a.rayon) ? a.rayon : "autre" })).filter(a => a.a), st: "" });
       if (t.name === "proposer_lieu" && x.nom && x.adresse) JV.view.push({ r: "p", k: "lieu", t: String(x.nom).slice(0, 80), adresse: String(x.adresse).slice(0, 200), type: JV_TYPES[x.type] ? x.type : "autre", sp: x.espace === "pro" ? "pro" : "perso", st: "" });
       if (t.name === "proposer_rappel_lieu" && x.titre && x.lieu) JV.view.push({ r: "p", k: "ici", t: String(x.titre).slice(0, 200), lieu: String(x.lieu).slice(0, 80), sp: x.espace === "pro" ? "pro" : "perso", st: "" });
       if (t.name === "proposer_vtc" && x.destination) JV.view.push({ r: "p", k: "vtc", t: String(x.destination).slice(0, 200), quand: x.quand || "", st: "" });
@@ -4472,6 +4484,7 @@ async function cvDecide(i, ok){
     if (!l) { p.st = ""; await cvSave(); cvPaint(); toast("adresse introuvable : précise-la (rue, ville)"); return; }
     p.label = l.label; JV.notes.push(`lieu habituel ajouté : « ${p.t} » (${l.label})`);
   }
+  if (ok && p.k === "courses") { const n = jvAddCourses(p); JV.notes.push(`liste de courses créée (${n} articles${p.t ? ", " + p.t : ""})`); }
   if (ok && p.k === "ici") {
     const l = jvLieu(p.lieu);
     if (!l) { toast("ce lieu n'est pas encore dans tes lieux habituels"); return; }
@@ -4602,6 +4615,21 @@ function jvAddTask(p){
   if (p.lieuId) jvGeoSync();
   return it;
 }
+const JV_RAYONS = ["fruits et légumes", "boulangerie", "boucherie / poissonnerie", "frais", "surgelés", "épicerie", "boissons", "hygiène / beauté", "entretien / maison", "autre"];
+function jvAddCourses(p){
+  const l = p.t ? jvLieu(p.t) : null, now = Date.now(), st = spaceState("perso");
+  const arts = p.art.slice().sort((a, b) => JV_RAYONS.indexOf(a.r) - JV_RAYONS.indexOf(b.r));
+  const items = arts.map((a, k) => {
+    const it = { id: uid(), created: now + k, done: false, doneAt: null, src: "jarvis", raw: "", title: a.a, cat: "courses", ch: "", u: 1, due: null, time: null, note: a.r, rayon: a.r };
+    if (l) it.lieuId = l.id;
+    return it;
+  });
+  // la liste s'affiche par date de création : le premier rayon d'abord
+  if (SPACE === "perso") { S.items.unshift(...items); save(); try { render(items.map(i => i.id)); } catch (e) {} }
+  else { st.items = st.items || []; st.items.unshift(...items); LS.set(SKEY("perso"), st); }
+  if (l) jvGeoSync();
+  return items.length;
+}
 function jvVtc(app, dest){
   if (app === "Uber") { const url = "https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]=" + encodeURIComponent(dest); if (NATIVE) tn("openUrl", { url }); else window.open(url, "_blank"); return; }
   try { navigator.clipboard && navigator.clipboard.writeText(dest); } catch (e) {}
@@ -4697,8 +4725,10 @@ async function jvGeoSync(){
     } catch (e) {}
     for (const sp of (CFG.jvPro ? ["pro", "perso"] : ["perso"])) {
       const byL = {};
-      for (const i of spaceState(sp).items || []) if (!i.done && i.lieuId) (byL[i.lieuId] = byL[i.lieuId] || []).push(i.title);
+      const shop = {};
+      for (const i of spaceState(sp).items || []) if (!i.done && i.lieuId) { const m = i.cat === "courses" ? shop : byL; (m[i.lieuId] = m[i.lieuId] || []).push(i.title); }
       for (const id in byL) { const l = MEM.items.get(id); if (l && l.g) fences.push({ id: "lieu-" + id, lat: l.g.lat, lon: l.g.lon, r: 250, until: 0, title: "À faire ici · " + l.g.nom, body: byL[id].slice(0, 3).join(" · "), url: "./" }); }
+      for (const id in shop) { const l = MEM.items.get(id); if (l && l.g) fences.push({ id: "courses-" + id, lat: l.g.lat, lon: l.g.lon, r: 250, until: 0, title: `Ta liste de courses · ${shop[id].length} article${shop[id].length > 1 ? "s" : ""}`, body: shop[id].slice(0, 12).join(", "), url: "./" }); }
     }
     await tn("geoSet", { fences: fences.slice(0, 90) });
   } catch (e) {}
@@ -4716,8 +4746,53 @@ function paintLieux(){
   box.querySelectorAll("[data-wz]").forEach(b => b.onclick = () => { const l = MEM.items.get(b.dataset.wz); if (l) jvWaze(l.g.nom); });
   box.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (b.dataset.sure) { memForget([b.dataset.del]).then(() => { paintLieux(); jvGeoSync(); }); } else { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; b.style.color = "var(--u3)"; } });
   $("cvProChk").checked = !!CFG.jvPro;
+  $("cvBriefChk").checked = CFG.jvBrief !== false;
   $("cvAlChk").checked = !!CFG.jvAlertes;
   jvAlertesState().then(s => { const e = $("cvAlSt"); if (e) e.textContent = s.txt; });
+}
+
+/* ---------- le tri des dictées s'appuie sur la mémoire (une seule source) ---------- */
+const JV_LIENS = /\b(fils|fille|enfants?|ex-femme|femme|mari|compagne|copine|copain|pote|potes|ami|amie|amis|frère|soeur|sœur|mère|père|maman|papa|cousin|cousine|oncle|tante|neveu|nièce|voisin|voisine|collègue|collègues|technicien|techniciens|assistante|responsable)\b/i;
+function jvTriMemo(text){
+  try {
+    if (!MEM.key || !MEM.items.size) return "";
+    const sp = typeof SPACE !== "undefined" ? SPACE : "pro", keep = i => i.p || i.d === sp;
+    const pick = new Map();
+    [...MEM.items.values()].filter(i => i.p && !i.g).forEach(i => pick.set(i.id, i));
+    [...MEM.items.values()].filter(i => keep(i) && !i.g && JV_LIENS.test(i.t)).slice(0, 12).forEach(i => pick.set(i.id, i));
+    memSearch(text || "", 8).filter(keep).forEach(i => pick.set(i.id, i));
+    let size = 0; const out = [];
+    for (const i of pick.values()) { if (size > 3000) break; size += i.t.length; out.push("- " + i.t); }
+    return out.length ? "\nCE QUE TU SAIS AUSSI DE LUI (sa mémoire, à utiliser pour reconnaître ses proches, ses lieux et ses habitudes) :\n" + out.join("\n") + "\n" : "";
+  } catch (e) { return ""; }
+}
+function jvProches(){
+  try {
+    if (!MEM.key) return "";
+    const sp = typeof SPACE !== "undefined" ? SPACE : "pro";
+    return [...MEM.items.values()].filter(i => (i.p || i.d === sp) && !i.g && JV_LIENS.test(i.t)).slice(0, 10).map(i => i.t).join(" ");
+  } catch (e) { return ""; }
+}
+const JV_MOTS = new Set("Il Elle Ils Sa Son Ses Le La Les Un Une Des Du De Au Aux En Et Ou Pour Par Sur Dans Avec Depuis Quand Chez Ce Cette Ces Lieu Golf Bloc".split(" "));
+function jvNoms(){
+  const set = new Set();
+  for (const i of MEM.items.values()) {
+    if (!(i.p || JV_LIENS.test(i.t))) continue;
+    for (const m of i.t.matchAll(/(?:^|[^.!?]\s)([A-ZÉÈÀÂÎÔÛÇ][a-zéèêëàâîïôöûüç-]{1,20}(?:\s[A-ZÉÈ][a-zéèêëàâîïôöûüç-]{1,20})?)/g)) { const n = m[1]; if (!JV_MOTS.has(n.split(" ")[0])) set.add(n); }
+  }
+  return [...set].slice(0, 40);
+}
+/* la dictée Voxtral reconnaît mieux les prénoms de tes proches */
+const _jvVoxBias = voxBias;
+voxBias = function(){ const r = _jvVoxBias.apply(this, arguments) || []; try { const have = new Set(r); jvNoms().forEach(n => { if (!have.has(n) && r.length < 80) r.push(n); }); } catch (e) {} return r; };
+
+/* ---------- brief du jour ---------- */
+const jvBriefFait = () => LS.get("copilote_brief", "") === ymd(new Date());
+async function jvBrief(){
+  if (JV.busy) return;
+  LS.set("copilote_brief", ymd(new Date()));
+  const we = [0, 6].includes(new Date().getDay());
+  await cvSend("Mon brief du jour." + (we ? " C'est le week-end : rien de pro." : ""));
 }
 
 /* ---------- affichage ---------- */
@@ -4741,6 +4816,11 @@ function cvPaint(){
       const act = v.st === "ok" ? `<div class="act">ajouté ✓${v.label ? " · " + esc(v.label) : ""}</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
       return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">Lieu habituel · ${JV_TYPES[v.type]} · ${v.sp}</div><div>${esc(v.t)}</div><div class="sub">${esc(v.adresse)}</div>${act}</div>`;
     }
+    if (v.k === "courses") {
+      const g = JV_RAYONS.map(r => [r, v.art.filter(a => a.r === r).map(a => a.a)]).filter(e => e[1].length);
+      const act = v.st === "ok" ? `<div class="act">liste créée ✓</div>` : v.st === "non" ? `<div class="act">laissée de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, crée la liste</button></div>`;
+      return `<div class="cv-p"><div class="sub" style="margin:0 0 6px">Courses${v.t ? " · " + esc(v.t) : ""} · ${v.art.length} article${v.art.length > 1 ? "s" : ""}</div>${g.map(([r, l]) => `<div style="margin-top:4px"><span class="sub" style="margin:0">${esc(r)} : </span>${esc(l.join(", "))}</div>`).join("")}${act}</div>`;
+    }
     if (v.k === "ici") {
       const act = v.st === "ok" ? `<div class="act">ajouté, je te préviens sur place ✓</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
       return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">En passant · ${esc(v.lieu)}</div><div>${esc(v.t)}</div>${act}</div>`;
@@ -4752,7 +4832,7 @@ function cvPaint(){
     const head = v.k === "retenir" ? `Je retiens${v.pin ? " (épinglé)" : ""} · ${v.d}` : "J'efface de ta mémoire";
     const act = v.st === "ok" ? `<div class="act">${v.k === "retenir" ? "retenu ✓" : "effacé ✓"}</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">${v.k === "retenir" ? "oui, retiens" : "oui, efface"}</button></div>`;
     return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">${head}</div><div>${esc(v.t)}</div>${v.why ? `<div class="sub">${esc(v.why)}</div>` : ""}${act}</div>`;
-  }).join("") + (JV.view.length ? `<button class="cv-new" id="cvNew">nouvelle conversation</button>` : "");
+  }).join("") + `<div style="display:flex;justify-content:center;gap:22px">${JV.view.length ? `<button class="cv-new" id="cvNew">nouvelle conversation</button>` : ""}<button class="cv-new" id="cvBrief">brief du jour</button></div>`;
   const m = cvMonth();
   $("cvCost").textContent = `Claude Sonnet · ce mois : ${cvMoney(m.usd)} sur ${cvMoney(cvCap())} · ${MEM.items.size} souvenir${MEM.items.size > 1 ? "s" : ""}`;
   L.querySelectorAll("[data-ok]").forEach(b => b.onclick = () => cvDecide(+b.dataset.ok, true));
@@ -4761,6 +4841,7 @@ function cvPaint(){
   L.querySelectorAll("[data-waze]").forEach(b => b.onclick = () => jvWaze(b.dataset.waze));
   L.querySelectorAll("[data-retry]").forEach(b => b.onclick = () => { const v = JV.view[+b.dataset.retry]; JV.view.splice(+b.dataset.retry, 1); const u = JV.view.length && JV.view[JV.view.length - 1]; if (u && u.r === "u" && u.t === v.retry) JV.view.pop(); cvSend(v.retry); });
   const nb = $("cvNew"); if (nb) nb.onclick = () => cvNew();
+  const bb = $("cvBrief"); if (bb) bb.onclick = () => jvBrief();
   requestAnimationFrame(() => { const s = $("conv"); s.scrollTop = s.scrollHeight; });
 }
 function paintMem(){
@@ -4851,6 +4932,8 @@ async function openConv(){
     $("cvLock").style.display = "none";
     if (!(await memUnlock())) { cvLockUI(); return; }
     cvTab("parler"); memSync(); jvGeoSync();
+    const h = new Date().getHours();
+    if (CFG.jvBrief !== false && !jvBriefFait() && h >= 5 && h < 11 && CFG.key) setTimeout(jvBrief, 400);
   }, 60);
 }
 const _cvIdle = idle;
@@ -4888,6 +4971,7 @@ $("cvLieuGo").onclick = async () => {
   b.disabled = false; b.textContent = "ajouter";
   if (ok) { $("cvLieuNom").value = ""; $("cvLieuAdr").value = ""; paintLieux(); toast("lieu ajouté"); } else toast(adr ? "adresse introuvable : précise la rue et la ville" : "position indisponible : autorise la position ou tape l'adresse");
 };
+$("cvBriefChk").onchange = () => { CFG.jvBrief = $("cvBriefChk").checked; saveCfg(); };
 $("cvProChk").onchange = () => { CFG.jvPro = $("cvProChk").checked; saveCfg(); jvGeoSync(); };
 $("cvAlChk").onchange = async () => {
   CFG.jvAlertes = $("cvAlChk").checked; saveCfg();
@@ -4901,6 +4985,7 @@ $("cvImpIn").onchange = async e => { const f = e.target.files && e.target.files[
 $("cvImpGo").onclick = impRead;
 $("cvCapIn").onchange = () => { CFG.cvCap = Math.min(200, Math.max(1, Math.round(+$("cvCapIn").value) || 20)); saveCfg(); paintMem(); };
 $("cvLockBtn").onclick = async () => { const b = $("cvLockBtn"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; return; } await memLock(); cvLockUI(); };
+setTimeout(() => { memUnlock().then(ok => { if (ok) { memSync(); jvGeoSync(); } }).catch(() => {}); }, 2500);
 </script>
 </body>
 </html>
