@@ -390,7 +390,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center">Jarvis v1 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center">Jarvis v2 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -470,6 +470,12 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <div class="lab">Ajouter à la main</div>
     <textarea id="cvAdd" rows="2" placeholder="une chose à retenir, en une phrase"></textarea>
     <div class="foot" style="margin-top:12px"><div class="sl" id="cvAddDom"><button data-d="pro">pro</button><button data-d="perso" class="on">perso</button><button data-d="pin">épingler</button></div><button class="ok" id="cvAddGo">retenir</button></div>
+    <div class="lab">Importer une liste</div>
+    <p class="small" style="margin-top:0">Choisis un fichier .txt ou colle ta liste : chaque ligne qui commence par « - » devient un souvenir. Repères reconnus : (pro), (perso), [épingle].</p>
+    <textarea id="cvImpTxt" rows="3" placeholder="colle ta liste ici…"></textarea>
+    <input type="file" id="cvImpIn" accept=".txt,text/plain" hidden>
+    <div class="foot" style="margin-top:12px"><div class="l"><button id="cvImpFile">choisir un fichier</button></div><button class="ok" id="cvImpGo">lire la liste</button></div>
+    <div id="cvImpList"></div>
     <div class="lab">Plafond mensuel de la conversation (Claude Sonnet)</div>
     <input id="cvCapIn" type="number" min="1" max="200" step="1" inputmode="numeric">
     <p class="small">Ta mémoire est chiffrée sur ce téléphone avec ta phrase secrète : le serveur ne garde que du chiffré illisible, et seuls les souvenirs utiles à une question partent chez Claude. Ce plafond s'ajoute à celui que tu fixes dans la console Claude.</p>
@@ -585,7 +591,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 1;
+const TEMPO_BUILD = 2;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4116,9 +4122,11 @@ async function memSync(){
     let q = null; await memQ(x => { q = { w: [...x.w], o: [...x.o] }; });
     if (q.w.length) {
       const want = new Set(q.w), rows = (await rowsAll()).filter(r => want.has(r.id) && r.ct);
-      if (rows.length) { const j = await memApi({ action: "ecrire", jeton: MEM.tok, items: rows.map(r => ({ id: r.id, iv: r.iv, ct: r.ct })) }); if (!j.ok) throw j; }
+      for (let i = 0; i < rows.length; i += 100) {   // par paquets : le serveur en prend 200 au plus par envoi
+        const j = await memApi({ action: "ecrire", jeton: MEM.tok, items: rows.slice(i, i + 100).map(r => ({ id: r.id, iv: r.iv, ct: r.ct })) }); if (!j.ok) throw j;
+      }
     }
-    if (q.o.length) { const j = await memApi({ action: "oublier", jeton: MEM.tok, ids: q.o }); if (!j.ok) throw j; }
+    for (let i = 0; i < q.o.length; i += 100) { const j = await memApi({ action: "oublier", jeton: MEM.tok, ids: q.o.slice(i, i + 100) }); if (!j.ok) throw j; }
     await memQ(q2 => { q2.w = q2.w.filter(id => !q.w.includes(id)); q2.o = q2.o.filter(id => !q.o.includes(id)); });   // ce qui a été ajouté pendant l'envoi reste dans la file
     for (let n = 0, plus = true; plus && n < 10; n++) {
       const j = await memApi({ action: "liste", jeton: MEM.tok, depuis: MEM.last });
@@ -4146,6 +4154,37 @@ async function memRemember(t, d, pin, src){
   await memQ(q => { q.w.push(id); });
   memSync();
   return id;
+}
+async function memRememberMany(list, src, onStep){
+  const now = new Date().toISOString(), rows = [], ids = [];
+  for (let i = 0; i < list.length; i++) {
+    const x = list[i], id = uuid4(), o = { t: String(x.t).trim().slice(0, 2000), d: x.d === "pro" ? "pro" : "perso", p: !!x.pin, q: now, s: src || "import" };
+    rows.push(await memSeal(id, o)); MEM.items.set(id, Object.assign(o, { id })); ids.push(id);
+    if (onStep && (i % 10 === 9 || i === list.length - 1)) onStep(i + 1);
+  }
+  await rowsPut(rows);
+  await memQ(q => { q.w.push(...ids); });
+  memSync();
+  return ids.length;
+}
+/* une liste collée ou un fichier .txt : une ligne « - … » = un souvenir ; repères (pro) (perso) [épingle] */
+function memParse(txt){
+  const lines = String(txt || "").replace(/\r/g, "").split("\n");
+  let out = lines.filter(l => /^\s*[-•*]\s+/.test(l)).map(l => l.replace(/^\s*[-•*]\s+/, ""));
+  if (!out.length) out = lines.map(l => l.trim()).filter(l => l.length >= 12 && !/^(=|#|bloc\b|retiens\b)/i.test(l));
+  const key = t => cvNorm(t).replace(/\s+/g, " ").trim();
+  const seen = new Set([...MEM.items.values()].map(i => key(i.t)));
+  const res = [];
+  for (const l of out) {
+    let t = l, pin = false, d = "perso";
+    if (/\[\s*[ée]pingl[ée]s?\s*\]/i.test(t)) { pin = true; t = t.replace(/\[\s*[ée]pingl[ée]s?\s*\]/ig, ""); }
+    const m = t.match(/\((pro|perso)\)/i); if (m) { d = m[1].toLowerCase(); t = t.replace(m[0], ""); }
+    t = t.replace(/\s+/g, " ").trim();
+    if (t.length < 3) continue;
+    const k = key(t), dup = seen.has(k); seen.add(k);
+    res.push({ t, d, pin, dup, on: !dup });
+  }
+  return res.slice(0, 1000);
 }
 async function memForget(ids){
   ids = ids.filter(id => MEM.items.has(id));
@@ -4339,11 +4378,31 @@ function paintMem(){
   const q = $("cvQ").value.trim();
   const all = [...MEM.items.values()].sort((a, b) => (b.p - a.p) || ((Date.parse(b.q) || 0) - (Date.parse(a.q) || 0)));
   const list = q ? memSearch(q, 50) : all;
-  $("cvMemList").innerHTML = list.length ? list.map(i => `<div class="it" style="padding:10px 0"><span class="dot" style="opacity:${i.p ? 1 : .45}"></span><div class="tx" style="flex:1"><div class="tt" style="font-size:15.5px">${esc(i.t)}</div><div class="sub">${(i.q || "").slice(0, 10)} · ${i.d}${i.p ? " · épinglé" : ""}${i.s === "conversation" ? " · vu en conversation" : ""}</div><div class="sub" style="display:flex;gap:18px;margin-top:6px"><button data-pin="${i.id}">${i.p ? "désépingler" : "épingler"}</button><button data-del="${i.id}">oublier</button></div></div></div>`).join("")
+  $("cvMemList").innerHTML = list.length ? list.map(i => `<div class="it" style="padding:10px 0"><span class="dot" style="opacity:${i.p ? 1 : .45}"></span><div class="tx" style="flex:1"><div class="tt" style="font-size:15.5px">${esc(i.t)}</div><div class="sub">${(i.q || "").slice(0, 10)} · ${i.d}${i.p ? " · épinglé" : ""}${i.s === "conversation" ? " · vu en conversation" : i.s === "import" ? " · importé" : ""}</div><div class="sub" style="display:flex;gap:18px;margin-top:6px"><button data-pin="${i.id}">${i.p ? "désépingler" : "épingler"}</button><button data-del="${i.id}">oublier</button></div></div></div>`).join("")
     : `<p class="small">${q ? "rien trouvé." : "Ta mémoire est vide. Ajoute ce que tu veux ci-dessous, ou parle avec Jarvis : il te proposera quoi retenir."}</p>`;
   $("cvMemList").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const it = MEM.items.get(b.dataset.del); if (!it) return; if (b.dataset.sure) { memForget([it.id]).then(paintMem); } else { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; b.style.color = "var(--u3)"; } });
   $("cvMemList").querySelectorAll("[data-pin]").forEach(b => b.onclick = () => memPin(b.dataset.pin).then(paintMem));
   $("cvCapIn").value = cvCap();
+}
+let JIMP = [];
+function impRead(){ JIMP = memParse($("cvImpTxt").value); if (!JIMP.length) toast("je n'ai trouvé aucune ligne à retenir"); paintImp(); }
+function paintImp(){
+  const box = $("cvImpList");
+  if (!JIMP.length) { box.innerHTML = ""; return; }
+  const n = JIMP.filter(x => x.on).length, all = JIMP.every(x => x.on || x.dup), dups = JIMP.filter(x => x.dup).length;
+  box.innerHTML = `<p class="small">${JIMP.length} ligne${JIMP.length > 1 ? "s" : ""} trouvée${JIMP.length > 1 ? "s" : ""}${dups ? ` · ${dups} déjà en mémoire (décochée${dups > 1 ? "s" : ""})` : ""}. Décoche ce que tu ne veux pas garder.</p>
+    <div class="foot" style="margin-top:12px"><div class="l"><button id="cvImpAll">${all ? "tout décocher" : "tout cocher"}</button><button id="cvImpNo">annuler</button></div><button class="ok" id="cvImpOk">${n ? `retenir ${n} souvenir${n > 1 ? "s" : ""}` : "rien de coché"}</button></div>
+    <div style="margin-top:8px">${JIMP.map((x, i) => `<label class="it" style="padding:9px 0;cursor:pointer"><input type="checkbox" data-i="${i}" ${x.on ? "checked" : ""} style="width:auto;margin:5px 0 0;flex:none"><div class="tx"><div class="tt" style="font-size:15px;${x.on ? "" : "color:var(--mut)"}">${esc(x.t)}</div><div class="sub">${x.d}${x.pin ? " · épinglé" : ""}${x.dup ? " · déjà en mémoire" : ""}</div></div></label>`).join("")}</div>`;
+  box.querySelectorAll("input[data-i]").forEach(c => c.onchange = () => { JIMP[+c.dataset.i].on = c.checked; paintImp(); });
+  $("cvImpAll").onclick = () => { JIMP.forEach(x => { x.on = !all && !x.dup; }); paintImp(); };
+  $("cvImpNo").onclick = () => { JIMP = []; $("cvImpTxt").value = ""; paintImp(); };
+  $("cvImpOk").onclick = async () => {
+    const sel = JIMP.filter(x => x.on), b = $("cvImpOk"); if (!sel.length || !MEM.key || b.disabled) return;
+    b.disabled = true; b.textContent = "je chiffre…";
+    const n = await memRememberMany(sel, "import", k => { b.textContent = `je chiffre… ${k}/${sel.length}`; });
+    JIMP = []; $("cvImpTxt").value = ""; paintImp(); paintMem();
+    toast(`${n} souvenir${n > 1 ? "s" : ""} retenu${n > 1 ? "s" : ""}, chiffré${n > 1 ? "s" : ""} sur ton téléphone`);
+  };
 }
 function cvTab(t){
   JV.tab = t;
@@ -4428,6 +4487,9 @@ $("cvAddGo").onclick = async () => {
   const d = document.querySelector("#cvAddDom button[data-d=pro].on") ? "pro" : "perso", pin = !!document.querySelector("#cvAddDom button[data-d=pin].on");
   await memRemember(t, d, pin, "main"); $("cvAdd").value = ""; paintMem(); toast("retenu");
 };
+$("cvImpFile").onclick = () => $("cvImpIn").click();
+$("cvImpIn").onchange = async e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; try { $("cvImpTxt").value = await f.text(); impRead(); } catch (err) { toast("fichier illisible"); } };
+$("cvImpGo").onclick = impRead;
 $("cvCapIn").onchange = () => { CFG.cvCap = Math.min(200, Math.max(1, Math.round(+$("cvCapIn").value) || 20)); saveCfg(); paintMem(); };
 $("cvLockBtn").onclick = async () => { const b = $("cvLockBtn"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; return; } await memLock(); cvLockUI(); };
 </script>
