@@ -390,7 +390,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center">Jarvis v12 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center">Jarvis v13 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -489,6 +489,10 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <input id="cvNom" list="cvNoms" placeholder="son nom (ex. Nestor, Véga)" style="margin-top:4px">
     <datalist id="cvNoms"><option value="Jarvis"></option><option value="Nestor"></option><option value="Véga"></option></datalist>
     <select id="cvVoix" style="margin-top:8px"></select>
+    <div id="cvStyleBox" style="display:none;margin-top:8px">
+      <label class="small" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="cvStyleChk" style="width:auto"> style majordome (Gemini) : la voix suit la consigne ci-dessous · environ 1 à 2 $ par mois</label>
+      <textarea id="cvStyleTxt" rows="2" style="margin-top:6px"></textarea>
+    </div>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px">grave <input type="range" id="cvPitch" min="0.6" max="1.3" step="0.05" style="flex:1"> aigu</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:6px">posé <input type="range" id="cvRate" min="0.75" max="1.3" step="0.05" style="flex:1"> rapide</label>
     <div class="foot" style="margin-top:10px"><p class="small" id="cvVoixSt" style="margin:0;flex:1"></p><button class="ok" id="cvVoixTest">écouter</button></div>
@@ -622,7 +626,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 12;
+const TEMPO_BUILD = 13;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -5528,11 +5532,50 @@ speak = function(t, then){
   const sans = () => { if (then) then(); };
   if (CFG.jvDiscret) return sans();
   if (NATIVE && CFG.jvDiscretAuto !== false) {
-    tn("sonState").then(r => { if (r && (r.ringer < 2 || r.dnd) && !r.casque) sans(); else _jvSpeak(t, then); }, () => _jvSpeak(t, then));
+    tn("sonState").then(r => { if (r && (r.ringer < 2 || r.dnd) && !r.casque) sans(); else jvDire(t, then); }, () => jvDire(t, then));
     return;
   }
-  return _jvSpeak(t, then);
+  return jvDire(t, then);
 };
+/* ---------- lot 10 : voix Google en ligne (Chirp 3 HD, ou « style » Gemini), sinon celle du téléphone ---------- */
+const JV_VFN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/copilote-voix";
+const JV_STYLE_DEF = "Voix d'homme grave et posée, flegme de majordome élégant, débit calme, une pointe d'ironie bienveillante.";
+let JV_AUDIO = null; const JV_SONS = new Map();
+async function vFn(body){
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 9000);
+  try { const r = await fetch(JV_VFN, { method: "POST", signal: ctl.signal, headers: { "content-type": "application/json", Authorization: "Bearer " + G_KEY, apikey: G_KEY }, body: JSON.stringify(Object.assign({ jeton: MEM.tok }, body)) }); return await r.json(); }
+  catch (e) { return { error: "reseau" }; } finally { clearTimeout(to); }
+}
+const jvVoixGoogle = () => /^g:fr-FR-Chirp3-HD-/.test(CFG.jvVoix || "");
+function jvDire(t, then){
+  if (!jvVoixGoogle() || !MEM.tok || navigator.onLine === false) return _jvSpeak(t, then);
+  let fini = false; const done = () => { if (fini) return; fini = true; if (then) then(); };
+  const repli = () => { if (fini) return; fini = true; _jvSpeak(t, then); };
+  const voix = CFG.jvVoix.slice(2), mode = CFG.jvStyle ? "style" : "hd", style = mode === "style" ? (CFG.jvStyleTxt || JV_STYLE_DEF) : "";
+  const k = [mode, voix, style, t].join("|");
+  const joue = src => {
+    try {
+      try { if (JV_AUDIO) JV_AUDIO.pause(); } catch (e) {}
+      const a = new Audio(src); JV_AUDIO = a;
+      a.onended = done; a.onerror = repli;
+      const p = a.play(); if (p && p.catch) p.catch(repli);
+      setTimeout(done, 6000 + t.length * 110);
+    } catch (e) { repli(); }
+  };
+  if (JV_SONS.has(k)) { joue(JV_SONS.get(k)); return; }
+  vFn({ action: "dire", texte: t, voix, mode, style }).then(r => {
+    if (r && r.mois) LS.set("copilote_vmois", { m: curMonth(), u: r.mois });
+    if (!r || !r.ok || !r.audio) {
+      if (r && r.error === "plafond" && LS.get("copilote_vplaf", "") !== ymd(new Date())) { LS.set("copilote_vplaf", ymd(new Date())); toast("plafond du mois atteint pour la voix Google : je reprends celle du téléphone", "", null, 6000); }
+      return repli();
+    }
+    const src = "data:" + (r.mime || "audio/mpeg") + ";base64," + r.audio;
+    JV_SONS.set(k, src); if (JV_SONS.size > 30) JV_SONS.delete(JV_SONS.keys().next().value);
+    joue(src);
+  }, repli);
+}
+const _jvHush = hush;
+hush = function(){ try { if (JV_AUDIO) { JV_AUDIO.pause(); JV_AUDIO = null; } } catch (e) {} return _jvHush.apply(this, arguments); };
 $("cvDiscretChk").onchange = () => { CFG.jvDiscret = $("cvDiscretChk").checked; saveCfg(); if (CFG.jvDiscret) { try { hush(); } catch (e) {} } };
 $("cvDiscretAutoChk").onchange = () => { CFG.jvDiscretAuto = $("cvDiscretAutoChk").checked; saveCfg(); };
 
@@ -5561,20 +5604,32 @@ async function jvVoixListe(){
   } catch (e) {}
   L.sort((a, b) => (a.off - b.off) || (a.net - b.net) || a.id.localeCompare(b.id));
   const court = id => id.replace(/^fr[-_]fr[-_]x[-_]/i, "").replace(/[-_](local|network)$/i, "");
-  sel.innerHTML = `<option value="">voix par défaut du téléphone</option>` + L.map((v, k) => `<option value="${esc(v.id)}">voix ${k + 1} (${esc(court(v.id))})${v.net ? " · en ligne" : ""}${v.off ? " · à télécharger" : ""}</option>`).join("");
+  let GV = [], gInfo = "";
+  if (MEM.tok) {
+    const c = LS.get("copilote_gvoix", null);
+    if (c && c.at > Date.now() - 864e5 && Array.isArray(c.v) && c.v.length) GV = c.v;
+    else { const r = await vFn({ action: "voix" }); if (r && r.ok && Array.isArray(r.voix)) { GV = r.voix; LS.set("copilote_gvoix", { at: Date.now(), v: GV }); } else gInfo = r && r.error === "config" ? "voix Google : pas encore branchée (secret GOOGLE_TTS_SA dans Supabase)" : r && r.error === "google" ? "voix Google : refus de Google (" + (r.detail || r.status || "?") + ")" : ""; }
+  }
+  const gOpts = GV.slice().sort((a, b) => (a.genre === "homme" ? 0 : 1) - (b.genre === "homme" ? 0 : 1) || a.nom.localeCompare(b.nom))
+    .map(v => `<option value="g:${esc(v.nom)}">${esc(v.nom.replace(/^fr-FR-Chirp3-HD-/, ""))} · ${v.genre} · Google</option>`).join("");
+  sel.innerHTML = `<option value="">voix par défaut du téléphone</option>`
+    + (gOpts ? `<optgroup label="Voix Google (en ligne, naturelles)">${gOpts}</optgroup>` : "")
+    + (L.length ? `<optgroup label="Voix du téléphone">` + L.map((v, k) => `<option value="${esc(v.id)}">voix ${k + 1} (${esc(court(v.id))})${v.net ? " · en ligne" : ""}${v.off ? " · à télécharger" : ""}</option>`).join("") + `</optgroup>` : "");
   sel.value = CFG.jvVoix || "";
-  if (L.length && !CFG.jvVoix) st.textContent = "écoute-les une par une et garde la voix d'homme qui te plaît";
+  const u = LS.get("copilote_vmois", null), um = u && u.m === curMonth() ? u.u : null;
+  st.textContent = gInfo || (jvVoixGoogle() && um ? `voix Google ce mois : ${(um.hd || 0).toLocaleString("fr-FR")} caractères${um.style ? " + " + um.style.toLocaleString("fr-FR") + " en style Jarvis" : ""}` : (GV.length || L.length) && !CFG.jvVoix ? "écoute-les une par une et garde la voix d'homme qui te plaît" : "");
 }
-function jvVoixSave(){ CFG.jvVoix = $("cvVoix").value; CFG.jvPitch = +$("cvPitch").value || 1; CFG.jvRate = +$("cvRate").value || 1.05; saveCfg(); }
+function jvVoixSave(){ CFG.jvVoix = $("cvVoix").value; CFG.jvPitch = +$("cvPitch").value || 1; CFG.jvRate = +$("cvRate").value || 1.05; CFG.jvStyle = $("cvStyleChk").checked; CFG.jvStyleTxt = $("cvStyleTxt").value.trim() || JV_STYLE_DEF; saveCfg(); $("cvStyleBox").style.display = jvVoixGoogle() ? "" : "none"; }
 function paintVoix(){
   $("cvNom").value = jvNom(); $("cvPitch").value = CFG.jvPitch || 1; $("cvRate").value = CFG.jvRate || 1.05; $("cvParleChk").checked = CFG.jvParle !== false;
   $("cvDiscretChk").checked = !!CFG.jvDiscret; $("cvDiscretAutoChk").checked = CFG.jvDiscretAuto !== false;
+  $("cvStyleChk").checked = !!CFG.jvStyle; $("cvStyleTxt").value = CFG.jvStyleTxt || JV_STYLE_DEF; $("cvStyleBox").style.display = jvVoixGoogle() ? "" : "none";
   jvVoixListe();
 }
 $("cvNom").onchange = () => { CFG.jvNom = $("cvNom").value.trim() || "Jarvis"; saveCfg(); jvNomDom(); toast(`désormais, je m'appelle ${jvNom()}`); };
-["cvVoix", "cvPitch", "cvRate"].forEach(id => $(id).onchange = jvVoixSave);
+["cvVoix", "cvPitch", "cvRate", "cvStyleChk", "cvStyleTxt"].forEach(id => $(id).onchange = jvVoixSave);
 $("cvParleChk").onchange = () => { CFG.jvParle = $("cvParleChk").checked; saveCfg(); };
-$("cvVoixTest").onclick = () => { jvVoixSave(); try { hush(); } catch (e) {} _jvSpeak(`Bonsoir ${(typeof myName === "function" && myName()) || ""}. Ici ${jvNom()}. Ton bus passe à 18 heures 45 : je te laisse le temps de retrouver tes clés.`); };
+$("cvVoixTest").onclick = () => { jvVoixSave(); try { hush(); } catch (e) {} jvDire(`Bonsoir ${(typeof myName === "function" && myName()) || ""}. Ici ${jvNom()}. Ton bus passe à 18 heures 45 : je te laisse le temps de retrouver tes clés.`); };
 const _jvOpenEdit = openEdit;
 openEdit = function(it){ const r = _jvOpenEdit.apply(this, arguments); const b = $("eSpace"); if (b) b.textContent = "→ " + jvAutre(); return r; };
 $("cvAlChk").onchange = async () => {
