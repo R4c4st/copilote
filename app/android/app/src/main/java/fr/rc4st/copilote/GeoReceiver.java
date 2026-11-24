@@ -13,13 +13,19 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
- * Jarvis — le téléphone entre dans une zone surveillée (arrêt de bus, relais colis, lieu habituel) :
- * on affiche la notification préparée par l'appli. Rien ne part sur Internet ici.
+ * Nestor — le téléphone entre dans une zone surveillée (arrêt de bus, relais colis, lieu habituel) :
+ * on affiche la notification préparée par l'appli.
+ * Seule exception, déléguée par lui : les zones « chauffage » autour de la maison (il s'éloigne → absent,
+ * il rentre → planning) envoient l'ordre à sa fonction serveur, puis préviennent avec de quoi annuler.
  */
 public class GeoReceiver extends BroadcastReceiver {
 
@@ -28,7 +34,9 @@ public class GeoReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context ctx, Intent intent) {
         GeofencingEvent ev = GeofencingEvent.fromIntent(intent);
-        if (ev == null || ev.hasError() || ev.getGeofenceTransition() != Geofence.GEOFENCE_TRANSITION_ENTER) return;
+        if (ev == null || ev.hasError()) return;
+        int tr = ev.getGeofenceTransition();
+        if (tr != Geofence.GEOFENCE_TRANSITION_ENTER && tr != Geofence.GEOFENCE_TRANSITION_EXIT) return;
         List<Geofence> hits = ev.getTriggeringGeofences();
         if (hits == null || hits.isEmpty()) return;
         SharedPreferences p = ctx.getSharedPreferences(TempoNativePlugin.PREFS, Context.MODE_PRIVATE);
@@ -47,6 +55,8 @@ public class GeoReceiver extends BroadcastReceiver {
                 if (o != null && id.equals(o.optString("id"))) { f = o; break; }
             }
             if (f == null) continue;
+            if (f.optBoolean("exit", false) != (tr == Geofence.GEOFENCE_TRANSITION_EXIT)) continue;
+            if (f.has("hook")) { hook(ctx, p, id, f); continue; }
             long until = f.optLong("until", 0);
             if (until > 0 && until < now) continue;
             // pas deux fois la même alerte en 45 min (on passe souvent plusieurs fois devant)
@@ -63,6 +73,47 @@ public class GeoReceiver extends BroadcastReceiver {
             p.edit().putLong("geo_last_" + id, now).apply();
             show(ctx, id, title, body, f.optString("url", "./"));
         }
+    }
+
+    /** zone chauffage : un seul ordre par changement (rien si le dernier ordre était déjà le même), en tâche de fond */
+    private void hook(Context ctx, SharedPreferences p, String id, JSONObject f) {
+        JSONObject h = f.optJSONObject("hook");
+        if (h == null) return;
+        JSONObject body = h.optJSONObject("body");
+        if (body == null) return;
+        final String mode = body.optString("mode", "");
+        long now = System.currentTimeMillis();
+        if (mode.isEmpty() || mode.equals(p.getString("chauffe_etat", ""))) return;
+        if (now - p.getLong("chauffe_t", 0) < 3 * 60 * 1000L) return;   // pas d'aller-retour en rafale
+        p.edit().putString("chauffe_etat", mode).putLong("chauffe_t", now).apply();
+        final PendingResult pr = goAsync();
+        final Context app = ctx.getApplicationContext();
+        new Thread(() -> {
+            boolean ok = false;
+            HttpURLConnection c = null;
+            try {
+                c = (HttpURLConnection) new URL(h.optString("url")).openConnection();
+                c.setRequestMethod("POST");
+                c.setConnectTimeout(7000);
+                c.setReadTimeout(7000);
+                c.setDoOutput(true);
+                c.setRequestProperty("content-type", "application/json");
+                c.setRequestProperty("Authorization", "Bearer " + h.optString("key"));
+                c.setRequestProperty("apikey", h.optString("key"));
+                try (OutputStream o = c.getOutputStream()) { o.write(body.toString().getBytes(StandardCharsets.UTF_8)); }
+                ok = c.getResponseCode() == 200;
+            } catch (Exception ignored) {
+                // pas de réseau : on le dira dans la notification
+            } finally {
+                if (c != null) c.disconnect();
+            }
+            if (ok) show(app, id, f.optString("title", "Nestor"), f.optString("body", ""), f.optString("url", "./"));
+            else {
+                p.edit().remove("chauffe_etat").apply();   // on retentera au prochain passage
+                show(app, id, "Chauffage : Netatmo n'a pas répondu", "away".equals(mode) ? "Tu t'es éloigné de la maison, mais le chauffage n'a pas pu passer en absent." : "Tu rentres, mais le chauffage n'a pas pu reprendre son planning.", "./");
+            }
+            if (pr != null) pr.finish();
+        }).start();
     }
 
     static void show(Context ctx, String id, String title, String body, String url) {

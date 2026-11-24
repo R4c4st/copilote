@@ -85,7 +85,7 @@ import org.json.JSONObject;
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 9;
+    static final int NATIVE_BUILD = 10;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -349,6 +349,13 @@ public class TempoNativePlugin extends Plugin {
     }
 
     /** Zones surveillées : [{id, lat, lon, r, until, dep, title, body, url}] — remplace les précédentes. */
+    /** Nestor : dernier mode de chauffage demandé (« away » / « schedule »), pour ne pas répéter l'ordre en arrivant */
+    @PluginMethod
+    public void setChauffe(PluginCall call) {
+        prefs().edit().putString("chauffe_etat", call.getString("etat", "")).putLong("chauffe_t", System.currentTimeMillis()).apply();
+        call.resolve();
+    }
+
     @PluginMethod
     public void geoSet(PluginCall call) {
         JSArray fences = call.getArray("fences");
@@ -371,13 +378,13 @@ public class TempoNativePlugin extends Plugin {
             if (f == null || !f.has("lat") || !f.has("lon")) continue;
             long until = f.optLong("until", 0);
             if (until > 0 && until <= now) continue;
-            float rad = (float) Math.max(100, Math.min(1000, f.optDouble("r", 200)));
+            float rad = (float) Math.max(100, Math.min(5000, f.optDouble("r", 200)));   // jusqu'à 5 km : « je rentre à la maison »
             list.add(
                 new Geofence.Builder()
                     .setRequestId(f.optString("id", "f" + i))
                     .setCircularRegion(f.optDouble("lat"), f.optDouble("lon"), rad)
                     .setExpirationDuration(until > 0 ? until - now : Geofence.NEVER_EXPIRE)
-                    .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+                    .setTransitionTypes(f.optBoolean("exit", false) ? Geofence.GEOFENCE_TRANSITION_EXIT : Geofence.GEOFENCE_TRANSITION_ENTER)
                     .build()
             );
         }

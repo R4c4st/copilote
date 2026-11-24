@@ -395,7 +395,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v19 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v20 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -483,6 +483,10 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <div class="foot" style="margin-top:12px"><select id="cvLieuType" style="width:auto"><option value="maison">maison</option><option value="arret">arrêt de bus</option><option value="golf">golf</option><option value="medecin">médecin</option><option value="magasin">magasin</option><option value="relais">relais colis</option><option value="autre" selected>autre</option></select><button class="ok" id="cvLieuGo">ajouter</button></div>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:16px"><input type="checkbox" id="cvAlChk" style="width:auto"> me prévenir quand j'arrive à un lieu (bus, colis, choses à faire)</label>
     <p class="small" id="cvAlSt" style="margin-top:4px"></p>
+    <div class="lab">Chauffage</div>
+    <p class="small" id="cvNetSt" style="margin-top:4px"></p>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvChauffeChk" style="width:auto"> selon ma présence : absent quand je pars, planning quand je rentre</label>
+    <div class="foot" style="margin-top:10px"><button id="cvNetOff" style="color:var(--mut);display:none">déconnecter</button><button class="ok" id="cvNetGo">connecter Netatmo</button></div>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBriefChk" style="width:auto"> brief du jour à la première ouverture du matin</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvProChk" style="width:auto"> Jarvis anticipe aussi le pro</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBnChk" style="width:auto"> brief en notification, le matin et le soir (aux heures des rituels)</label>
@@ -631,7 +635,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 19;
+const TEMPO_BUILD = 20;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1637,7 +1641,8 @@ async function gFinish(p){
 }
 async function gHandleRedirect(){
   const p = new URLSearchParams(location.search), st = p.get("state") || "";
-  if (st.startsWith("gsa_")) { history.replaceState(null, "", location.pathname); location.href = "copilote://gauth?" + p.toString(); return true; }   // Chrome → retour dans l'appli
+  if (st.startsWith("gsa_") || st.startsWith("nsa_")) { history.replaceState(null, "", location.pathname); location.href = "copilote://gauth?" + p.toString(); return true; }   // Chrome → retour dans l'appli (Google ou Netatmo)
+  if (st.startsWith("ns_")) { history.replaceState(null, "", location.pathname); setTimeout(() => jvNetFinir(p), 800); return true; }   // Netatmo, dans le navigateur
   if (!st.startsWith("gs_")) return false;
   history.replaceState(null, "", location.pathname);
   return gFinish(p);
@@ -3927,6 +3932,7 @@ function handleShare(){
   }
   else if (p.get("focus")) { history.replaceState(null, "", location.pathname); const F = LS.get("tempo_focus", null); if (F) { startFocus(F.id, F.sp); } }
   else if (p.get("waze")) { history.replaceState(null, "", location.pathname); const q = p.get("waze"); setTimeout(() => jvWaze(q), 300); }
+  else if (p.get("chauffe")) { history.replaceState(null, "", location.pathname); const m = p.get("chauffe"); setTimeout(() => jvChauffeLien(m), 300); }
   else return false;
   return true;
 }
@@ -4060,7 +4066,7 @@ function appUrl(url){
   const what = (u.host || u.pathname.replace(/^\/+/, "")).toLowerCase();
   if (what === "ecoute") { if (FOC) return; hide(); if (!listening && !typing) setTimeout(() => startListen({ auto: true, noSpeech: 8000 }), 250); }
   else if (what === "transfert") transferIn(u.searchParams.get("id"), u.searchParams.get("k"));
-  else if (what === "gauth") gFinish(u.searchParams);
+  else if (what === "gauth") { if ((u.searchParams.get("state") || "").startsWith("nsa_")) jvNetFinir(u.searchParams); else gFinish(u.searchParams); }
   else if (what === "msauth") msFinish(u.searchParams);
   else if (what === "ouvrir") openInternal(u.searchParams.get("u") || "./");
 }
@@ -4546,9 +4552,10 @@ function jvAcroDemande(text, recent){
 }
 const jvSys = () => CV_SYS.replace(/\{NOM\}/g, jvNom()).replace(/\{PRENOM\}/g, (typeof myName === "function" && myName()) || "ton utilisateur")
   + (cvNorm(jvNom()) !== "jarvis" ? "\n\nTon nom\n- Il lui arrive encore de t'appeler Jarvis, ton ancien nom : c'est bien à toi qu'il parle." : "")
-  + (jvEstNestor() ? "\n- Ton nom s'écrit N.E.S.T.O.R. en sigle. C'est un acronyme à géométrie variable : s'il te demande ce qu'il veut dire, donne avec flegme une seule de ces versions, jamais une autre : " + jvAcroListe().map(a => "« " + a + " »").join(", ") + "." : "");
+  + (jvEstNestor() ? "\n- Ton nom s'écrit N.E.S.T.O.R. en sigle. C'est un acronyme à géométrie variable : s'il te demande ce qu'il veut dire, donne avec flegme une seule de ces versions, jamais une autre : " + jvAcroListe().map(a => "« " + a + " »").join(", ") + "." : "")
+  + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Ne touche jamais au chauffage de ta propre initiative, sauf s'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets alors la maison en absent jusqu'à son retour, et dis-le.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "");
 async function cvCall(extras){
-  const body = { model: CV_MODEL, max_tokens: 4000, system: jvSys(), tools: CV_TOOLS, messages: JV.msgs.slice(-CV_HIST) };
+  const body = { model: CV_MODEL, max_tokens: 4000, system: jvSys(), tools: jvOutils(), messages: JV.msgs.slice(-CV_HIST) };
   if (extras !== false) { body.cache_control = { type: "ephemeral" }; body.output_config = { effort: CFG.cvEffort || "medium" }; }
   const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
     headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
@@ -4862,6 +4869,120 @@ async function toolMeteo(x){
 }
 const JV_LOCAL = { horaires_bus: toolBus, meteo: toolMeteo, trajet_voiture: toolVoiture, derniers_messages: toolMessages, mails: toolMails, lire_mail: toolLireMail, agenda: toolAgenda, taches: toolTaches };
 const JV_ATTENTE = { horaires_bus: "je regarde les bus…", meteo: "je regarde la météo…", trajet_voiture: "je calcule le trajet…", derniers_messages: "je regarde tes messages…", mails: "je regarde tes mails…", lire_mail: "je lis le mail…", agenda: "je regarde ton agenda…", taches: "je regarde tes tâches…" };
+
+/* ---------- lot 16 : le chauffage (Netatmo) ----------
+   La connexion Netatmo vit dans la fonction serveur copilote-netatmo ; le téléphone ne garde qu'une « clé maison ».
+   À la voix : il agit directement (délégué). Selon la présence : absent quand il s'éloigne, planning quand il rentre,
+   déclenché par les zones de l'appli même fermée, avec une notification pour annuler. */
+const JV_NFN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/copilote-netatmo";
+let JV_NET = LS.get("copilote_net", null) || {};
+const jvNetOn = () => !!JV_NET.cle;
+const jvNetSave = () => LS.set("copilote_net", JV_NET);
+const JV_NET_MODES = { planning: "schedule", absent: "away", hors_gel: "hg" };
+const JV_NET_DIT = { schedule: "planning", away: "absent", hg: "hors-gel" };
+async function nFn(body){
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 12000);
+  try {
+    const b = Object.assign({}, body); if (JV_NET.cle) b.cle = JV_NET.cle; if (MEM.tok) b.jeton = MEM.tok;
+    const r = await fetch(JV_NFN, { method: "POST", signal: ctl.signal, headers: { "content-type": "application/json", Authorization: "Bearer " + G_KEY, apikey: G_KEY }, body: JSON.stringify(b) });
+    const j = await r.json().catch(() => ({}));
+    if (j.error === "deconnecte" && JV_NET.cle) { JV_NET.perdu = true; jvNetSave(); }
+    return j;
+  } catch (e) { return { error: "reseau" }; } finally { clearTimeout(to); }
+}
+async function jvNetMaison(force){
+  if (!force && JV_NET.m && Date.now() - (JV_NET.mt || 0) < 60e3) return JV_NET.m;
+  const r = await nFn({ action: "maison" });
+  if (r.ok && r.maison) { JV_NET.m = r.maison; JV_NET.mt = Date.now(); JV_NET.perdu = false; jvNetSave(); return r.maison; }
+  return null;
+}
+/* « salon », « la chambre », « toute la maison » → les pièces Netatmo correspondantes */
+function jvNetPiece(m, nom){
+  const P = (m && m.pieces) || [], n = jvNormT(nom);
+  if (!n) return P.length === 1 ? P : null;
+  if (/^(?:toute la maison|tout|toutes les pieces|partout|la maison|maison)$/.test(n)) return P;
+  const eq = P.filter(p => jvNormT(p.nom) === n); if (eq.length) return eq;
+  const nn = n.replace(/^(?:le |la |les |l |dans le |dans la )/, "");
+  const part = P.filter(p => { const q = jvNormT(p.nom); return q.includes(nn) || nn.includes(q); });
+  return part.length ? part : null;
+}
+async function jvNetMode(mode, opt){
+  opt = opt || {};
+  const b = { action: "mode", mode };
+  if (opt.jusqua) { const d = new Date(opt.jusqua); if (!isNaN(d)) b.jusqua = d.toISOString(); }   // heure du téléphone (Paris) → heure universelle
+  if (opt.minutes) b.minutes = +opt.minutes;
+  const r = await nFn(b);
+  if (r.ok) { JV_NET.mt = 0; jvNetSave(); try { if (NATIVE) tn("setChauffe", { etat: mode }); } catch (e) {} }
+  return r;
+}
+const jvNetPasLa = () => ({ erreur: "Netatmo n'est pas connecté : onglet mémoire de Nestor, section Chauffage" });
+async function toolChauffage(){
+  if (!jvNetOn()) return jvNetPasLa();
+  const m = await jvNetMaison(true); if (!m) return { erreur: JV_NET.perdu ? "la connexion Netatmo est à refaire (onglet mémoire)" : "Netatmo ne répond pas" };
+  const hh = t => new Date(t).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  return { maison: m.nom, mode: JV_NET_DIT[m.mode] || m.mode, pieces: m.pieces.map(p => ({ piece: p.nom, mesure: p.mesure, consigne: p.consigne,
+    reglage: p.reglage === "manual" ? "manuel" + (p.jusqua ? " jusqu'à " + hh(p.jusqua) : "") : p.reglage === "away" ? "absent" : p.reglage === "hg" ? "hors-gel" : p.reglage === "max" ? "max" : "planning",
+    fenetre_ouverte: p.fenetre_ouverte || undefined })), plannings: m.plannings.map(p => p.nom + (p.actif ? " (actif)" : "")) };
+}
+async function toolChauffageRegler(x){
+  if (!jvNetOn()) return jvNetPasLa();
+  const m = await jvNetMaison(); if (!m) return { erreur: "Netatmo ne répond pas" };
+  const P = jvNetPiece(m, x.piece); if (!P) return { erreur: "pièce inconnue", pieces: m.pieces.map(p => p.nom) };
+  if (!x.retour_planning && !(+x.temperature >= 7 && +x.temperature <= 30)) return { erreur: "température entre 7 et 30 °C" };
+  const out = [];
+  for (const p of P) {
+    const r = await nFn(x.retour_planning ? { action: "regler", piece: p.id, retour: true } : { action: "regler", piece: p.id, temp: +x.temperature, minutes: +x.duree_minutes || 0 });
+    out.push(p.nom + (r.ok ? " ✓" : " : échec (" + (r.detail || r.error || "?") + ")"));
+  }
+  JV_NET.mt = 0; jvNetSave();
+  return { fait: out, consigne: x.retour_planning ? "planning" : +x.temperature, duree_minutes: +x.duree_minutes || undefined };
+}
+async function toolChauffageMode(x){
+  if (!jvNetOn()) return jvNetPasLa();
+  const mode = JV_NET_MODES[x.mode]; if (!mode) return { erreur: "mode : planning, absent ou hors_gel" };
+  const r = await jvNetMode(mode, { jusqua: x.jusqua, minutes: x.duree_minutes });
+  return r.ok ? { fait: "chauffage en " + JV_NET_DIT[mode] + (mode !== "schedule" && x.jusqua ? " jusqu'à " + x.jusqua : "") } : { erreur: r.detail || r.error || "échec" };
+}
+async function toolChauffagePlanning(x){
+  if (!jvNetOn()) return jvNetPasLa();
+  const m = await jvNetMaison(); if (!m) return { erreur: "Netatmo ne répond pas" };
+  const n = jvNormT(x.nom), s = m.plannings.find(p => jvNormT(p.nom) === n) || m.plannings.find(p => jvNormT(p.nom).includes(n) || n.includes(jvNormT(p.nom)));
+  if (!s) return { erreur: "planning inconnu", plannings: m.plannings.map(p => p.nom) };
+  const r = await nFn({ action: "planning", planning: s.id });
+  if (r.ok) { JV_NET.mt = 0; jvNetSave(); }
+  return r.ok ? { fait: "planning « " + s.nom + " » activé" } : { erreur: r.detail || r.error || "échec" };
+}
+const JV_NET_TOOLS = [
+  { name: "chauffage", description: "État du chauffage de sa maison (Netatmo) : mode, température mesurée et consigne de chaque pièce, plannings.",
+    input_schema: { type: "object", properties: {} } },
+  { name: "chauffage_regler", description: "Règle la température d'une pièce (piece = son nom, ou « maison » pour toutes), pour une durée facultative ; ou la remet sur son planning (retour_planning). Agis directement quand il le demande.",
+    input_schema: { type: "object", properties: { piece: { type: "string" }, temperature: { type: "number", description: "7 à 30 °C" }, duree_minutes: { type: "integer" }, retour_planning: { type: "boolean" } } } },
+  { name: "chauffage_mode", description: "Mode de toute la maison : planning (normal), absent ou hors_gel, avec une fin facultative : jusqua (AAAA-MM-JJTHH:MM, heure de Paris) ou duree_minutes. Ex. week-end : absent jusqu'à son retour.",
+    input_schema: { type: "object", properties: { mode: { type: "string", enum: ["planning", "absent", "hors_gel"] }, jusqua: { type: "string" }, duree_minutes: { type: "integer" } }, required: ["mode"] } },
+  { name: "chauffage_planning", description: "Active un de ses plannings Netatmo, par son nom.",
+    input_schema: { type: "object", properties: { nom: { type: "string" } }, required: ["nom"] } }
+];
+Object.assign(JV_LOCAL, { chauffage: toolChauffage, chauffage_regler: toolChauffageRegler, chauffage_mode: toolChauffageMode, chauffage_planning: toolChauffagePlanning });
+Object.assign(JV_ATTENTE, { chauffage: "je regarde le chauffage…", chauffage_regler: "je règle le chauffage…", chauffage_mode: "je règle le chauffage…", chauffage_planning: "je change le planning…" });
+const jvOutils = () => jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS;
+/* zones de la maison pour le chauffage selon la présence (l'appli Android les déclenche, même fermée) */
+const jvMaisonLieu = () => jvLieux().find(l => l.g.type === "maison");
+const jvChauffeAuto = () => jvNetOn() && CFG.jvChauffe !== false && !!jvMaisonLieu();
+function jvChauffeFences(){
+  const h = jvMaisonLieu(); if (!h || !jvNetOn()) return [];
+  const hook = mode => ({ url: JV_NFN, key: G_KEY, body: { action: "mode", mode, cle: JV_NET.cle } });
+  return [
+    { id: "chauffe-part", lat: h.g.lat, lon: h.g.lon, r: 500, exit: true, hook: hook("away"), title: "Chauffage en mode absent", body: "Tu t'éloignes de la maison. Touche ici pour remettre ton planning.", url: "./?chauffe=planning" },
+    { id: "chauffe-retour", lat: h.g.lat, lon: h.g.lon, r: 4000, hook: hook("schedule"), title: "Chauffage relancé", body: "Tu rentres : la maison se remet à chauffer selon ton planning.", url: "./" },
+    { id: "chauffe-arrive", lat: h.g.lat, lon: h.g.lon, r: 500, hook: hook("schedule"), title: "Chauffage relancé", body: "Te voilà : la maison reprend son planning.", url: "./" }
+  ];
+}
+/* la notification « touche pour annuler » */
+async function jvChauffeLien(m){
+  const mode = m === "absent" ? "away" : "schedule";
+  const r = await jvNetMode(mode);
+  toast(r.ok ? (mode === "schedule" ? "chauffage remis sur ton planning ✓" : "chauffage en mode absent ✓") : "Netatmo n'a pas répondu, réessaie", "", null, 5000);
+}
 function jvAddTask(p){
   const sp = p.sp === "pro" ? "pro" : "perso";
   const it = { id: uid(), created: Date.now(), done: false, doneAt: null, src: "jarvis", raw: "", title: p.t, cat: p.rdv ? "rdv" : (sp === "pro" ? "remarque" : "tache"), ch: "", u: 2, due: p.date || null, time: p.heure || null, note: p.note || "", place: p.lieu || "" };
@@ -4971,7 +5092,8 @@ async function jvBusWatch(p){
 }
 async function jvGeoSync(){
   try {
-    if ((await jvNative()) < 6 || !CFG.jvAlertes) return;
+    const nat = await jvNative(), chauffe = nat >= 10 && jvChauffeAuto();
+    if (nat < 6 || !(CFG.jvAlertes || chauffe)) return;
     const st = await tn("locState"); if (!st || !st.fine || !st.bg) return;
     const now = Date.now(), fences = [], L = jvLieux().filter(l => CFG.jvPro || l.d !== "pro");
     for (const b of LS.get("copilote_bus_watch", []) || []) if (b.dep > now) fences.push({ id: b.id, lat: b.lat, lon: b.lon, r: 200, until: b.dep + 3e5, dep: b.dep, title: `Ton bus ${b.ligne ? b.ligne + " " : ""}passe à ${b.heure.replace(":", "h")}`, body: `${b.arret} · dans {min} min`, url: "./" });
@@ -4988,6 +5110,8 @@ async function jvGeoSync(){
       for (const id in byL) { const l = MEM.items.get(id); if (l && l.g) fences.push({ id: "lieu-" + id, lat: l.g.lat, lon: l.g.lon, r: 250, until: 0, title: "À faire ici · " + l.g.nom, body: byL[id].slice(0, 3).join(" · "), url: "./" }); }
       for (const id in shop) { const l = MEM.items.get(id); if (l && l.g) fences.push({ id: "courses-" + id, lat: l.g.lat, lon: l.g.lon, r: 250, until: 0, title: `Ta liste de courses · ${shop[id].length} article${shop[id].length > 1 ? "s" : ""}`, body: shop[id].slice(0, 12).join(", "), url: "./" }); }
     }
+    if (!CFG.jvAlertes) fences.length = 0;
+    if (chauffe) fences.unshift(...jvChauffeFences());
     await tn("geoSet", { fences: fences.slice(0, 90) });
   } catch (e) {}
 }
@@ -5470,6 +5594,7 @@ function paintLieux(){
   try { paintVoix(); } catch (e) {}
   $("cvAlChk").checked = !!CFG.jvAlertes;
   jvAlertesState().then(s => { const e = $("cvAlSt"); if (e) e.textContent = s.txt; });
+  try { paintNet(); } catch (e) {}
 }
 
 /* ---------- le tri des dictées s'appuie sur la mémoire (une seule source) ---------- */
@@ -5664,6 +5789,57 @@ async function cvLockUI(){
 }
 
 /* ---------- ouverture, micro, branchements ---------- */
+/* lot 16 : connexion Netatmo (comme Google : Chrome dans l'appli, retour par copilote://gauth) et réglages */
+async function jvNetConnecter(){
+  if (!MEM.tok) { toast("ouvre d'abord ta mémoire, puis recommence", "", null, 6000); return; }
+  const e = await nFn({ action: "etat" });
+  if (e.error === "jeton") { toast("connexion refusée : rouvre ta mémoire puis recommence", "", null, 6000); return; }
+  if (!e.pret) { toast(e.error === "reseau" ? "serveur injoignable, réessaie" : "Netatmo pas encore prêt : range les deux clés dans Supabase", "", null, 8000); return; }
+  const st = (NATIVE ? "nsa_" : "ns_") + b64u(crypto.getRandomValues(new Uint8Array(12)));
+  LS.set("copilote_nstate", st);
+  const l = await nFn({ action: "lien", state: st, redirect_uri: gRedirect() });
+  if (!l.url) { toast("Netatmo injoignable, réessaie"); return; }
+  if (NATIVE) { await tn("openUrl", { url: l.url }); toast("connecte-toi à Netatmo dans Chrome, Nestor reprend la main ensuite", "", null, 8000); }
+  else location.href = l.url;
+}
+async function jvNetFinir(p){
+  const st = p.get("state") || "";
+  if (p.get("error")) { toast("connexion Netatmo annulée"); return true; }
+  if (!st || st !== LS.get("copilote_nstate", "")) { toast("connexion Netatmo invalide, recommence"); return true; }
+  for (let k = 0; k < 20 && !MEM.tok; k++) await new Promise(r => setTimeout(r, 500));   // la mémoire s'ouvre au démarrage
+  const r = await nFn({ action: "code", code: p.get("code") || "", redirect_uri: gRedirect() });
+  if (!r.cle) { toast("Netatmo n'a pas donné l'accès (" + (r.detail || r.error || "?") + "), recommence", "", null, 8000); return true; }
+  LS.set("copilote_nstate", "");
+  JV_NET = { cle: r.cle, m: r.maison || null, mt: Date.now() }; jvNetSave();
+  if (CFG.jvChauffe === undefined) { CFG.jvChauffe = true; saveCfg(); }
+  const n = r.maison ? r.maison.pieces.length : 0;
+  toast(`Netatmo connecté ✓${n ? " · " + n + " pièce" + (n > 1 ? "s" : "") : ""}`, "", null, 6000);
+  jvGeoSync(); try { paintNet(); } catch (e) {}
+  return true;
+}
+async function paintNet(){
+  const st = $("cvNetSt"); if (!st) return;
+  const on = jvNetOn(), m = JV_NET.m, auto = CFG.jvChauffe !== false;
+  $("cvNetGo").textContent = on ? (JV_NET.perdu ? "reconnecter Netatmo" : "actualiser") : "connecter Netatmo";
+  $("cvNetOff").style.display = on ? "" : "none";
+  $("cvChauffeChk").checked = on && auto; $("cvChauffeChk").disabled = !on;
+  let t = !on ? "Relie ton thermostat Netatmo : Nestor le règle à la voix, et selon ta présence."
+    : JV_NET.perdu ? "La connexion Netatmo a expiré : touche « reconnecter Netatmo »."
+    : m ? `${m.nom || "Maison"} · ${JV_NET_DIT[m.mode] || m.mode || "?"}${m.pieces.length ? " · " + m.pieces.map(p => `${p.nom} ${p.mesure != null ? String(p.mesure).replace(".", ",") + "°" : "?"}`).join(", ") : ""}` : "Netatmo connecté ✓";
+  if (on && auto && !JV_NET.perdu) {
+    if (!jvMaisonLieu()) t += " · ajoute ta maison dans Mes lieux pour le chauffage selon ta présence.";
+    else if (NATIVE && (await jvNative()) < 10) t += " · pour la présence, installe la nouvelle version de l'appli (réglages).";
+    else { const a = await jvAlertesState(); if (!a.ok) t += " · présence : " + a.txt; }
+  }
+  st.textContent = t;
+}
+$("cvNetGo").onclick = async () => { if (jvNetOn() && !JV_NET.perdu) { $("cvNetSt").textContent = "je regarde…"; await jvNetMaison(true); paintNet(); return; } jvNetConnecter(); };
+$("cvNetOff").onclick = async () => {
+  const b = $("cvNetOff"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; b.style.color = "var(--u3)"; return; }
+  delete b.dataset.sure; b.textContent = "déconnecter"; b.style.color = "";
+  await nFn({ action: "deconnecter" }); JV_NET = {}; jvNetSave(); jvGeoSync(); paintNet(); toast("Netatmo déconnecté");
+};
+$("cvChauffeChk").onchange = () => { CFG.jvChauffe = $("cvChauffeChk").checked; saveCfg(); jvGeoSync(); paintNet(); };
 /* correctif doublons : une seule fois, on nettoie
    1) les jumeaux : la même ligne réinsérée plusieurs fois (même identifiant) par le « annuler » invisible → on garde la première
    2) les lignes identiques venues d'un même message → on garde la plus ancienne */
