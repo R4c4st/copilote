@@ -390,7 +390,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center">Jarvis v8 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center">Jarvis v9 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -611,7 +611,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 8;
+const TEMPO_BUILD = 9;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4048,6 +4048,9 @@ if (NATIVE) {
   const arrived = LS.get("tempo_arrived", 0) > Date.now() - 60000;
   if (arrived) { LS.set("tempo_arrived", 0); setTimeout(() => toast("tes données de Chrome sont arrivées ✓", "", null, 5000), 900); }
   setTimeout(webUpdate, arrived ? 7000 : 1500);
+  /* et à chaque retour dans l'appli (au plus une fois tous les 10 min) : plus besoin de la fermer pour se mettre à jour */
+  let updLast = Date.now();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - updLast > 10 * 60000) { updLast = Date.now(); setTimeout(webUpdate, 1500); } });
   tn("info").then(r => { NV = (r && r.native) || 0; if (NV >= 3) watchInit(); });
 }
 if (CFG.gmail) setTimeout(() => gmailColis(false), 4000);
