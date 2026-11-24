@@ -89,7 +89,11 @@ body.const .ring.on{transform:none}
 .acts{display:none;gap:40px;margin-top:22px;font-size:14px;letter-spacing:.5px}
 .acts.show{display:flex}
 .acts button{color:var(--mut)} .acts .yes{color:var(--fg)}
-.alt{position:absolute;bottom:4px;display:flex;gap:28px;font-size:13px;color:var(--mut);letter-spacing:.4px}
+.alt{position:absolute;bottom:4px;display:flex;gap:28px;align-items:center;font-size:13px;color:var(--mut);letter-spacing:.4px}
+#bConv{color:var(--fg);font-weight:500;border-radius:999px;padding:7px 16px;margin:-7px 0;background:linear-gradient(135deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.12) 45%,rgba(255,255,255,.3) 100%);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(var(--glow),.25);-webkit-backdrop-filter:blur(10px) saturate(1.5);backdrop-filter:blur(10px) saturate(1.5)}
+#bConv::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:rgb(var(--glow));margin-right:7px;vertical-align:1px;animation:jvRespire 4s ease-in-out infinite}
+@keyframes jvRespire{50%{opacity:.35;transform:scale(.7)}}
+@media (prefers-reduced-motion:reduce){#bConv::before{animation:none}}
 .typed{display:none;margin-top:24px;width:calc(100% - 60px);font-size:18px;text-align:center}
 
 /* list */
@@ -391,7 +395,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v18 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v19 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -627,7 +631,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 18;
+const TEMPO_BUILD = 19;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
