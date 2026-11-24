@@ -31,3 +31,10 @@ Compteur de dépense et plafond mensuel dans l'appli, en plus du plafond de la c
 3. L'APK se télécharge ensuite ici : `https://github.com/R4c4st/copilote/releases/download/app/copilote.apk`
 
 Aucune clé et aucune donnée personnelle dans ce dépôt : les clés restent dans le téléphone ou dans les secrets du serveur.
+
+## Horaires de bus
+
+Chaque lundi, GitHub récupère les horaires publics du réseau Stan et les range dans `donnees/stan.json`.
+Jarvis cherche les trajets directement dans le téléphone, directs ou avec une correspondance : l'arrêt que tu demandes ne part nulle part.
+Source : Réseau Stan / Métropole du Grand Nancy, données ouvertes sous Licence Ouverte (transport.data.gouv.fr).
+Les services de nuit à la demande ne figurent pas dans ces données.
