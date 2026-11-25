@@ -395,7 +395,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v24 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v25 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -646,7 +646,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 24;
+const TEMPO_BUILD = 25;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -953,7 +953,7 @@ ICI CE NE SONT PAS DES DICTÉES : ce sont des SMS, WhatsApp et messages (Snapcha
 - Ignore : bavardage et politesses (« ok », « merci », « bonne soirée », emoji), photos sans texte, messages déjà réglés, pubs, codes.
 - Les lignes NOTIFICATION viennent d'applis qu'il a choisies lui-même (Outlook, Teams, Doctolib…) : même règle, garde seulement ce qui demande une action ou un rendez-vous.
 - Mets toujours l'expéditeur dans note (« SMS de Paul », « Snapchat de Léa »). Si rien n'est utile : {"items":[],"updates":[]}.`;
-async function aiParse(text, kind, ctx){
+async function aiParse(text, kind, ctx, maxTok){
   const d = new Date();
   const last = kind ? [] : lastItems();
   const cr = ctx && ctx.cr;
@@ -1002,14 +1002,15 @@ Réponds UNIQUEMENT en JSON : {"items":[{"title":"","sp":"pro|perso","cat":"${(C
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
-    body: JSON.stringify({ model: "claude-haiku-5-5", max_tokens: 1500, system: sys + (kind === "mail" ? `
+    body: JSON.stringify({ model: "claude-haiku-5-5", max_tokens: maxTok || 1500, system: sys + (kind === "mail" ? `
 
 ICI CE NE SONT PAS DES DICTÉES : ce sont des mails qu'il a reçus. Extrais uniquement ce que LUI doit faire (répondre, rappeler, commander, intervenir, transmettre…). Ignore pubs, newsletters, notifications automatiques, mails purement informatifs. Mets l'expéditeur et l'objet dans note. Si une réponse est attendue d'un contact clé, prépare "mail" (réponse). Si rien n'est à faire : {"items":[],"updates":[]}.` : kind === "phone" ? PHONEX : kind === "cr" ? `
 
 ICI C'EST UN COMPTE RENDU qu'il dicte juste après un appel${cr && cr.who ? " avec " + cr.who : ""}${cr && cr.title ? " (tâche : « " + cr.title + " »)" : ""}. Ajoute au JSON un champ "summary" : le compte rendu résumé en 1 ou 2 lignes, avec SES mots (ce qui a été dit, décidé, promis). Dans "items", mets UNIQUEMENT les nouvelles choses à faire qui en découlent (rappeler, commander, envoyer, passer sur site…), sinon une liste vide. N'utilise pas "updates".` : ""), messages: [{ role: "user", content: text }] })
   });
-  if (!r.ok) throw new Error("API " + r.status);
+  if (!r.ok) { let m = ""; try { m = ((await r.json()).error || {}).message || ""; } catch (e) {} throw new Error("API " + r.status + (m ? " " + m : "")); }
   const j = await r.json();
+  if (j.stop_reason === "max_tokens") throw new Error("coupé");
   const raw = (j.content || []).map(c => c.text || "").join("");
   const obj = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
   const items = (obj.items || []).map(it => { const sp = CFG.jvEsp !== false && (it.sp === "pro" || it.sp === "perso") ? it.sp : SPACE, CX = sp === "perso" ? CATS_PERSO : CATS_PRO; return ({
@@ -1021,6 +1022,25 @@ ICI C'EST UN COMPTE RENDU qu'il dicte juste après un appel${cr && cr.who ? " av
     amount: it.cat === "memo" && it.amount != null && !isNaN(+it.amount) ? +it.amount : undefined
   }); }).filter(it => it.title);
   return { items, updates: Array.isArray(obj.updates) ? obj.updates.filter(u => u && u.id) : [], summary: typeof obj.summary === "string" ? obj.summary.trim() : "" };
+}
+/* un second essai si Claude n'a pas répondu (réseau, surcharge, réponse coupée : alors en plus long) ; pas pour une clé refusée ou un crédit épuisé */
+async function aiParseSur(text, kind, ctx){
+  let err = null;
+  for (const mt of [1500, 4000]) {
+    try { return await aiParse(text, kind, ctx, mt); }
+    catch (e) { err = e; if (/^API (401|403)\b|credit|balance|billing/i.test(e.message || "")) break; await new Promise(r => setTimeout(r, 1500)); }
+  }
+  throw err;
+}
+function aiRaison(e){
+  const m = String((e && e.message) || "");
+  if (/^API (401|403)\b/.test(m)) return "ta clé est refusée";
+  if (/credit|balance|billing/i.test(m)) return "ton crédit est épuisé";
+  if (/^API 429\b/.test(m)) return "trop de demandes d'un coup";
+  if (/^API (5\d\d)\b/.test(m)) return "surchargé pour l'instant";
+  if (/coupé/.test(m)) return "réponse trop longue";
+  if (!navigator.onLine || /fetch|network|load failed/i.test(m)) return "pas de réseau";
+  return "pas de réponse";
 }
 async function aiMail(it){
   const sys = `Tu rédiges un mail pour ${myName()}.\n\nQUI IL EST\n${CFG.profile}\n\nCONTACTS :\n${contacts().map(c => "- " + c.name + (c.role ? " : " + c.role : "")).join("\n")}\n\nSA FAÇON D'ÉCRIRE :\n${CFG.style}\n\nN'invente ni quantité, ni référence, ni date. Réponds UNIQUEMENT en JSON : {"to":"prénom","subject":"","body":""}`;
@@ -1126,11 +1146,17 @@ async function capture(text, src, kind, ctx){
       return true;
     }
   }
-  let parsed = null, viaAI = false, U = { n: 0, done: [], undo: [] };
+  let parsed = null, viaAI = false, U = { n: 0, done: [], undo: [] }, aiErr = null;
   if (CFG.key) {
     ringState("think"); hint(kind === "mail" ? "je lis tes mails…" : kind === "phone" ? "je regarde tes messages…" : "je range…");
-    try { const r = await aiParse(text, kind, ctx); parsed = r.items; U = applyUpdates(kind === "phone" ? (r.updates || []).map(u => ({ id: u.id, note: u.note, due: u.due, time: u.time, u: u.u })) : r.updates); viaAI = true; } catch (e) { parsed = null; }   // un message peut préciser une tâche, jamais la cocher ni la supprimer
+    try { const r = await aiParseSur(text, kind, ctx); parsed = r.items; U = applyUpdates(kind === "phone" ? (r.updates || []).map(u => ({ id: u.id, note: u.note, due: u.due, time: u.time, u: u.u })) : r.updates); viaAI = true; } catch (e) { parsed = null; aiErr = e; }   // un message peut préciser une tâche, jamais la cocher ni la supprimer
   }
+  /* Claude n'a pas répondu : une longue dictée n'est pas découpée phrase par phrase (elle reste entière, Nestor la range dès qu'il répond) */
+  if (!viaAI && CFG.key && !kind) {
+    if (ctx && ctx.reprise) { idle(); return false; }
+    if (typeof jvARanger === "function" && jvLongue(text)) { jvARanger(text, src, aiErr); return true; }
+  }
+  if (viaAI && ctx && ctx.reprise && typeof jvRangeFin === "function") jvRangeFin(ctx.reprise);
   if ((kind === "mail" || kind === "phone") && viaAI && typeof jvSansDoublons === "function") parsed = jvSansDoublons(parsed);
   if (kind === "mail" || kind === "phone") {
     if (!viaAI) { idle(); if (kind === "mail") toast("il faut Claude pour lire les mails"); return false; }
@@ -5889,6 +5915,7 @@ async function jvJournalier(){
   try { await jvMatchPrep(); } catch (e) {}
   try { await jvCinePrep(); } catch (e) {}
   try { await jvSantePrep(); } catch (e) {}
+  try { await jvRangerAttente(); } catch (e) {}
 }
 /* branché sur l'agenda : chaque création ou modification d'une tâche passe par calSync */
 function jvSortieCheck(it){
@@ -5971,6 +5998,35 @@ function jvCommandeVoix(text){
   if (off.test(n)) { CFG.jvDiscret = true; saveCfg(); try { hush(); } catch (e) {} toast("mode discret : je ne parle plus · dis « tu peux parler » pour que je reprenne", "", null, 5000); return true; }
   if (on.test(n)) { CFG.jvDiscret = false; saveCfg(); toast("je peux de nouveau te répondre à voix haute", "", null, 4000); return true; }
   return false;
+}
+/* ---------- correctif du 25/11 : une longue dictée n'est jamais découpée à l'aveugle ----------
+   Si Claude ne répond pas (même après un second essai), la dictée reste entière, en une ligne « à ranger »,
+   et Nestor la range dès qu'il répond : au retour dans l'appli, au retour du réseau, ou toutes les 30 min. */
+const jvLongue = t => String(t || "").length > 160 || splitText(String(t || "")).length >= 3;
+const JV_RANGER_LS = "copilote_a_ranger";
+const jvHM = t => { const d = new Date(t); return `${d.getHours()} h ${String(d.getMinutes()).padStart(2, "0")}`; };
+function jvARanger(text, src, err){
+  const now = Date.now();
+  const it = { id: uid(), created: now, done: false, doneAt: null, src: src || "voix", raw: text, title: `Dictée de ${jvHM(now)} à ranger`, cat: "remarque", ch: "", u: 2, due: null, time: null, note: text, aRanger: 1 };
+  it.orig = { cat: it.cat, ch: "", u: 2, slot: bucket(it) };
+  S.items.unshift(it); save(); idle(); render([it.id]); vib([12, 50, 12]);
+  const L = LS.get(JV_RANGER_LS, null) || []; L.push({ id: it.id, sp: SPACE, text, src: src || "voix", at: now, essai: now }); LS.set(JV_RANGER_LS, L);
+  toast(`Claude : ${aiRaison(err)}. Ta dictée reste entière, je la range dès qu'il répond.`, "", null, 9000);
+}
+function jvRangeFin(id){
+  for (const sp of ["pro", "perso"]) { const st = spaceState(sp); if ((st.items || []).some(i => i.id === id)) { st.items = st.items.filter(i => i.id !== id); putSpace(sp, st); } }
+  LS.set(JV_RANGER_LS, (LS.get(JV_RANGER_LS, null) || []).filter(x => x.id !== id));
+}
+let JV_RANGE_ON = false;
+async function jvRangerAttente(force){
+  if (JV_RANGE_ON || !CFG.key || navigator.onLine === false || (typeof listening !== "undefined" && listening) || $("ring").classList.contains("think")) return;
+  // supprimée ou cochée à la main, ou vieille de plus d'une semaine : on n'y touche plus
+  const L = (LS.get(JV_RANGER_LS, null) || []).filter(x => Date.now() - x.at < 7 * 86400e3 && (spaceState(x.sp).items || []).some(i => i.id === x.id && !i.done));
+  LS.set(JV_RANGER_LS, L);
+  const x = L.find(x => force || Date.now() - (x.essai || 0) > 10 * 60e3); if (!x) return;
+  JV_RANGE_ON = true;
+  try { x.essai = Date.now(); LS.set(JV_RANGER_LS, L); await capture(x.text, x.src, undefined, { reprise: x.id }); }
+  finally { JV_RANGE_ON = false; }
 }
 /* ---------- lot 19 : au cercle, « Nestor, … » s'adresse à lui (ni tâche ni mémo) ---------- */
 /* ce qui suit son nom (« Dis Nestor, je rentre » → « je rentre ») ; null si la phrase ne commence pas par son nom */
@@ -6232,6 +6288,9 @@ $("cvSanteBriefChk").onchange = () => {
   if (!CFG.jvSanteBrief) LS.set("copilote_sante_brief", null); else jvSantePrep(true).catch(() => {});
   try { schedulePushSync(); } catch (e) {}
 };
+/* une dictée restée « à ranger » : dès que le réseau revient, ou au retour dans l'appli */
+window.addEventListener("online", () => setTimeout(() => jvRangerAttente(true).catch(() => {}), 2000));
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") setTimeout(() => jvRangerAttente().catch(() => {}), 3000); });
 /* au retour dans l'appli (le matin, ou depuis Health Connect) : la ligne du brief et les réglages se remettent à jour */
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible" || !jvSanteOn()) return;
