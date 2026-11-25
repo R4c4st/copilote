@@ -395,7 +395,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v26 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v27 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -646,7 +646,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 26;
+const TEMPO_BUILD = 27;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -999,8 +999,9 @@ ${SPACE === "perso" || CFG.jvEsp !== false ? `- VIE PRIVÉE (éléments perso) :
 - J'Y SUIS / C'EST EN COURS : s'il dit qu'il est arrivé, qu'il y est, qu'il commence ou qu'il est en train (« je suis arrivé à la salle de sport », « je suis chez le médecin », « je commence le devis Dupont »), retrouve la tâche ou le rendez-vous correspondant et marque-le done:true (c'est honoré, il n'a plus besoin du rappel). Ne crée rien d'autre.
 - MODIFICATIONS : s'il parle d'une tâche DÉJÀ dans sa liste (« le truc Dupont c'est pour jeudi », « c'est fait pour Julie », « annule le rappel Durand »), ne crée pas de nouvelle action : ajoute une entrée dans "updates" avec l'id et seulement les champs qui changent (title, u, due, time, note, ch, done:true, delete:true).
 Réponds UNIQUEMENT en JSON : {"items":[{"title":"","sp":"pro|perso","cat":"${(CFG.jvEsp !== false ? [...new Set([...Object.keys(CATS_PRO), ...Object.keys(CATS_PERSO)])] : Object.keys(CATS)).join("|")}","ch":"","u":1,"due":null,"time":null,"note":"","mail":null,"rec":null,"rb":null,"amount":null}],"updates":[{"id":"","due":"…"}]}`;
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 40000);   // 40 s au plus : au-delà, Claude ne répondra plus
   const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
+    method: "POST", signal: ctl.signal,
     headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
     body: JSON.stringify({ model: "claude-haiku-5-5", max_tokens: maxTok || 1500, system: sys + (kind === "mail" ? `
 
@@ -1008,8 +1009,8 @@ ICI CE NE SONT PAS DES DICTÉES : ce sont des mails qu'il a reçus. Extrais uniq
 
 ICI C'EST UN COMPTE RENDU qu'il dicte juste après un appel${cr && cr.who ? " avec " + cr.who : ""}${cr && cr.title ? " (tâche : « " + cr.title + " »)" : ""}. Ajoute au JSON un champ "summary" : le compte rendu résumé en 1 ou 2 lignes, avec SES mots (ce qui a été dit, décidé, promis). Dans "items", mets UNIQUEMENT les nouvelles choses à faire qui en découlent (rappeler, commander, envoyer, passer sur site…), sinon une liste vide. N'utilise pas "updates".` : ""), messages: [{ role: "user", content: text }] })
   });
-  if (!r.ok) { let m = ""; try { m = ((await r.json()).error || {}).message || ""; } catch (e) {} throw new Error("API " + r.status + (m ? " " + m : "")); }
-  const j = await r.json();
+  if (!r.ok) { clearTimeout(to); let m = ""; try { m = ((await r.json()).error || {}).message || ""; } catch (e) {} throw new Error("API " + r.status + (m ? " " + m : "")); }
+  const j = await r.json(); clearTimeout(to);
   if (j.stop_reason === "max_tokens") throw new Error("coupé");
   const raw = (j.content || []).map(c => c.text || "").join("");
   const obj = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
@@ -1025,6 +1026,7 @@ ICI C'EST UN COMPTE RENDU qu'il dicte juste après un appel${cr && cr.who ? " av
 }
 /* un second essai si Claude n'a pas répondu (réseau, surcharge, réponse coupée : alors en plus long) ; pas pour une clé refusée ou un crédit épuisé */
 async function aiParseSur(text, kind, ctx){
+  if (kind === "phone") return aiParse(text, kind, ctx, 3000);   // en fond : un seul essai, la boîte de réception réessaiera plus tard
   let err = null;
   for (const mt of [1500, 4000]) {
     try { return await aiParse(text, kind, ctx, mt); }
@@ -1039,6 +1041,7 @@ function aiRaison(e){
   if (/^API 429\b/.test(m)) return "trop de demandes d'un coup";
   if (/^API (5\d\d)\b/.test(m)) return "surchargé pour l'instant";
   if (/coupé/.test(m)) return "réponse trop longue";
+  if (/abort/i.test(m)) return "pas de réponse en 40 s";
   if (!navigator.onLine || /fetch|network|load failed/i.test(m)) return "pas de réseau";
   return "pas de réponse";
 }
@@ -1147,20 +1150,22 @@ async function capture(text, src, kind, ctx){
     }
   }
   let parsed = null, viaAI = false, U = { n: 0, done: [], undo: [] }, aiErr = null;
+  /* en fond (messages reçus, dictée remise à ranger) : le cercle reste libre, rien à l'écran tant que ce n'est pas fini */
+  const fond = kind === "phone" || !!(ctx && ctx.reprise);
   if (CFG.key) {
-    ringState("think"); hint(kind === "mail" ? "je lis tes mails…" : kind === "phone" ? "je regarde tes messages…" : "je range…");
+    if (!fond) { ringState("think"); hint(kind === "mail" ? "je lis tes mails…" : "je range…"); }
     try { const r = await aiParseSur(text, kind, ctx); parsed = r.items; U = applyUpdates(kind === "phone" ? (r.updates || []).map(u => ({ id: u.id, note: u.note, due: u.due, time: u.time, u: u.u })) : r.updates); viaAI = true; } catch (e) { parsed = null; aiErr = e; }   // un message peut préciser une tâche, jamais la cocher ni la supprimer
   }
   /* Claude n'a pas répondu : une longue dictée n'est pas découpée phrase par phrase (elle reste entière, Nestor la range dès qu'il répond) */
   if (!viaAI && CFG.key && !kind) {
-    if (ctx && ctx.reprise) { idle(); return false; }
+    if (ctx && ctx.reprise) return false;
     if (typeof jvARanger === "function" && jvLongue(text)) { jvARanger(text, src, aiErr); return true; }
   }
   if (viaAI && ctx && ctx.reprise && typeof jvRangeFin === "function") jvRangeFin(ctx.reprise);
   if ((kind === "mail" || kind === "phone") && viaAI && typeof jvSansDoublons === "function") parsed = jvSansDoublons(parsed);
   if (kind === "mail" || kind === "phone") {
-    if (!viaAI) { idle(); if (kind === "mail") toast("il faut Claude pour lire les mails"); return false; }
-    if (!parsed.length && !U.n) { idle(); if (kind === "mail") { flashOk(); toast("rien à faire dans tes mails"); } return true; }
+    if (!viaAI) { if (!fond) idle(); if (kind === "mail") toast("il faut Claude pour lire les mails"); return false; }
+    if (!parsed.length && !U.n) { if (!fond) idle(); if (kind === "mail") { flashOk(); toast("rien à faire dans tes mails"); } return true; }
   }
   if (!viaAI) {
     const ld = localDone(text);
@@ -1173,7 +1178,8 @@ async function capture(text, src, kind, ctx){
   const added = (parsed || []).map(p => Object.assign({ id: uid(), created: now, done: false, doneAt: null, src: src || "voix", raw: text, orig: { cat: p.cat, ch: p.ch, u: p.u, slot: bucket(p) } }, p));
   const moved = typeof jvRanger === "function" ? jvRanger(added, kind) : [], versSp = SPACE === "pro" ? "perso" : "pro";
   if (added.length) { S.items.unshift(...added); added.forEach(calSync); }
-  save(); flashOk(); idle(); render(added.map(a => a.id));
+  save(); if (!fond) { flashOk(); idle(); } else if (!listening && !typing) flashOk();
+  render(added.map(a => a.id));
   vib(U.done.length ? [12, 50, 18] : 18);
   const ids = added.map(a => a.id), nm = added.filter(a => a.mail).length, other = U.n - U.done.length;
   const parts = [];
@@ -2108,6 +2114,7 @@ async function processInbox(){
   let q = LS.get("tempo_iq", []); if (!q.length) return;
   if (listening || typing || document.querySelector(".sheet.show") || $("ring").classList.contains("think")) return;   // on attend un moment calme
   inboxRunning = true;
+  const q0 = q.slice(), clef = e => [e.kind, e.who, e.num, e.body, e.at].join("|");
   const old = Date.now() - 3 * 86400000;
   q = q.filter(e => Date.parse(e.at) > old);
   const seen = new Set();   // même notification reçue deux fois (WhatsApp la met souvent à jour) : une seule
@@ -2135,12 +2142,21 @@ async function processInbox(){
   const chatOk = e => { const w = (e.who || "").trim(); return !!w && (!!knownContact(w, "") || chatWho().includes(norm(w).split(/\s+/)[0])); };
   msgs = scope === "aucun" ? [] : scope === "tous" ? msgs : msgs.filter(e => e.kind === "chat" ? chatOk(e) : e.kind === "notif" ? NATIVE : known(e));   // notif : une appli que tu as cochée toi-même
   if (msgs.length) {
-    const neufs = typeof jvMsgNeufs === "function" ? jvMsgNeufs(msgs) : msgs;   // déjà traité (même supprimé depuis) : on ne le renvoie pas à Claude
-    if (CFG.key && neufs.length) {
-      const txt = neufs.map(e => `[${e.kind === "whatsapp" ? "WHATSAPP" : e.kind === "sms" ? "SMS" : e.kind === "chat" ? (e.app || "MESSAGERIE").toUpperCase() : "NOTIFICATION " + (e.app || "")}] De : ${e.who || fmtNum(e.num) || "?"}${e.num && e.who && !isNumLike(e.who) ? " (" + fmtNum(e.num) + ")" : ""} — reçu ${new Date(e.at).toLocaleString("fr-FR", { weekday: "long", hour: "2-digit", minute: "2-digit" })}\n${e.body || "(vide)"}`).join("\n\n");
+    let neufs = typeof jvMsgNeufs === "function" ? jvMsgNeufs(msgs) : msgs;   // déjà traité (même supprimé depuis) : on ne le renvoie pas à Claude
+    /* par paquets de 20 (les plus anciens d'abord) : la suite au prochain passage, sans faire attendre */
+    const plus = CFG.key ? neufs.slice(20) : []; if (CFG.key) neufs = neufs.slice(0, 20);
+    const pause = LS.get("tempo_iq_pause", null);
+    if (CFG.key && neufs.length && pause && pause.until > Date.now()) keep = neufs.concat(plus);   // Claude n'a pas répondu il y a peu : on attend
+    else if (CFG.key && neufs.length) {
+      const txt = neufs.map(e => `[${e.kind === "whatsapp" ? "WHATSAPP" : e.kind === "sms" ? "SMS" : e.kind === "chat" ? (e.app || "MESSAGERIE").toUpperCase() : "NOTIFICATION " + (e.app || "")}] De : ${e.who || fmtNum(e.num) || "?"}${e.num && e.who && !isNumLike(e.who) ? " (" + fmtNum(e.num) + ")" : ""} — reçu ${new Date(e.at).toLocaleString("fr-FR", { weekday: "long", hour: "2-digit", minute: "2-digit" })}\n${String(e.body || "(vide)").slice(0, 600)}`).join("\n\n");
       let ok = false; try { ok = await capture(txt, "téléphone", "phone"); } catch (er) { ok = "erreur"; }
-      if (ok === false) keep = neufs;                                // Claude injoignable : on réessaiera
-      else if (typeof jvMsgVus === "function") jvMsgVus(neufs);      // traité (ou planté après coup) : jamais une deuxième fois
+      if (ok === false) {
+        // Claude injoignable : on réessaiera dans 10, puis 20 min ; au troisième échec, on laisse tomber ces messages-là
+        const n = ((pause && pause.n) || 0) + 1;
+        if (n >= 3) { if (typeof jvMsgVus === "function") jvMsgVus(neufs); LS.set("tempo_iq_pause", null); toast(`${neufs.length} message${neufs.length > 1 ? "s" : ""} pas lu${neufs.length > 1 ? "s" : ""} : Claude ne répond pas`, "", null, 6000); }
+        else { keep = neufs; LS.set("tempo_iq_pause", { n, until: Date.now() + n * 10 * 60e3 }); }
+      } else { LS.set("tempo_iq_pause", null); if (typeof jvMsgVus === "function") jvMsgVus(neufs); }   // traité (ou planté après coup) : jamais une deuxième fois
+      keep = keep.concat(plus);
     } else if (!CFG.key) {
       /* sans Claude : seulement les messages de tes contacts connus → « Répondre à … » */
       if (typeof jvMsgVus === "function") jvMsgVus(neufs);
@@ -2153,7 +2169,8 @@ async function processInbox(){
       }
     }
   }
-  LS.set("tempo_iq", keep);
+  // ce qui est arrivé pendant qu'on lisait reste dans la file
+  { const vus = new Set(q0.map(clef)); LS.set("tempo_iq", keep.concat((LS.get("tempo_iq", []) || []).filter(e => !vus.has(clef(e))))); }
   render();
   if (COLIS_NEWS.length) setTimeout(colisToast, nCalls ? 5400 : 200);
   if (nCalls) toast(nCalls === 1 ? `${IC.tel} appel manqué · ${callNames[0]} → à rappeler` : `${IC.tel} ${nCalls} appels manqués → à rappeler`, "", null, 5000);
