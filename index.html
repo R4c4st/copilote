@@ -395,7 +395,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v25 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v26 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -646,7 +646,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 25;
+const TEMPO_BUILD = 26;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -5177,8 +5177,22 @@ async function jvGeoSync(){
     }
     if (!CFG.jvAlertes) fences.length = 0;
     if (chauffe) fences.unshift(...jvChauffeFences());
-    await tn("geoSet", { fences: fences.slice(0, 90) });
+    const r = await tn("geoSet", { fences: fences.slice(0, 90) });
+    LS.set("copilote_geo_res", { at: Date.now(), ok: !!(r && r.ok), why: (r && r.why) || "", n: (r && r.n) || 0 });
   } catch (e) {}
+}
+/* présence : les zones en place, et le dernier passage vu par le téléphone (appli 0.3.6 et plus) */
+async function jvChauffeEtatTxt(){
+  if ((await jvNative()) < 13) return "";
+  const j = await tn("geoJournal"); if (!j) return "";
+  const z = j.zones || [], res = LS.get("copilote_geo_res", null);
+  if (!z.includes("chauffe-part")) return res && !res.ok ? `présence : Android refuse les zones (${res.why || "?"})` : "présence : zones pas encore posées, rouvre l'appli";
+  const E = (j.journal || []).filter(e => /^chauffe-/.test(e.id) || e.id === "-"), d = E[E.length - 1];
+  if (!d) return "présence automatique ✓ · aucun passage vu pour l'instant";
+  const quand = ymd(new Date(d.t)) === ymd(new Date()) ? jvHM(d.t) : jvJourTxt(ymd(new Date(d.t))) + " " + jvHM(d.t);
+  const ou = { "chauffe-part": "départ", "chauffe-retour": "retour à 4 km", "chauffe-arrive": "arrivée" }[d.id];
+  const quoi = { "envoyé away": "absent ✓", "envoyé schedule": "planning ✓", "déjà away": "déjà en absent", "déjà schedule": "déjà au planning" }[d.q] || (/^échec/.test(d.q) ? "Netatmo n'a pas répondu" : d.q);
+  return "présence automatique ✓ · dernier passage : " + (ou ? `${ou} ${quand} → ${quoi}` : `${quoi} (${quand})`);
 }
 async function jvAlertesState(){
   const n = await jvNative(); if (n < 6) return { ok: false, txt: NATIVE ? "il faut la nouvelle version de l'appli (réglages → mettre à jour)" : "seulement dans l'appli Android" };
@@ -6337,7 +6351,7 @@ async function paintNet(){
   if (on && auto && !JV_NET.perdu) {
     if (!jvMaisonLieu()) t += " · ajoute ta maison dans Mes lieux pour le chauffage selon ta présence.";
     else if (NATIVE && (await jvNative()) < 10) t += " · pour la présence, installe la nouvelle version de l'appli (réglages).";
-    else { const a = await jvAlertesState(); if (!a.ok) t += " · présence : " + a.txt; }
+    else { const a = await jvAlertesState(); if (!a.ok) t += " · présence : " + a.txt; else { const g = await jvChauffeEtatTxt(); if (g) t += " · " + g; } }
   }
   st.textContent = t;
 }

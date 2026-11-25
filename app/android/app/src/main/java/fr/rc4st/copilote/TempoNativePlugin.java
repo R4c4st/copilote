@@ -46,6 +46,8 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingClient;
 import com.google.android.gms.location.GeofencingRequest;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import java.io.File;
@@ -97,7 +99,7 @@ import org.json.JSONObject;
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 12;
+    static final int NATIVE_BUILD = 13;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -372,62 +374,129 @@ public class TempoNativePlugin extends Plugin {
     public void geoSet(PluginCall call) {
         JSArray fences = call.getArray("fences");
         if (fences == null) fences = new JSArray();
-        prefs().edit().putString("geo_fences", fences.toString()).apply();
+        final SharedPreferences pr = prefs();
+        pr.edit().putString("geo_fences", fences.toString()).apply();
         final GeofencingClient gc = LocationServices.getGeofencingClient(getContext());
         final PendingIntent pi = geoIntent();
         if (getPermissionState("loc") != PermissionState.GRANTED || !bgGranted()) {
             gc.removeGeofences(pi);
+            pr.edit().remove("geo_sig").apply();
             JSObject r = new JSObject();
             r.put("ok", false);
             r.put("why", "perm");
             call.resolve(r);
             return;
         }
-        final List<Geofence> list = new ArrayList<>();
+        // On ne réinscrit que les zones qui ont changé : réinscrire une zone efface ce que le téléphone en savait,
+        // et un départ en cours (appli ouverte juste en s'éloignant) n'était alors jamais vu.
+        // Tout est réinscrit après un redémarrage, une mise à jour de l'appli ou une coupure de la localisation.
+        final String ctxNow = geoCtx();
+        JSONObject old = null;
+        if (ctxNow.equals(pr.getString("geo_ctx", ""))) {
+            try {
+                old = new JSONObject(pr.getString("geo_sig", ""));
+            } catch (Exception e) {
+                old = null;
+            }
+        }
+        final boolean tout = old == null;
+        final JSONObject sig = new JSONObject();
+        final List<Geofence> entree = new ArrayList<>(), sortie = new ArrayList<>();
+        final List<String> retirer = new ArrayList<>();
         long now = System.currentTimeMillis();
-        for (int i = 0; i < fences.length() && list.size() < 90; i++) {
+        for (int i = 0; i < fences.length() && sig.length() < 90; i++) {
             JSONObject f = fences.optJSONObject(i);
             if (f == null || !f.has("lat") || !f.has("lon")) continue;
             long until = f.optLong("until", 0);
             if (until > 0 && until <= now) continue;
+            String id = f.optString("id", "f" + i);
             float rad = (float) Math.max(100, Math.min(5000, f.optDouble("r", 200)));   // jusqu'à 5 km : « je rentre à la maison »
-            list.add(
-                new Geofence.Builder()
-                    .setRequestId(f.optString("id", "f" + i))
-                    .setCircularRegion(f.optDouble("lat"), f.optDouble("lon"), rad)
-                    .setExpirationDuration(until > 0 ? until - now : Geofence.NEVER_EXPIRE)
-                    .setTransitionTypes(f.optBoolean("exit", false) ? Geofence.GEOFENCE_TRANSITION_EXIT : Geofence.GEOFENCE_TRANSITION_ENTER)
-                    .build()
-            );
-        }
-        final int n = list.size();
-        gc.removeGeofences(pi).addOnCompleteListener(t -> {
-            JSObject r = new JSObject();
-            if (n == 0) {
-                r.put("ok", true);
-                r.put("n", 0);
-                call.resolve(r);
-                return;
-            }
-            GeofencingRequest req = new GeofencingRequest.Builder().setInitialTrigger(0).addGeofences(list).build();
+            boolean exit = f.optBoolean("exit", false);
+            String sg = f.optDouble("lat") + "," + f.optDouble("lon") + "," + rad + "," + exit + "," + until;
             try {
-                gc.addGeofences(req, pi)
-                    .addOnSuccessListener(v -> {
+                sig.put(id, sg);
+            } catch (Exception ignored) {}
+            if (!tout && sg.equals(old.optString(id, ""))) continue;   // inchangée : elle continue de surveiller
+            if (!tout && old.has(id)) retirer.add(id);
+            Geofence g = new Geofence.Builder()
+                .setRequestId(id)
+                .setCircularRegion(f.optDouble("lat"), f.optDouble("lon"), rad)
+                .setExpirationDuration(until > 0 ? until - now : Geofence.NEVER_EXPIRE)
+                .setTransitionTypes(exit ? Geofence.GEOFENCE_TRANSITION_EXIT : Geofence.GEOFENCE_TRANSITION_ENTER)
+                .build();
+            (exit ? sortie : entree).add(g);
+        }
+        if (!tout) {
+            Iterator<String> it = old.keys();
+            while (it.hasNext()) {
+                String id = it.next();
+                if (!sig.has(id) && !retirer.contains(id)) retirer.add(id);
+            }
+        }
+        final int n = sig.length(), nouveaux = entree.size() + sortie.size();
+        Task<Void> t0 = tout ? gc.removeGeofences(pi) : retirer.isEmpty() ? Tasks.<Void>forResult(null) : gc.removeGeofences(retirer);
+        t0.addOnCompleteListener(x -> {
+            final JSObject r = new JSObject();
+            try {
+                // une zone « on s'éloigne » posée alors qu'on est déjà loin se déclenche tout de suite
+                Task<Void> a = entree.isEmpty() ? Tasks.<Void>forResult(null) : gc.addGeofences(new GeofencingRequest.Builder().setInitialTrigger(0).addGeofences(entree).build(), pi);
+                Task<Void> b = sortie.isEmpty()
+                    ? Tasks.<Void>forResult(null)
+                    : gc.addGeofences(new GeofencingRequest.Builder().setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_EXIT).addGeofences(sortie).build(), pi);
+                Tasks.whenAll(a, b).addOnCompleteListener(y -> {
+                    if (y.isSuccessful()) {
+                        pr.edit().putString("geo_sig", sig.toString()).putString("geo_ctx", ctxNow).apply();
                         r.put("ok", true);
                         r.put("n", n);
-                        call.resolve(r);
-                    })
-                    .addOnFailureListener(e -> {
+                        r.put("nouveaux", nouveaux);
+                    } else {
+                        pr.edit().remove("geo_sig").apply();   // tout sera réinscrit la prochaine fois
                         r.put("ok", false);
-                        r.put("why", String.valueOf(e.getMessage()));
-                        call.resolve(r);
-                    });
+                        r.put("why", String.valueOf(y.getException() != null ? y.getException().getMessage() : "?"));
+                    }
+                    call.resolve(r);
+                });
             } catch (SecurityException e) {
+                pr.edit().remove("geo_sig").apply();
                 r.put("ok", false);
                 r.put("why", "perm");
                 call.resolve(r);
             }
         });
+    }
+
+    /** ce qui oblige à tout réinscrire : un redémarrage ou une mise à jour de l'appli */
+    private String geoCtx() {
+        int boot = 0;
+        long maj = 0;
+        try {
+            boot = Settings.Global.getInt(getContext().getContentResolver(), Settings.Global.BOOT_COUNT, 0);
+        } catch (Exception ignored) {}
+        try {
+            maj = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0).lastUpdateTime;
+        } catch (Exception ignored) {}
+        return boot + ":" + maj;
+    }
+
+    /** Nestor : les zones en place et les derniers passages (réglage « chauffage selon ta présence ») */
+    @PluginMethod
+    public void geoJournal(PluginCall call) {
+        SharedPreferences pr = prefs();
+        JSObject r = new JSObject();
+        try {
+            r.put("journal", new JSONArray(pr.getString("geo_journal", "[]")));
+        } catch (Exception e) {
+            r.put("journal", new JSONArray());
+        }
+        JSONArray z = new JSONArray();
+        try {
+            JSONObject sg = new JSONObject(pr.getString("geo_sig", "{}"));
+            Iterator<String> it = sg.keys();
+            while (it.hasNext()) z.put(it.next());
+        } catch (Exception ignored) {}
+        r.put("zones", z);
+        r.put("perm", getPermissionState("loc") == PermissionState.GRANTED && bgGranted());
+        call.resolve(r);
     }
 
     // ------------------------------------------------------------------ synthèse vocale

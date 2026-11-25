@@ -12,6 +12,7 @@ import android.os.Build;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.GeofenceStatusCodes;
 import com.google.android.gms.location.GeofencingEvent;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -34,7 +35,16 @@ public class GeoReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context ctx, Intent intent) {
         GeofencingEvent ev = GeofencingEvent.fromIntent(intent);
-        if (ev == null || ev.hasError()) return;
+        if (ev == null) return;
+        if (ev.hasError()) {
+            // localisation coupée : Android a retiré les zones, l'appli les reposera toutes à sa prochaine ouverture
+            if (ev.getErrorCode() == GeofenceStatusCodes.GEOFENCE_NOT_AVAILABLE) {
+                SharedPreferences p = ctx.getSharedPreferences(TempoNativePlugin.PREFS, Context.MODE_PRIVATE);
+                p.edit().remove("geo_sig").apply();
+                journal(p, "-", "zones retirées (localisation coupée)");
+            }
+            return;
+        }
         int tr = ev.getGeofenceTransition();
         if (tr != Geofence.GEOFENCE_TRANSITION_ENTER && tr != Geofence.GEOFENCE_TRANSITION_EXIT) return;
         List<Geofence> hits = ev.getTriggeringGeofences();
@@ -83,8 +93,9 @@ public class GeoReceiver extends BroadcastReceiver {
         if (body == null) return;
         final String mode = body.optString("mode", "");
         long now = System.currentTimeMillis();
-        if (mode.isEmpty() || mode.equals(p.getString("chauffe_etat", ""))) return;
-        if (now - p.getLong("chauffe_t", 0) < 3 * 60 * 1000L) return;   // pas d'aller-retour en rafale
+        if (mode.isEmpty()) return;
+        if (mode.equals(p.getString("chauffe_etat", ""))) { journal(p, id, "déjà " + mode); return; }
+        if (now - p.getLong("chauffe_t", 0) < 3 * 60 * 1000L) { journal(p, id, "ignoré (moins de 3 min)"); return; }   // pas d'aller-retour en rafale
         p.edit().putString("chauffe_etat", mode).putLong("chauffe_t", now).apply();
         final PendingResult pr = goAsync();
         final Context app = ctx.getApplicationContext();
@@ -107,6 +118,7 @@ public class GeoReceiver extends BroadcastReceiver {
             } finally {
                 if (c != null) c.disconnect();
             }
+            journal(p, id, (ok ? "envoyé " : "échec ") + mode);
             if (ok) show(app, id, f.optString("title", "Nestor"), f.optString("body", ""), f.optString("url", "./"));
             else {
                 p.edit().remove("chauffe_etat").apply();   // on retentera au prochain passage
@@ -114,6 +126,16 @@ public class GeoReceiver extends BroadcastReceiver {
             }
             if (pr != null) pr.finish();
         }).start();
+    }
+
+    /** les 20 derniers passages, pour que l'appli puisse dire ce qui s'est passé */
+    static void journal(SharedPreferences p, String id, String quoi) {
+        try {
+            JSONArray j = new JSONArray(p.getString("geo_journal", "[]"));
+            j.put(new JSONObject().put("t", System.currentTimeMillis()).put("id", id).put("q", quoi));
+            while (j.length() > 20) j.remove(0);
+            p.edit().putString("geo_journal", j.toString()).apply();
+        } catch (Exception ignored) {}
     }
 
     static void show(Context ctx, String id, String title, String body, String url) {
