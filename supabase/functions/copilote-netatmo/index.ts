@@ -59,10 +59,23 @@ async function acces(): Promise<string | null> {
 async function api(path: string, params: Record<string, string> = {}, post = false) {
   const t = await acces(); if (!t) return { ok: false, status: 401, j: { error: "deconnecte" } as Record<string, unknown> };
   const q = new URLSearchParams(params);
-  const r = post
-    ? await fetch(API + "/api/" + path, { method: "POST", headers: { Authorization: "Bearer " + t, "content-type": "application/x-www-form-urlencoded;charset=UTF-8" }, body: q })
-    : await fetch(API + "/api/" + path + (params && Object.keys(params).length ? "?" + q : ""), { headers: { Authorization: "Bearer " + t } });
-  return { ok: r.ok, status: r.status, j: await r.json().catch(() => ({})) as Record<string, unknown> };
+  let res = { ok: false, status: 0, j: {} as Record<string, unknown> };
+  // Netatmo a des ratés passagers : un second essai, une seconde plus tard
+  for (let essai = 0; essai < 2; essai++) {
+    try {
+      const r = post
+        ? await fetch(API + "/api/" + path, { method: "POST", headers: { Authorization: "Bearer " + t, "content-type": "application/x-www-form-urlencoded;charset=UTF-8" }, body: q, signal: AbortSignal.timeout(8000) })
+        : await fetch(API + "/api/" + path + (params && Object.keys(params).length ? "?" + q : ""), { headers: { Authorization: "Bearer " + t }, signal: AbortSignal.timeout(8000) });
+      res = { ok: r.ok, status: r.status, j: await r.json().catch(() => ({})) as Record<string, unknown> };
+    } catch (e) {
+      res = { ok: false, status: 0, j: { error: "reseau: " + String((e as Error)?.message ?? e).slice(0, 60) } };
+    }
+    if (res.ok || (res.status >= 400 && res.status < 500 && res.status !== 429)) break;
+    if (essai === 0) await new Promise(r => setTimeout(r, 1000));
+  }
+  // dans les journaux : l'appel et la réponse de Netatmo, jamais de donnée de la maison
+  if (!res.ok) console.log("netatmo", path, res.status, JSON.stringify(res.j?.error ?? "").slice(0, 160));
+  return res;
 }
 const errNet = (r: { status: number; j: Record<string, unknown> }) => {
   const e = r.j?.error as Record<string, unknown> | string | undefined;

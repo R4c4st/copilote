@@ -220,7 +220,9 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
 .cc.dim{opacity:.6}
 .aRow{display:flex;gap:10px;align-items:center;padding:6px 0;margin-top:0}
 .aRow input,#cGm{accent-color:rgb(var(--glow))}
-.toast{position:fixed;left:50%;bottom:calc(26px + var(--sab));transform:translate(-50%,20px);opacity:0;transition:.3s;font-size:14px;display:flex;gap:18px;padding:12px 20px;border-radius:999px;background:var(--sheet);border:1px solid var(--faint);z-index:60;white-space:nowrap;letter-spacing:.2px}
+.toast{position:fixed;left:50%;bottom:calc(26px + var(--sab));transform:translate(-50%,20px);opacity:0;transition:.3s;font-size:14px;display:flex;align-items:center;gap:18px;padding:12px 20px;border-radius:24px;background:var(--sheet);border:1px solid var(--faint);z-index:60;width:max-content;max-width:calc(100vw - 28px);box-sizing:border-box;line-height:1.35;letter-spacing:.2px}
+#tTxt{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.toast button{flex-shrink:0;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .toast{pointer-events:none}.toast.show button{pointer-events:auto}
 .toast button{color:rgb(var(--glow));font-weight:500}
@@ -395,7 +397,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v27 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v28 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -646,7 +648,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 27;
+const TEMPO_BUILD = 28;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -3442,7 +3444,9 @@ function toast(msg, btn, fn, ms){
   $("tTxt").innerHTML = richText(msg); const b = $("tBtn");
   let used = false;
   b.textContent = btn || ""; b.style.display = btn ? "" : "none"; b.onclick = () => { if (used) return; used = true; b.onclick = null; fn && fn(); $("toast").classList.remove("show"); };
-  $("toast").classList.add("show"); clearTimeout(tt); tt = setTimeout(() => { $("toast").classList.remove("show"); b.onclick = null; }, ms || (btn ? 4000 : 2200));
+  // le temps de lire : plus le message est long, plus il reste
+  const lire = Math.min(12000, 1200 + String(msg || "").length * 55);
+  $("toast").classList.add("show"); clearTimeout(tt); tt = setTimeout(() => { $("toast").classList.remove("show"); b.onclick = null; }, Math.max(ms || (btn ? 4000 : 2200), lire));
 }
 
 /* ===== reminders ===== */
@@ -4621,7 +4625,7 @@ const jvSys = () => CV_SYS.replace(/\{NOM\}/g, jvNom()).replace(/\{PRENOM\}/g, (
   + (cvNorm(jvNom()) !== "jarvis" ? "\n\nTon nom\n- Il lui arrive encore de t'appeler Jarvis, ton ancien nom : c'est bien à toi qu'il parle." : "")
   + (jvEstNestor() ? "\n- Ton nom s'écrit N.E.S.T.O.R. en sigle. C'est un acronyme à géométrie variable : s'il te demande ce qu'il veut dire, donne avec flegme une seule de ces versions, jamais une autre : " + jvAcroListe().map(a => "« " + a + " »").join(", ") + "." : "")
   + (jvBetaMatchOn() || jvBetaCineOn() ? "\n\nBêta (essais qu'il peut couper)\n- Quand il demande son brief, et seulement là, termine par les blocs bêta présents dans <contexte> (Cote & Match, Ciné du week-end) : francs, courts, sans les délayer.\n- S'il annonce son pari Cote & Match, note-le avec cote_match_choix, puis propose en une ligne le message prêt à envoyer au groupe : c'est lui qui l'envoie." : "")
-  + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Ne touche jamais au chauffage de ta propre initiative, sauf s'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets alors la maison en absent jusqu'à son retour, et dis-le.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "")
+  + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Quand il te dit qu'il part ou qu'il est parti de chez lui (« je pars », « je suis parti », « je m'en vais », « je pars au boulot ») : mets la maison en absent (chauffage_mode), sans rien demander. Quand il dit qu'il rentre ou qu'il est rentré : remets le planning. Il te l'a délégué.\n- S'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets la maison en absent jusqu'à son retour, et dis-le.\n- En dehors de ça, ne touche jamais au chauffage de ta propre initiative.\n- Si Netatmo ne répond pas, dis-le en une phrase et propose de réessayer : ne fais pas d'hypothèse sur ce qu'il voulait.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "")
   + (jvSanteOn() ? "\n\nSa santé (sa montre et sa balance)\n- Pour un bilan santé, son sommeil, son poids, son pouls ou son activité, appelle sante_bilan (jours : 7 par défaut, 30 pour le mois, davantage pour suivre le poids).\n- Le bilan : court et parlé, quelques chiffres seulement. Compare sa période à ses propres habitudes (la référence), pas à des normes générales. Termine par un point positif et un point à surveiller.\n- Tu commentes des tendances, jamais de diagnostic. Si un signal dure (pouls au repos haut plusieurs jours, poids qui baisse sans qu'il le cherche, nuits très courtes en série), conseille-lui simplement d'en parler à son médecin.\n- N'en parle jamais de toi-même : seulement quand il le demande." : "");
 /* début de la fenêtre envoyée à Claude, fixé pour toute une réponse : si on le décale pendant qu'il utilise ses outils,
    sa réflexion (signée pour ce début de conversation) est refusée (erreur 400 « bound to a different conversation ») */
@@ -4651,6 +4655,13 @@ function cvCount(u){
 async function cvSend(text, opt){
   text = (text || "").trim(); if (!text || JV.busy) return;
   cvFraiche();
+  { const rc = jvRaccourci(jvAppel(text) || text);   // « je pars », « je rentre » : tout de suite, sans Claude
+    if (rc) {
+      JV.busy = true; cvStatus("je règle le chauffage…");
+      try { const o = await jvFaireRaccourci(rc, text); if (opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0") { try { speak(jvPourVoix(o.err || o.dit)); } catch (e) {} } }
+      finally { JV.busy = false; cvStatus(""); cvPaint(); }
+      return;
+    } }
   if (jvAcroDemande(text, JV.at && Date.now() - JV.at < 3 * 60000)) {
     const r = jvAcro();
     JV.view.push({ r: "u", t: text }, { r: "a", t: r.ecrit, usd: 0 });
@@ -6070,12 +6081,21 @@ function jvAppel(text){
 /* raccourcis : faits tout de suite, sans passer par Claude (les prochains automatismes s'ajoutent ici) */
 const JV_RACCOURCIS = [
   { nom: "rentre", pret: () => jvNetOn(),
-    rx: /^(?:je (?:rentre|reviens|suis sur le (?:chemin du )?retour|suis en route pour la maison)|on rentre)(?: (?:a la maison|chez moi|du (?:boulot|travail|taf|bureau|golf|chantier)))?(?: (?:maintenant|la|tout de suite))?$/,
+    rx: /^(?:je (?:rentre|reviens|suis rentree?|suis sur le (?:chemin du )?retour|suis en route pour la maison|suis (?:a la maison|chez moi)|arrive (?:a la maison|chez moi))|on rentre|j'arrive a la maison)(?: (?:a la maison|chez moi|du (?:boulot|travail|taf|bureau|golf|chantier)))?(?: (?:maintenant|la|tout de suite|bientot))?$/,
     faire: async () => { const r = await jvNetMode("schedule"); return r.ok ? { dit: "Chauffage remis au planning : la maison chauffe pour ton retour." } : { err: "Netatmo n'a pas répondu, le chauffage n'a pas changé." }; } },
   { nom: "pars", pret: () => jvNetOn(),
-    rx: /^(?:je (?:pars|m'en vais|quitte la maison|sors de (?:la maison|chez moi))|on part)(?: (?:de la maison|de chez moi))?(?: (?:maintenant|la|tout de suite))?$/,
+    rx: /^(?:je (?:pars|m'en vais|file|suis partie?|suis sortie? de (?:la maison|chez moi)|ne suis plus (?:a la maison|chez moi)|quitte (?:la maison|chez moi)|sors de (?:la maison|chez moi)|vais (?:au|a l') ?(?:boulot|travail|taf|bureau|chantier|agence))|j'ai quitte (?:la maison|chez moi)|on part|on est partis?)(?: (?:de la maison|de chez moi|(?:au|a l') ?(?:boulot|travail|taf|bureau|chantier|agence)))?(?: (?:maintenant|la|tout de suite|ce matin))?$/,
     faire: async () => { const r = await jvNetMode("away"); return r.ok ? { dit: "Maison en absent, le chauffage baisse." + (jvChauffeAuto() ? " Il reprend tout seul à ton retour." : " Dis « Nestor, je rentre » au retour.") } : { err: "Netatmo n'a pas répondu, le chauffage n'a pas changé." }; } }
 ];
+/* fait le raccourci et le garde dans la conversation : s'il l'ouvre ensuite, Nestor sait ce qui a été fait */
+async function jvFaireRaccourci(r, texte){
+  const o = await r.faire(), dit = o.err || o.dit;
+  cvFraiche();
+  JV.view.push({ r: "u", t: texte }, { r: "a", t: dit, usd: 0 });
+  JV.msgs.push({ role: "user", content: texte }, { role: "assistant", content: dit });
+  JV.at = Date.now(); await cvSave();
+  return o;
+}
 function jvRaccourci(reste){
   const n = cvNorm(String(reste || "").replace(/[’`]/g, "'")).replace(/\bs'il te plait\b/g, " ").replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim().replace(/^(?:bon|ok|allez|alors) /, "");
   return JV_RACCOURCIS.find(r => r.rx.test(n) && r.pret()) || null;
@@ -6093,15 +6113,11 @@ async function jvAuCercle(reste){
   const parle = t => { if (CFG.jvParle !== false && CFG.vSay !== "0") { try { speak(jvPourVoix(t)); } catch (e) {} } };
   const r = jvRaccourci(reste);
   if (r) {
-    const o = await r.faire();
+    const o = await jvFaireRaccourci(r, reste);
     idle();
     if (o.err) { toast(o.err, "", null, 6000); parle(o.err); return; }
     flashOk(); vib(18); toast(o.dit, "voir", () => openConv(), 7000); parle(o.dit);
-    // gardé dans la conversation : s'il l'ouvre ensuite, Nestor sait ce qui a été fait
-    cvFraiche();
-    JV.view.push({ r: "u", t: reste }, { r: "a", t: o.dit, usd: 0 });
-    JV.msgs.push({ role: "user", content: reste }, { role: "assistant", content: o.dit });
-    JV.at = Date.now(); await cvSave(); return;
+    return;
   }
   if (!CFG.key) { idle(); toast("il me faut ta clé Claude pour te répondre (réglages)", "", null, 6000); return; }
   if (JV.busy) { idle(); toast("je réponds déjà à autre chose, réessaie dans un instant", "", null, 5000); return; }
@@ -6112,7 +6128,8 @@ async function jvAuCercle(reste){
   // une proposition à valider (souvenir, lieu, oubli) ou une erreur : la conversation s'ouvre
   if (nv.some(v => (v.r === "p" && !v.st) || v.r === "e")) { openConv(); return; }
   const rep = jvPourVoix(nv.filter(v => v.r === "a").map(v => v.t).join(" "));
-  flashOk(); toast(rep.length > 180 ? rep.slice(0, 177) + "…" : rep || "c'est fait", "voir", () => openConv(), 9000);
+  let court = rep; if (court.length > 140) { const k = court.slice(0, 140).search(/[.!?…](?=\s[^.!?…]*$)/); court = k > 40 ? court.slice(0, k + 1) : court.slice(0, 137) + "…"; }
+  flashOk(); toast(court || "c'est fait", "voir", () => openConv(), 10000);
 }
 const jvPourVoix = t => String(t || "").replace(/\*\*/g, "").replace(/\b(?:[A-Z]\.\s?){3,}[A-Z]?\.?/g, m => m.replace(/[.\s]/g, "").toLowerCase() === cvNorm(jvNom()) ? jvNom() + (/\s$/.test(m) ? " " : "") : m).replace(/^\s*[-•]\s*/gm, "").replace(/https?:\/\/\S+/g, "").replace(/\s*\n+\s*/g, " ").trim().slice(0, 900);
 const _jvVoxBias = voxBias;
