@@ -397,7 +397,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v29 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v30 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -648,7 +648,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 29;
+const TEMPO_BUILD = 30;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -2097,7 +2097,11 @@ function knownContact(name, num){
 const isNumLike = s => /^[+\d\s.()-]{6,}$/.test(s || "");
 const fmtNum = n => { const d = (n || "").replace(/[^\d+]/g, "").replace(/^\+33/, "0").replace(/^0033/, "0"); return /^0\d{9}$/.test(d) ? d.replace(/(\d{2})(?=\d)/g, "$1 ").trim() : d; };
 const hhmm = iso => { const d = new Date(iso); return pad(d.getHours()) + "h" + pad(d.getMinutes()); };
+/* appels étiquetés spam par le téléphone (« Suspicion de spam », « Démarchage »…) : jamais à rappeler */
+const SPAM_RX = /spam|indesirable|demarchage|arnaque|fraud|escroqu|telemarketing|teleprospect|appel suspect|numero suspect|robocall/;
+const estSpam = e => SPAM_RX.test(norm(String((e && e.who) || "")));
 function missedCall(e){
+  if (estSpam(e)) return null;
   const num = (e.num || "").replace(/[^\d+]/g, ""), raw = e.who && !isNumLike(e.who) ? e.who : "";
   const kc = knownContact(raw, num), name = (kc && kc.name) || raw;
   if (!name && !num) return null;                                   // numéro masqué : rien à rappeler
@@ -2110,8 +2114,19 @@ function missedCall(e){
   st.items.unshift(it); putSpace(sp, st); if (sp === SPACE) calSync(it);
   return sp;
 }
+function menageSpam(){
+  if (LS.get("copilote_menage_spam", 0)) return;
+  for (const sp of ["pro", "perso"]) {
+    const st = spaceState(sp), sale = (st.items || []).filter(i => !i.done && i.cat === "appel" && SPAM_RX.test(norm(String(i.title || "").replace(/^rappeler\s+/i, ""))));
+    if (!sale.length) continue;
+    st.items = st.items.filter(i => !sale.includes(i)); putSpace(sp, st);
+    sale.forEach(i => { try { calDel(i); } catch (e) {} });
+  }
+  LS.set("copilote_menage_spam", 1);
+}
 let inboxRunning = false;
 async function processInbox(){
+  try { menageSpam(); } catch (e) {}
   if (inboxRunning) return;
   let q = LS.get("tempo_iq", []); if (!q.length) return;
   if (listening || typing || document.querySelector(".sheet.show") || $("ring").classList.contains("think")) return;   // on attend un moment calme
@@ -2122,7 +2137,7 @@ async function processInbox(){
   const seen = new Set();   // même notification reçue deux fois (WhatsApp la met souvent à jour) : une seule
   q = q.filter(e => { const k = [e.kind, e.who, e.num, e.body].join("|"); if (seen.has(k)) return false; seen.add(k); return true; });
   try { if (typeof jvHisto === "function") jvHisto(q); } catch (er) {}   // Jarvis : 3 jours d'historique, dans le téléphone, pour « fais un check »
-  const calls = q.filter(e => e.kind === "appel"), ends = q.filter(e => e.kind === "fin_appel");
+  const calls = q.filter(e => e.kind === "appel" && !estSpam(e)), ends = q.filter(e => e.kind === "fin_appel" && !estSpam(e));
   let msgs = q.filter(e => ["sms", "whatsapp", "notif", "chat"].includes(e.kind));
   let nCalls = 0; const callNames = [];
   for (const e of calls) { const sp = missedCall(e); if (sp) { nCalls++; callNames.push(e.who && !isNumLike(e.who) ? e.who : fmtNum(e.num)); } }
