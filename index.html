@@ -397,7 +397,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v28 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v29 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -648,7 +648,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 28;
+const TEMPO_BUILD = 29;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4496,6 +4496,15 @@ const CV_TOOLS = [
       du: { type: "string", description: "AAAA-MM-JJ" }, au: { type: "string", description: "AAAA-MM-JJ" },
       espace: { type: "string", enum: ["tous", "pro", "perso"] },
       faites: { type: "boolean", description: "true pour inclure celles déjà faites." } } } },
+  { name: "modifier_tache", description: "Corrige un élément DÉJÀ dans sa liste (tâche, rappel, rendez-vous, et son agenda) : le déplacer, le renommer ou le supprimer. À utiliser dès qu'il corrige une date ou une heure (« je me suis trompé, c'est jeudi 10 », « décale à 19h »), qu'il annule, ou qu'il y a un doublon : on modifie l'existant, on n'en crée jamais un second. Trouve l'élément par son id (outil taches) ou par des mots de son titre (+ date_actuelle pour départager). Le rappel de bus lié est retiré quand le rendez-vous bouge. Fait tout de suite, annulable.",
+    input_schema: { type: "object", properties: {
+      action: { type: "string", enum: ["deplacer", "supprimer", "renommer"] },
+      id: { type: "string", description: "L'id donné par l'outil taches (le plus sûr)." },
+      recherche: { type: "string", description: "Sinon, des mots de son titre, ex. « marché de Noël Yann »." },
+      date_actuelle: { type: "string", description: "AAAA-MM-JJ : sa date actuelle, pour départager deux exemplaires." },
+      nouvelle_date: { type: "string", description: "AAAA-MM-JJ" }, nouvelle_heure: { type: "string", description: "HH:MM" },
+      nouveau_titre: { type: "string" } },
+      required: ["action"] } },
   { name: "proposer_vtc", description: "Seulement s'il te demande explicitement un Uber ou un Bolt : propose d'ouvrir l'appli vers une destination. Il commande lui-même.",
     input_schema: { type: "object", properties: {
       destination: { type: "string", description: "Adresse ou lieu de destination." },
@@ -4625,6 +4634,7 @@ const jvSys = () => CV_SYS.replace(/\{NOM\}/g, jvNom()).replace(/\{PRENOM\}/g, (
   + (cvNorm(jvNom()) !== "jarvis" ? "\n\nTon nom\n- Il lui arrive encore de t'appeler Jarvis, ton ancien nom : c'est bien à toi qu'il parle." : "")
   + (jvEstNestor() ? "\n- Ton nom s'écrit N.E.S.T.O.R. en sigle. C'est un acronyme à géométrie variable : s'il te demande ce qu'il veut dire, donne avec flegme une seule de ces versions, jamais une autre : " + jvAcroListe().map(a => "« " + a + " »").join(", ") + "." : "")
   + (jvBetaMatchOn() || jvBetaCineOn() ? "\n\nBêta (essais qu'il peut couper)\n- Quand il demande son brief, et seulement là, termine par les blocs bêta présents dans <contexte> (Cote & Match, Ciné du week-end) : francs, courts, sans les délayer.\n- S'il annonce son pari Cote & Match, note-le avec cote_match_choix, puis propose en une ligne le message prêt à envoyer au groupe : c'est lui qui l'envoie." : "")
+  + "\n\nCorriger plutôt qu'ajouter\n- S'il corrige une date, une heure ou un titre (« je me suis trompé », « non, c'est jeudi », « décale à 19h »), qu'il annule quelque chose, ou s'il y a un doublon : utilise modifier_tache sur l'élément qui existe déjà (cherche-le avec taches si besoin). Ne crée jamais un second rendez-vous ou un second rappel à côté de l'ancien.\n- Ça vaut aussi pour ce que tu viens d'ajouter dans cette conversation.\n- Si son rappel de bus a été retiré, propose le bus pour la nouvelle date."
   + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Quand il te dit qu'il part ou qu'il est parti de chez lui (« je pars », « je suis parti », « je m'en vais », « je pars au boulot ») : mets la maison en absent (chauffage_mode), sans rien demander. Quand il dit qu'il rentre ou qu'il est rentré : remets le planning. Il te l'a délégué.\n- S'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets la maison en absent jusqu'à son retour, et dis-le.\n- En dehors de ça, ne touche jamais au chauffage de ta propre initiative.\n- Si Netatmo ne répond pas, dis-le en une phrase et propose de réessayer : ne fais pas d'hypothèse sur ce qu'il voulait.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "")
   + (jvSanteOn() ? "\n\nSa santé (sa montre et sa balance)\n- Pour un bilan santé, son sommeil, son poids, son pouls ou son activité, appelle sante_bilan (jours : 7 par défaut, 30 pour le mois, davantage pour suivre le poids).\n- Le bilan : court et parlé, quelques chiffres seulement. Compare sa période à ses propres habitudes (la référence), pas à des normes générales. Termine par un point positif et un point à surveiller.\n- Tu commentes des tendances, jamais de diagnostic. Si un signal dure (pouls au repos haut plusieurs jours, poids qui baisse sans qu'il le cherche, nuits très courtes en série), conseille-lui simplement d'en parler à son médecin.\n- N'en parle jamais de toi-même : seulement quand il le demande." : "");
 /* début de la fenêtre envoyée à Claude, fixé pour toute une réponse : si on le décale pendant qu'il utilise ses outils,
@@ -4733,7 +4743,7 @@ async function cvSend(text, opt){
   }
   JV.busy = false; cvStatus(""); await cvSave(); cvPaint();
 }
-const JV_AUTO = new Set(["rappel", "courses", "ici"]);
+const JV_AUTO = new Set(["rappel", "courses", "ici", "modif"]);
 async function cvDecide(i, ok){
   const p = JV.view[i]; if (!p || p.r !== "p" || p.st) return;
   if (ok && p.k === "retenir") { await memRemember(p.t, p.d, p.pin, "conversation"); JV.notes.push(`retenu : « ${p.t} »`); }
@@ -4759,6 +4769,7 @@ async function cvDecide(i, ok){
 /* annuler ce qui s'est ajouté tout seul */
 async function cvUndo(i){
   const p = JV.view[i]; if (!p || p.st !== "ok" || !JV_AUTO.has(p.k)) return;
+  if (p.k === "modif") return jvModifAnnule(p);
   const ids = p.tids || (p.tid ? [p.tid] : []), sp = p.k === "courses" ? "perso" : p.sp;
   if (ids.length) {
     if (sp === SPACE) { const gone = S.items.filter(x => ids.includes(x.id)); S.items = S.items.filter(x => !ids.includes(x.id)); save(); try { render(); } catch (e) {} gone.forEach(x => { if (x.cat === "rdv") calDel(x); }); }
@@ -4937,7 +4948,72 @@ async function toolTaches(x){
     out.push({ i, sp });
   }
   out.sort((a, b) => (a.i.due || "9999").localeCompare(b.i.due || "9999") || (a.i.time || "").localeCompare(b.i.time || "") || (b.i.created || 0) - (a.i.created || 0));
-  return { nombre: out.length, taches: out.slice(0, 40).map(({ i, sp }) => `${i.due ? jvJourTxt(i.due) + (i.time ? " " + i.time : "") : "sans date"} · ${sp} · ${i.title}${i.ch ? " [" + i.ch + "]" : ""}${i.done ? " (fait)" : ""}`) };
+  return { nombre: out.length, taches: out.slice(0, 40).map(({ i, sp }) => `id=${i.id} · ${i.due ? jvJourTxt(i.due) + (i.time ? " " + i.time : "") : "sans date"} · ${sp} · ${i.title}${i.ch ? " [" + i.ch + "]" : ""}${i.done ? " (fait)" : ""}`) };
+}
+/* ---------- correctif du 25/11 : corriger plutôt qu'ajouter ----------
+   « Je me suis trompé, c'est jeudi 10 » : l'élément existant est déplacé (agenda compris), jamais recréé.
+   Le rappel du bus lié est retiré (Nestor en propose un nouveau). Tout s'annule d'un geste. */
+const jvHmMin = t => +String(t).slice(0, 2) * 60 + +String(t).slice(3, 5);
+function jvTrouveTache(x){
+  const tous = [];
+  for (const sp of ["perso", "pro"]) for (const i of spaceState(sp).items || []) if (!i.done) tous.push({ i, sp });
+  if (x.id) { const t = tous.find(o => o.i.id === String(x.id)); return t ? [t] : []; }
+  const mots = busKey(x.recherche || "").split(" ").filter(w => w.length > 2);
+  if (!mots.length) return [];
+  let L = tous.filter(({ i }) => { const k = busKey([i.title, i.note, i.ch, i.place].join(" ")); return mots.every(w => k.includes(w)); });
+  if (/^\d{4}-\d{2}-\d{2}$/.test(x.date_actuelle || "")) L = L.filter(o => o.i.due === x.date_actuelle);
+  return L;
+}
+/* le rappel « Pars pour le bus… » posé pour ce rendez-vous : même jour, dans les 3 heures avant */
+const jvBusLie = (sp, it) => !it.due || !it.time ? [] : (spaceState(sp).items || []).filter(b => b.id !== it.id && !b.done && b.due === it.due && /^pars pour le bus/i.test(b.title || "") && b.time && b.time <= it.time && jvHmMin(it.time) - jvHmMin(b.time) <= 180);
+function jvBusOublie(b){
+  const m = /bus de (\d{1,2})h(\d{2})/i.exec(b.title || ""); if (!m || !b.due) return;
+  const id = "bus-" + new Date(`${b.due}T${m[1].padStart(2, "0")}:${m[2]}:00`).getTime();
+  LS.set("copilote_bus_watch", (LS.get("copilote_bus_watch", []) || []).filter(w => w.id !== id));
+}
+const jvQuandT = i => i.due ? jvJourTxt(i.due) + (i.time ? " à " + i.time.replace(":", "h") : "") : "sans date";
+async function toolModifierTache(x){
+  const act = x.action;
+  if (!["deplacer", "supprimer", "renommer"].includes(act)) return { erreur: "action : deplacer, supprimer ou renommer" };
+  const L = jvTrouveTache(x);
+  if (!L.length) return { erreur: "introuvable", conseil: "cherche-la avec l'outil taches (il donne l'id)" };
+  if (L.length > 1) return { plusieurs: L.slice(0, 8).map(({ i, sp }) => `id=${i.id} · ${jvQuandT(i)} · ${sp} · ${i.title}`), conseil: "rappelle modifier_tache avec l'id du bon élément" };
+  const { i: it, sp } = L[0];
+  const nd = /^\d{4}-\d{2}-\d{2}$/.test(x.nouvelle_date || "") ? x.nouvelle_date : "", nh = /^\d{1,2}:\d{2}$/.test(x.nouvelle_heure || "") ? x.nouvelle_heure.padStart(5, "0") : "";
+  if (act === "deplacer" && !nd && !nh) return { erreur: "il manque nouvelle_date (AAAA-MM-JJ) ou nouvelle_heure (HH:MM)" };
+  if (act === "renommer" && !String(x.nouveau_titre || "").trim()) return { erreur: "il manque nouveau_titre" };
+  const avant = JSON.parse(JSON.stringify(it)), bus = act === "renommer" ? [] : jvBusLie(sp, it), retires = [];
+  let st = spaceState(sp);
+  if (act === "supprimer") { st.items = st.items.filter(o => o.id !== it.id); retires.push(avant); try { await calDel(it); } catch (e) {} }
+  else {
+    const o = st.items.find(o => o.id === it.id);
+    if (act === "deplacer") { if (nd) o.due = nd; if (nh) o.time = nh; o.notified = false; }
+    else o.title = String(x.nouveau_titre).trim().slice(0, 140);
+  }
+  for (const b of bus) { st.items = st.items.filter(o => o.id !== b.id); retires.push(JSON.parse(JSON.stringify(b))); jvBusOublie(b); try { await calDel(b); } catch (e) {} }
+  putSpace(sp, st);
+  if (act !== "supprimer") { st = spaceState(sp); const o = st.items.find(o => o.id === it.id); if (o) { try { await calSync(o); } catch (e) {} putSpace(sp, st); } }
+  try { render(); } catch (e) {}
+  schedulePushSync(); if (bus.length) jvGeoSync();
+  const apres = (spaceState(sp).items || []).find(o => o.id === it.id);
+  const t = act === "supprimer" ? `${avant.title} (${jvQuandT(avant)})` : act === "deplacer" ? `${avant.title} : ${jvQuandT(avant)} → ${jvQuandT(apres)}` : `${avant.title} → ${apres.title}`;
+  JV.view.push({ r: "p", k: "modif", act, st: "ok", auto: true, sp, tid: it.id, t, avant, retires, bus: bus.map(b => b.title) });
+  JV.notes.push(`${act === "supprimer" ? "supprimé" : act === "deplacer" ? "déplacé" : "renommé"} : « ${t} »`);
+  return { fait: (act === "supprimer" ? "supprimé : " : act === "deplacer" ? "déplacé : " : "renommé : ") + t + (act !== "supprimer" && apres && apres.cat === "rdv" ? " (agenda mis à jour)" : ""),
+    ...(bus.length ? { rappel_bus_retire: bus.map(b => b.title).join(", "), conseil: act === "deplacer" ? "propose le bus pour la nouvelle date (horaires_bus puis proposer_rappel)" : "" } : {}) };
+}
+/* annuler une correction : tout revient comme avant */
+async function jvModifAnnule(p){
+  const st = spaceState(p.sp);
+  if (p.act !== "supprimer") { const o = st.items.find(o => o.id === p.tid); if (o) { Object.keys(o).forEach(k => delete o[k]); Object.assign(o, p.avant); } }
+  for (const r of p.retires || []) if (!st.items.some(o => o.id === r.id)) st.items.unshift(r);
+  putSpace(p.sp, st);
+  for (const id of [p.tid, ...(p.retires || []).map(r => r.id)]) { const o = (spaceState(p.sp).items || []).find(o => o.id === id); if (o) { try { await calSync(o); } catch (e) {} } }
+  putSpace(p.sp, spaceState(p.sp));
+  try { render(); } catch (e) {}
+  schedulePushSync();
+  p.st = "non"; JV.notes.push(`correction annulée : « ${p.t} »`);
+  await cvSave(); cvPaint();
 }
 const METEO_CODE = c => c === 0 ? "ciel clair" : c <= 3 ? "nuageux" : c <= 48 ? "brouillard" : c <= 57 ? "bruine" : c <= 67 ? "pluie" : c <= 77 ? "neige" : c <= 82 ? "averses" : c <= 86 ? "averses de neige" : "orage";
 async function toolMeteo(x){
@@ -4956,8 +5032,8 @@ async function toolMeteo(x){
   H.time.forEach((t, i) => { const h = +t.slice(11, 13); if (h >= lo && h <= hi) heures.push(`${h}h : ${Math.round(H.temperature_2m[i])}°C, ${METEO_CODE(H.weather_code[i])}, pluie ${H.precipitation_probability[i] ?? "?"} % (${H.precipitation[i]} mm), vent ${Math.round(H.wind_speed_10m[i])} km/h`); });
   return { lieu: p.nom, date: day, heures, source: "Open-Meteo" };
 }
-const JV_LOCAL = { horaires_bus: toolBus, meteo: toolMeteo, trajet_voiture: toolVoiture, derniers_messages: toolMessages, mails: toolMails, lire_mail: toolLireMail, agenda: toolAgenda, taches: toolTaches };
-const JV_ATTENTE = { horaires_bus: "je regarde les bus…", meteo: "je regarde la météo…", trajet_voiture: "je calcule le trajet…", derniers_messages: "je regarde tes messages…", mails: "je regarde tes mails…", lire_mail: "je lis le mail…", agenda: "je regarde ton agenda…", taches: "je regarde tes tâches…" };
+const JV_LOCAL = { horaires_bus: toolBus, meteo: toolMeteo, trajet_voiture: toolVoiture, derniers_messages: toolMessages, mails: toolMails, lire_mail: toolLireMail, agenda: toolAgenda, taches: toolTaches, modifier_tache: toolModifierTache };
+const JV_ATTENTE = { horaires_bus: "je regarde les bus…", meteo: "je regarde la météo…", trajet_voiture: "je calcule le trajet…", derniers_messages: "je regarde tes messages…", mails: "je regarde tes mails…", lire_mail: "je lis le mail…", agenda: "je regarde ton agenda…", taches: "je regarde tes tâches…" , modifier_tache: "je corrige…"};
 
 /* ---------- lot 16 : le chauffage (Netatmo) ----------
    La connexion Netatmo vit dans la fonction serveur copilote-netatmo ; le téléphone ne garde qu'une « clé maison ».
@@ -6164,6 +6240,10 @@ function cvPaint(){
       const wz = v.lieu ? `<button class="y" data-waze="${esc(v.lieu)}">Waze</button>` : "";
       const act = v.st === "ok" ? `<div class="act">${wz}<span>${v.rdv && gOn() ? "ajouté, et dans l'agenda" : "ajouté, il sonnera"} ✓</span>${cvUndoBtn(v, i)}</div>` : v.st === "non" ? `<div class="act">${v.auto ? "annulé" : "laissé de côté"}</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
       return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">${v.rdv ? "Rendez-vous" : "Rappel"} · ${v.sp} · ${quand}</div><div>${esc(v.t)}</div>${v.lieu ? `<div class="sub">${esc(v.lieu)}</div>` : ""}${act}</div>`;
+    }
+    if (v.k === "modif") {
+      const act = v.st === "ok" ? `<div class="act"><span>${v.act === "supprimer" ? "supprimé" : "corrigé"}${v.act !== "renommer" ? ", agenda compris" : ""} ✓</span>${cvUndoBtn(v, i)}</div>` : `<div class="act">annulé</div>`;
+      return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">${v.act === "supprimer" ? "Supprimé" : v.act === "deplacer" ? "Déplacé" : "Renommé"} · ${v.sp}</div><div>${esc(v.t)}</div>${v.bus && v.bus.length ? `<div class="sub">rappel retiré : ${esc(v.bus.join(", "))}</div>` : ""}${act}</div>`;
     }
     if (v.k === "lieu") {
       const act = v.st === "ok" ? `<div class="act">ajouté ✓${v.label ? " · " + esc(v.label) : ""}</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
