@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v33 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v34 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 33;
+const TEMPO_BUILD = 34;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1729,7 +1729,7 @@ async function gSync(it){
     summary: (it.done ? "✓ " : "") + (it.ch ? "[" + it.ch + "] " : "") + it.title,
     description: (it.note ? it.note + "\n\n" : "") + (it.done ? "Fait le " + new Date(it.doneAt).toLocaleString("fr-FR") + "\n" : "") + "— " + jvNom(),
     start, end, transparency: it.done ? "transparent" : "opaque",
-    reminders: { useDefault: false, overrides: it.done || !it.time ? [] : [{ method: "popup", minutes: it.cat === "rdv" ? 30 : 0 }] }
+    reminders: { useDefault: false, overrides: [] }   // pas de notification de l'agenda : c'est Nestor qui prévient
   };
   if (it.done) ev.colorId = "8";
   const base = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
@@ -1745,6 +1745,19 @@ async function gSync(it){
     }
   } catch (e) { G.lastErr = "réseau " + e.message; saveG(); toast("agenda injoignable"); }
 }
+/* correctif du 26/11 : les entrées d'agenda posées par Nestor ne sonnent plus (une seule fois, sur celles à venir) */
+async function gSansRappels(){
+  if (!gOn() || LS.get("copilote_g_sansrappel", false)) return;
+  const t = await gToken(); if (!t) return;
+  const auj = ymd(new Date()), L = ["pro", "perso"].flatMap(sp => spaceState(sp).items || []).filter(i => i.gId && !i.done && i.due && i.due >= auj);
+  let ok = true;
+  for (const it of L) {
+    try { const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/" + encodeURIComponent(it.gId), { method: "PATCH", headers: { Authorization: "Bearer " + t, "content-type": "application/json" }, body: JSON.stringify({ reminders: { useDefault: false, overrides: [] } }) });
+      if (!r.ok && r.status !== 404 && r.status !== 410) ok = false; } catch (e) { ok = false; }
+  }
+  if (ok) LS.set("copilote_g_sansrappel", true);
+}
+setTimeout(() => { try { gSansRappels(); } catch (e) {} }, 4000);
 async function gDel(it){
   if (!it || !it.gId || !gOn()) return;
   const t = await gToken(); if (!t) return;
@@ -1772,7 +1785,7 @@ async function calSync(it){
     subject: (it.done ? "✓ " : "") + (it.ch ? "[" + it.ch + "] " : "") + it.title,
     body: { contentType: "text", content: (it.note ? it.note + "\n\n" : "") + (it.done ? "Fait le " + new Date(it.doneAt).toLocaleString("fr-FR") + "\n" : "") + "— " + jvNom() },
     start, end, isAllDay: allDay, showAs: "free",
-    isReminderOn: !it.done && !allDay, reminderMinutesBeforeStart: 10, categories: [jvNom()]
+    isReminderOn: false, categories: [jvNom()]
   };
   try {
     const url = "https://graph.microsoft.com/v1.0/me/events" + (it.evId ? "/" + it.evId : "");
