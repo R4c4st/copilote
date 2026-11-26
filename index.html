@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v34 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v35 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 34;
+const TEMPO_BUILD = 35;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1002,6 +1002,7 @@ ${SPACE === "perso" || CFG.jvEsp !== false ? `- VIE PRIVÉE (éléments perso) :
 - RÉCURRENCE : si c'est répétitif (« tous les lundis », « chaque mois le 5 », « tous les jours »), ajoute "rec":"jour|ouvre|semaine|mois|an" et mets la PROCHAINE occurrence dans due (et time si dite). "ouvre" = du lundi au vendredi. Le title ne contient pas la fréquence.
 - MAILS : s'il demande d'écrire, d'envoyer, de demander, de prévenir ou de faire un compte rendu à un contact clé (ex. « demande à Julie… », « mail à Paul pour… »), mets cat "mail" et ajoute "mail":{"to":"prénom du contact","subject":"objet court et clair (avec le chantier si connu)","body":"le mail complet, rédigé exactement dans SA façon d'écrire, avec seulement ce qu'il a dit"}. Pas de signature longue, termine par « ${myName()} ». N'invente ni quantité, ni référence, ni date.
 - RENDEZ-VOUS : un rendez-vous, une réunion, une visite (VPI), une intervention ou une mise en service à une date donnée, un coiffeur, un médecin… = cat "rdv" avec due et time si dits.
+- ALLER CHERCHER, DÉPOSER ou EMMENER quelqu'un à une heure donnée (« je vais chercher Léo à 17h à la fac ») = cat "rdv" avec due et time, et un title qui garde le lieu tel qu'il le dit (« Chercher Léo à la fac de droit », « Chercher Léo chez sa mère »).
 - MÉMOS (pas des tâches) : s'il demande de noter/retenir une info, une idée, ou s'il signale une DÉPENSE payée de sa poche${SPACE === "pro" ? " à se faire rembourser (essence, péage, parking, repas, hôtel, petit matériel, fournitures…)" : ""}, mets cat "memo" avec "rb":"depense|info|idee". Pour une dépense : "amount" = montant en euros (nombre, ex. 45.5), title = objet court (« Essence », « Repas midi »), ch = chantier/thème si dit, due = date de la dépense (aujourd'hui par défaut), note = détails utiles (lieu, nb de personnes, n° de ticket). Pour une info : title = l'info elle-même, claire et complète. Pas d'urgence, pas d'heure.
 - C'EST FAIT : s'il dit qu'une ou plusieurs choses sont faites, réglées, envoyées, appelées, commandées, livrées, bouclées (« Julie c'est fait », « le devis Martin est parti », « j'ai eu Durand »), retrouve CHAQUE tâche correspondante dans sa liste, même formulée autrement, et mets-la dans "updates" avec done:true. Il peut en citer plusieurs d'affilée. Ne crée JAMAIS de nouvelle tâche pour une chose déjà faite. Si une chose faite ne correspond à aucune tâche, ignore-la.
 - J'Y SUIS / C'EST EN COURS : s'il dit qu'il est arrivé, qu'il y est, qu'il commence ou qu'il est en train (« je suis arrivé à la salle de sport », « je suis chez le médecin », « je commence le devis Dupont »), retrouve la tâche ou le rendez-vous correspondant et marque-le done:true (c'est honoré, il n'a plus besoin du rappel). Ne crée rien d'autre.
@@ -1190,6 +1191,7 @@ async function capture(text, src, kind, ctx){
   if (added.length) { S.items.unshift(...added); added.forEach(calSync); }
   save(); if (!fond) { flashOk(); idle(); } else if (!listening && !typing) flashOk();
   render(added.map(a => a.id));
+  if (!kind && U.n > U.done.length && typeof jvFriction === "function") jvFriction("correction", text);   // matière des propositions du dimanche
   if (ctx && ctx.muet) return true;   // une ligne parmi d'autres (mail « Nestor ») : le bilan est donné à la fin
   vib(U.done.length ? [12, 50, 18] : 18);
   const ids = added.map(a => a.id), nm = added.filter(a => a.mail).length, other = U.n - U.done.length;
@@ -1732,6 +1734,7 @@ async function gSync(it){
     reminders: { useDefault: false, overrides: [] }   // pas de notification de l'agenda : c'est Nestor qui prévient
   };
   if (it.done) ev.colorId = "8";
+  try { const l = typeof jvLieuDans === "function" ? jvLieuDans(it) : null; if (l && l.g && l.g.label) ev.location = l.g.label; else if (it.place) ev.location = it.place; } catch (e) {}   // l'adresse complète : Waze et la carte s'en servent
   const base = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
   try {
     const r = await fetch(base + (it.gId ? "/" + encodeURIComponent(it.gId) : ""), { method: it.gId ? "PATCH" : "POST", headers: { Authorization: "Bearer " + t, "content-type": "application/json" }, body: JSON.stringify(ev) });
@@ -4179,6 +4182,7 @@ if (NATIVE) {
     CAPP.minimizeApp();
   });
   TN.addListener("shared", d => { if (d && d.text) capture(d.text, "partage"); });
+  TN.addListener("assistant", d => { try { if (typeof jvAssistant === "function") jvAssistant(d || {}); } catch (e) {} });   // lot 21 : appui long sur l'écouteur, assistant du téléphone
   if (LN) LN.addListener("localNotificationActionPerformed", a => openInternal(a && a.notification && a.notification.extra && a.notification.extra.url));
   const arrived = LS.get("tempo_arrived", 0) > Date.now() - 60000;
   if (arrived) { LS.set("tempo_arrived", 0); setTimeout(() => toast("tes données de Chrome sont arrivées ✓", "", null, 5000), 900); }
@@ -4324,6 +4328,7 @@ async function memRememberMany(list, src, onStep){
     const x = list[i], id = uuid4(), o = { t: String(x.t).trim().slice(0, 2000), d: x.d === "pro" ? "pro" : "perso", p: !!x.pin, q: now, s: src || "import" };
     if (x.g) o.g = x.g;
     if (x.an) o.an = x.an;
+    if (x.cad) o.cad = x.cad;
     rows.push(await memSeal(id, o)); MEM.items.set(id, Object.assign(o, { id })); ids.push(id);
     if (onStep && (i % 10 === 9 || i === list.length - 1)) onStep(i + 1);
   }
@@ -4445,15 +4450,18 @@ Anticiper sa vie : c'est ton rôle principal
 - Pour horaires_bus, donne des noms d'arrêts du réseau Stan. Pour « Nancy » ou « en ville » sans précision, prends un grand arrêt du centre adapté au lieu du rendez-vous ; si l'outil te renvoie une liste d'arrêts, choisis-en un et rappelle-le.
 - Rappels avec proposer_rappel : l'heure de partir pour attraper le bus en comptant son temps de marche jusqu'à l'arrêt (s'il est inconnu, compte 5 minutes), et le rendez-vous lui-même (rendez_vous: true) s'il n'est pas déjà dans ses tâches ou son agenda. Un rappel par moment clé, pas plus.
 - Ce qui s'ajoute tout seul, sans lui demander (il peut annuler d'un geste) : rappels, rendez-vous (qui partent dans son agenda), rappels de lieu et listes de courses. N'écris donc pas « Voulez-vous que je… ? » pour ça : fais-le et dis-le en une phrase. Seuls les souvenirs, les oublis et les nouveaux lieux habituels attendent sa validation.
-- Quand un rendez-vous dicté depuis le rond cite un de ses lieux habituels (golf, médecin…), l'appli pose seule le rappel « Pars à … » en voiture avec Waze : s'il est déjà dans ses tâches datées, ne le refais pas.
+- Quand un rendez-vous dicté depuis le rond cite un de ses lieux habituels (golf, médecin…), l'appli pose seule le rappel « Départ à … » en voiture avec Waze : s'il est déjà dans ses tâches datées, ne le refais pas.
 - La météo (outil meteo) seulement quand elle change quelque chose : pluie, froid, vent pour une sortie.
 - Quand il demande un point, un check, ce qu'il a raté, ses messages, ses mails, son agenda ou ses tâches : utilise derniers_messages, mails (puis lire_mail si l'extrait ne suffit pas), agenda et taches. Fais une synthèse courte : d'abord ce qui demande une action de sa part, le reste en une ligne. Ne recopie pas les messages, n'invente rien de ce qui n'y est pas.
 - N'invente jamais un horaire de bus ni une météo : uniquement ce que renvoient les outils. Si un outil échoue, dis-le simplement.
 - Ses lieux habituels (maison, arrêt, golf, médecin, magasins, relais colis…) sont dans ses souvenirs, marqués « Lieu habituel ». S'il t'en donne un nouveau, propose-le avec proposer_lieu (avec l'adresse la plus précise possible) ; s'il en manque un dont tu as besoin, demande-le une fois.
-- En voiture : appelle trajet_voiture pour estimer le temps de route (c'est une estimation sans trafic, Waze donnera le temps réel), puis propose le rappel « pars à … » et le rendez-vous avec son lieu : la carte lui offrira d'ouvrir Waze.
+- En voiture : appelle trajet_voiture pour estimer le temps de route (c'est une estimation sans trafic, Waze donnera le temps réel), puis propose le rappel « départ à … » et le rendez-vous avec son lieu : la carte lui offrira d'ouvrir Waze.
 - Pour une chose à faire quelque part sans heure précise (« quand je passe à Intermarché »), utilise proposer_rappel_lieu : il sera prévenu en arrivant.
 - Courses : quand il donne une liste (ou des articles), range-la par rayon et crée-la avec proposer_courses, avec le magasin s'il le dit (s'il est dans ses lieux habituels, il aura sa liste en arrivant). Regarde aussi ses colis en attente et ses choses à faire en passant : si un relais ou un lieu est sur le chemin ou à quelques minutes du magasin (trajet_voiture), ajoute le passage (proposer_rappel_lieu ou proposer_rappel).
 - Brief du jour : quand il le demande, en 5 à 8 lignes maximum, dans cet ordre : ce qui l'attend aujourd'hui avec les heures de départ utiles, la météo chez lui si elle change quelque chose, les colis à retirer (d'abord ceux qui expirent), les anniversaires ou échéances proches que tu vois dans ses souvenirs, puis une idée pour grouper ses déplacements. Propose ensuite les rappels utiles. Le week-end, rien de pro.
+- Idées cadeaux : quand il évoque une envie ou une idée de cadeau pour un proche (« il rêve d'une montre », « idée cadeau pour Léa : un sac »), note-la avec noter_idee_cadeau, sans lui demander, en une phrase de confirmation. Dans le brief, si un anniversaire approche (21 jours ou moins) et qu'il a des idées notées pour cette personne, rappelle-les en une ligne (idees_cadeaux).
+- Aller chercher ou déposer quelqu'un à une heure donnée : c'est un rendez-vous avec son lieu. Si le lieu n'est pas dans ses lieux habituels, demande l'adresse une seule fois puis propose-le avec proposer_lieu, en mettant dans autres_noms les autres façons dont il l'appelle (« chez sa mère », « chez Julie »). L'appli calcule ensuite l'heure de départ et le prévient elle-même.
+- Le dimanche, tu lui proposes parfois des améliorations de l'appli. S'il en retient une (« garde la 2 »), note-la avec proposer_souvenir en commençant par « À proposer au prochain lot : ».
 - Le <contexte> te dit si son mode pro est activé. S'il est désactivé, ne propose rien côté pro de ta propre initiative (ni rappel, ni trajet, ni alerte) : réponds seulement à ce qu'il demande.
 
 Les balises <souvenirs>, <contexte> et <validations> sont ajoutées par l'appli : ce ne sont pas ses mots. <validations> te dit ce qu'il a accepté ou refusé parmi tes propositions précédentes.`;
@@ -4506,7 +4514,8 @@ const CV_TOOLS = [
       nom: { type: "string", description: "Comme il l'appelle : « maison », « golf », « mon médecin », « Intermarché »…" },
       adresse: { type: "string", description: "Adresse complète ou nom précis + ville. Pour un arrêt de bus : le nom de l'arrêt Stan." },
       type: { type: "string", enum: ["maison", "arret", "golf", "medecin", "magasin", "relais", "travail", "autre"] },
-      espace: { type: "string", enum: ["pro", "perso"] } },
+      espace: { type: "string", enum: ["pro", "perso"] },
+      autres_noms: { type: "string", description: "Autres façons dont il appelle ce lieu, séparées par des virgules (ex. « chez sa mère, chez Julie »)." } },
       required: ["nom", "adresse", "type"] } },
   { name: "proposer_rappel_lieu", description: "Ajoute une chose à faire en passant par un lieu habituel, sans heure : il sera prévenu en arrivant sur place. S'ajoute tout de suite, annulable.",
     input_schema: { type: "object", properties: {
@@ -4537,7 +4546,7 @@ const CV_TOOLS = [
     input_schema: { type: "object", properties: { du: { type: "string", description: "AAAA-MM-JJ" }, au: { type: "string", description: "AAAA-MM-JJ" } }, required: ["du"] } },
   { name: "taches", description: "Cherche dans ses tâches, pro et perso (titre, note, chantier), avec dates facultatives. Par défaut seulement celles qui ne sont pas faites.",
     input_schema: { type: "object", properties: {
-      recherche: { type: "string", description: "Mots à chercher, ex. « Arvato », « Sacha »." },
+      recherche: { type: "string", description: "Mots à chercher, ex. « Dupont », « Léo »." },
       du: { type: "string", description: "AAAA-MM-JJ" }, au: { type: "string", description: "AAAA-MM-JJ" },
       espace: { type: "string", enum: ["tous", "pro", "perso"] },
       faites: { type: "boolean", description: "true pour inclure celles déjà faites." } } } },
@@ -4920,7 +4929,7 @@ async function cvSend(text, opt){
       if (t.name === "proposer_souvenir" && x.texte) JV.view.push({ r: "p", k: "retenir", t: String(x.texte).slice(0, 2000), d: x.domaine === "pro" ? "pro" : "perso", pin: !!x.epingle, st: "" });
       if (t.name === "proposer_rappel" && x.titre && /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") && /^\d{1,2}:\d{2}$/.test(x.heure || "")) JV.view.push({ r: "p", k: "rappel", t: String(x.titre).slice(0, 200), date: x.date, heure: x.heure.padStart(5, "0"), sp: x.espace === "pro" ? "pro" : "perso", rdv: !!x.rendez_vous, lieu: x.lieu || "", note: x.note || "", bus: x.bus_arret && /^\d{1,2}:\d{2}$/.test(x.bus_depart || "") ? { arret: x.bus_arret, dep: x.bus_depart.padStart(5, "0"), ligne: x.bus_ligne || "" } : null, st: "" });
       if (t.name === "proposer_courses" && Array.isArray(x.articles) && x.articles.length) JV.view.push({ r: "p", k: "courses", t: x.magasin ? String(x.magasin).slice(0, 80) : "", art: x.articles.slice(0, 80).map(a => ({ a: String(a.article || "").slice(0, 80), r: JV_RAYONS.includes(a.rayon) ? a.rayon : "autre" })).filter(a => a.a), st: "" });
-      if (t.name === "proposer_lieu" && x.nom && x.adresse) JV.view.push({ r: "p", k: "lieu", t: String(x.nom).slice(0, 80), adresse: String(x.adresse).slice(0, 200), type: JV_TYPES[x.type] ? x.type : "autre", sp: x.espace === "pro" ? "pro" : "perso", st: "" });
+      if (t.name === "proposer_lieu" && x.nom && x.adresse) JV.view.push({ r: "p", k: "lieu", t: String(x.nom).slice(0, 80), adresse: String(x.adresse).slice(0, 200), type: JV_TYPES[x.type] ? x.type : "autre", sp: x.espace === "pro" ? "pro" : "perso", alias: String(x.autres_noms || "").slice(0, 200), st: "" });
       if (t.name === "proposer_rappel_lieu" && x.titre && x.lieu) JV.view.push({ r: "p", k: "ici", t: String(x.titre).slice(0, 200), lieu: String(x.lieu).slice(0, 80), sp: x.espace === "pro" ? "pro" : "perso", st: "" });
       if (t.name === "proposer_vtc" && x.destination) JV.view.push({ r: "p", k: "vtc", t: String(x.destination).slice(0, 200), quand: x.quand || "", st: "" });
       if (t.name === "proposer_oubli") {
@@ -4949,9 +4958,10 @@ async function cvDecide(i, ok){
   if (ok && p.k === "oublier") { await memForget(p.ids); JV.notes.push(`oublié : « ${p.t} »`); }
   if (ok && p.k === "rappel") { p.tid = jvAddTask(p).id; if (p.bus) await jvBusWatch(p); JV.notes.push(`${p.auto ? "ajouté automatiquement" : "rappel ajouté"} : « ${p.t} » le ${p.date} à ${p.heure}`); }
   if (ok && p.k === "lieu") {
-    const l = await jvAddLieu(p.t, p.adresse, p.type, p.sp);
+    const l = await jvAddLieu(p.t, p.adresse, p.type, p.sp, p.alias);
     if (!l) { p.st = ""; await cvSave(); cvPaint(); toast("adresse introuvable : précise-la (rue, ville)"); return; }
     p.label = l.label; JV.notes.push(`lieu habituel ajouté : « ${p.t} » (${l.label})`);
+    setTimeout(() => { try { jvSortieRescan(); } catch (e) {} }, 300);   // lot 21 : les rendez-vous qui l'attendaient ont leur heure de départ
   }
   if (ok && p.k === "courses") { const its = jvAddCourses(p); p.tids = its.map(x => x.id); JV.notes.push(`liste de courses créée (${its.length} articles${p.t ? ", " + p.t : ""})`); }
   if (ok && p.k === "ici") {
@@ -5332,7 +5342,7 @@ const JV_BETA_TOOLS = [
   { name: "cote_match_choix", description: "Note le pari qu'il a choisi cette semaine pour Cote & Match (ça coupe la relance de 11h du vendredi).",
     input_schema: { type: "object", properties: { pari: { type: "string", description: "match et pari, ex. « Lens - Brest, victoire de Lens »" } }, required: ["pari"] } }
 ];
-const jvOutils = () => { let t = jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS; if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); return t; };
+const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); return t; };
 /* zones de la maison pour le chauffage selon la présence (l'appli Android les déclenche, même fermée) */
 const jvMaisonLieu = () => jvLieux().find(l => l.g.type === "maison");
 const jvChauffeAuto = () => jvNetOn() && CFG.jvChauffe !== false && !!jvMaisonLieu();
@@ -5404,7 +5414,7 @@ async function jvGeocode(adr){
   if (!a || a.score < 0.5) { try { const b = await one("poi"); if (b && (!a || b.score >= a.score)) a = b; } catch (e) {} }
   return a;
 }
-async function jvAddLieu(nom, adresse, type, sp){
+async function jvAddLieu(nom, adresse, type, sp, alias){
   let g = null;
   if (type === "arret") {
     const D = await busData(), A = D ? busResolve(D, adresse) : [];
@@ -5414,7 +5424,8 @@ async function jvAddLieu(nom, adresse, type, sp){
   if (!g) return null;
   // l'adresse exacte de la maison reste dans le téléphone : Claude ne reçoit que la ville
   const vu = type === "maison" ? (g.city || "adresse enregistrée dans le téléphone") : g.label;
-  await memRememberMany([{ t: `Lieu habituel (${JV_TYPES[type] || "lieu"}) : ${nom} — ${vu}`, d: sp === "pro" ? "pro" : "perso", pin: type === "maison" || type === "arret", g: { nom, type, lat: g.lat, lon: g.lon, label: g.label } }], "lieu");
+  const al = String(alias || "").split(/[,;\n]/).map(x => x.trim()).filter(x => x && busKey(x) !== busKey(nom)).slice(0, 6);
+  await memRememberMany([{ t: `Lieu habituel (${JV_TYPES[type] || "lieu"}) : ${nom}${al.length ? " (aussi « " + al.join(" », « ") + " »)" : ""} — ${vu}`, d: sp === "pro" ? "pro" : "perso", pin: type === "maison" || type === "arret", g: Object.assign({ nom, type, lat: g.lat, lon: g.lon, label: g.label }, al.length ? { alias: al } : {}) }], "lieu");
   jvGeoSync();
   return g;
 }
@@ -5517,7 +5528,8 @@ function jvLieuDans(it){
   const txt = " " + busKey([it.place, it.title, it.raw].join(" ")) + " ";
   const L = jvLieux().filter(l => l.g.type !== "maison" && l.g.type !== "arret" && (CFG.jvPro || l.d !== "pro"));
   let best = null;
-  for (const l of L) { const n = busKey(l.g.nom); if (n.length > 2 && txt.includes(" " + n + " ") && (!best || n.length > busKey(best.g.nom).length)) best = l; }
+  let bl = 0;
+  for (const l of L) for (const nm of [l.g.nom].concat(l.g.alias || [])) { const n = busKey(nm); if (n.length > 2 && txt.includes(" " + n + " ") && n.length > bl) { best = l; bl = n.length; } }
   if (!best) best = L.find(l => { const ty = busKey(JV_TYPES[l.g.type] || ""); return l.g.type !== "autre" && ty.length > 2 && txt.includes(" " + ty + " "); }) || null;
   return best;
 }
@@ -5591,6 +5603,10 @@ function jvSortieToast(it, sig, msg){
 }
 async function jvSortieFaire(it, m){
   let x = null;
+  if (m.mode === "voiture" && it.due === ymd(new Date()) && tMin(it.time) - (new Date().getHours() * 60 + new Date().getMinutes()) <= 240) {   // lot 21 : départ du jour, depuis là où il est
+    try { const p = await Promise.race([jvPos(), new Promise(r => setTimeout(() => r(null), 6000))]); if (p && typeof p.lat === "number") x = { orig: { lat: p.lat, lon: p.lon } }; } catch (e) {}
+    if (!S.items.includes(it) || (jvSortieMode(it) || {}).sig !== m.sig) return;
+  }
   if (m.mode === "bus") {
     try { x = await jvSortiePlan(it); } catch (e) { x = { err: "calcul impossible" }; }
     if (!S.items.includes(it) || (jvSortieMode(it) || {}).sig !== m.sig) return;   // annulé ou changé entre-temps
@@ -5601,14 +5617,14 @@ async function jvSortieFaire(it, m){
 function jvSortieApplique(it, m, x, muet){
   const sig = m.sig, info = msg => setTimeout(() => toast(msg, "", null, 6000), 4300);
   if (m.mode === "voiture") {
-    const home = jvLieux().find(l => l.g.type === "maison"), n = new Date();
-    if (!home) { it.jvBus = { sig, err: "maison" }; save(); info("rendez-vous noté · ajoute ta maison dans Mes lieux (onglet mémoire de Jarvis) et je calcule l'heure de départ"); return; }
-    const r = jvRoute(home.g, m.l.g), part = tMin(it.time) - r.min - JV_MARGE, rap = Math.max(0, part - 5), heure = jvHeure(rap).slice(0, 5);
+    const home = jvLieux().find(l => l.g.type === "maison"), n = new Date(), orig = x && x.orig;
+    if (!home && !orig) { it.jvBus = { sig, err: "maison" }; save(); info("rendez-vous noté · ajoute ta maison dans Mes lieux (onglet mémoire de Jarvis) et je calcule l'heure de départ"); return; }
+    const r = jvRoute(orig || home.g, m.l.g), part = tMin(it.time) - r.min - JV_MARGE, rap = Math.max(0, part - 5), heure = jvHeure(rap).slice(0, 5);
     const nom = m.l.g.nom, placed = !it.place;
     if (placed) it.place = nom;
-    it.note = [jvSansPlan(it.note), `Route : ~${r.min} min depuis chez toi (estimation sans trafic), pars à ${jvH(part)}`].filter(Boolean).join("\n");
+    it.note = [jvSansPlan(it.note), `Route : ~${r.min} min depuis ${orig ? "votre position" : "chez vous"} (estimation sans trafic), départ à ${jvH(part)}`].filter(Boolean).join("\n");
     const late = it.due === ymd(n) && rap < n.getHours() * 60 + n.getMinutes();
-    const t = late ? null : jvAddTask({ t: `Pars à ${jvH(part)} pour ${nom}`, date: it.due, heure, sp: SPACE, note: `~${r.min} min de route · Waze donne le temps réel`, lieu: nom, extra: { jvFor: it.id, wz: true } });
+    const t = late ? null : jvAddTask({ t: `Départ à ${jvH(part)} pour ${nom}`, date: it.due, heure, sp: SPACE, note: `~${r.min} min de route${orig ? " depuis votre position" : ""} · Waze donne le temps réel`, lieu: nom, extra: { jvFor: it.id, wz: true } });
     it.jvBus = { sig, task: t ? t.id : null, place: placed ? nom : null };
     save(); try { render(); } catch (e) {}
     const msg = late ? `${nom} · ~${r.min} min de route : pars maintenant (Waze sur le rendez-vous)` : `${nom} à ${it.time.replace(":", "h")} · ~${r.min} min de route · rappel ${heure.replace(":", "h")}, Waze en un geste`;
@@ -5763,10 +5779,11 @@ function jvAnnivTaches(){
   const tod = ymd(new Date()), cles = new Set(LS.get("copilote_cles", [])); let n = 0;
   for (const a of jvAnnivs()) {
     const d = jvProchain(a, tod); if (!d) continue;
-    const k = jvEcart(tod, d); if (k > 7) continue;
-    const quand = jvQuand(a);
-    const add = (due, t, key) => { if (cles.has(key)) return; cles.add(key); jvAddTask({ t, date: due, heure: "09:00", sp: "perso", note: "anniversaire", extra: { jvAn: key } }); n++; };
-    if (k >= 1) add(jvAjoute(d, -Math.min(7, k)), `Anniversaire de ${a.nom} le ${quand} : pense au cadeau`, `an|${busKey(a.nom)}|${d}|7`);
+    const k = jvEcart(tod, d), idees = jvIdeesPour(a.nom); if (k > (idees.length ? 21 : 7)) continue;
+    const quand = jvQuand(a), ni = idees.length ? "idées notées : " + idees.map(x => x.idee).join(", ") : "anniversaire";
+    const add = (due, t, key) => { if (cles.has(key)) return; cles.add(key); jvAddTask({ t, date: due, heure: "09:00", sp: "perso", note: key.endsWith("|0") ? "anniversaire" : ni, extra: { jvAn: key } }); n++; };
+    if (k > 7) { add(jvAjoute(d, -Math.min(21, k)), `Anniversaire de ${a.nom} le ${quand} : vos idées cadeaux`, `an|${busKey(a.nom)}|${d}|21`); continue; }
+    if (k >= 1) add(jvAjoute(d, -Math.min(7, k)), `Anniversaire de ${a.nom} le ${quand} : pensez au cadeau`, `an|${busKey(a.nom)}|${d}|7`);
     add(d, `Anniversaire de ${a.nom} aujourd'hui`, `an|${busKey(a.nom)}|${d}|0`);
   }
   if (n) LS.set("copilote_cles", [...cles].slice(-400));
@@ -6234,6 +6251,7 @@ async function jvJournalier(){
   try { await jvSantePrep(); } catch (e) {}
   try { await jvRangerAttente(); } catch (e) {}
   try { await jvMailNestor(); } catch (e) {}
+  try { await jvPropositions(); } catch (e) {}
 }
 /* branché sur l'agenda : chaque création ou modification d'une tâche passe par calSync */
 function jvSortieCheck(it){
@@ -6330,6 +6348,7 @@ function jvARanger(text, src, err, muet){
   it.orig = { cat: it.cat, ch: "", u: 2, slot: bucket(it) };
   S.items.unshift(it); save(); if (!muet) idle(); render([it.id]); if (!muet) vib([12, 50, 12]);
   const L = LS.get(JV_RANGER_LS, null) || []; L.push({ id: it.id, sp: SPACE, text, src: src || "voix", at: now, essai: now }); LS.set(JV_RANGER_LS, L);
+  try { jvFriction("à ranger", text); } catch (e) {}
   if (!muet) toast(`Claude : ${aiRaison(err)}. Ta dictée reste entière, je la range dès qu'il répond.`, "", null, 9000);
 }
 function jvRangeFin(id){
@@ -6659,6 +6678,112 @@ async function cvLockUI(){
     } catch (e) { $("cvPGo").disabled = false; msg("Pas de réseau, réessaie."); }
   };
 }
+
+/* ======================================================================
+   lot 21 : écouteurs et assistant du téléphone, idées cadeaux, propositions du dimanche, aller chercher quelqu'un
+   ====================================================================== */
+
+/* ---------- journal des frictions : ce qu'il a dû corriger, annuler, ou que Nestor n'a pas su ranger ---------- */
+const JV_FRIC_LS = "copilote_frictions";
+function jvFriction(k, t){
+  try {
+    const now = Date.now(), L = (LS.get(JV_FRIC_LS, null) || []).filter(e => now - e.at < 35 * 864e5);
+    L.push({ k, t: String(t || "").replace(/\s+/g, " ").slice(0, 160), at: now });
+    LS.set(JV_FRIC_LS, L.slice(-300));
+  } catch (e) {}
+}
+{ const f = JV_LOCAL.modifier_tache; JV_LOCAL.modifier_tache = async x => { jvFriction("correction", JSON.stringify(x || {})); return f(x); }; }
+
+/* ---------- propositions du dimanche : 1 à 3 améliorations tirées du journal de la semaine ---------- */
+const jvSemaineCle = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return ymd(x); };
+async function jvPropositions(force){
+  const n = new Date();
+  if (!force && (n.getDay() !== 0 || n.getHours() < 17)) return null;
+  const cle = jvSemaineCle(n); if (!force && LS.get("copilote_prop_sem", "") === cle) return null;
+  if (!CFG.key || cvMonth().usd >= cvCap()) return null;
+  const L = (LS.get(JV_FRIC_LS, null) || []).filter(e => n - e.at < 7 * 864e5);
+  LS.set("copilote_prop_sem", cle);
+  if (L.length < 3) return [];
+  const journal = L.slice(-120).map(e => `${new Date(e.at).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" })} · ${e.k} · ${e.t}`).join("\n");
+  const sys = `Tu es ${jvNom()}, l'assistant personnel de ${(typeof myName === "function" && myName()) || "ton utilisateur"} : une appli Android maison (dictée au cercle, rappels, agenda, messages, chauffage, trajets, voix). Chaque dimanche, tu relis le journal de la semaine : ce qu'il a dû corriger ou annuler, et ce que tu n'as pas su ranger. Propose 1 à 3 améliorations CONCRÈTES de l'appli (un comportement à changer, une règle à ajouter, un raccourci), jamais des conseils de vie. Chacune en une phrase, avec entre parenthèses le constat qui la justifie. Seulement s'il y a un vrai motif qui revient ; sinon réponds exactement « RIEN ». Format : une ligne par proposition, numérotée « 1. », « 2. »…`;
+  let txt = "";
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      body: JSON.stringify({ model: CV_MODEL, max_tokens: 600, system: sys, messages: [{ role: "user", content: "Journal de la semaine :\n" + journal }] }) });
+    const j = await r.json().catch(() => ({})); if (!r.ok) { LS.set("copilote_prop_sem", ""); return null; }
+    cvCount(j.usage);
+    txt = (j.content || []).filter(b => b.type === "text").map(b => b.text).join("").trim();
+  } catch (e) { LS.set("copilote_prop_sem", ""); return null; }
+  const lignes = txt.split("\n").map(l => l.trim()).filter(l => /^\d+[.)]\s+\S/.test(l)).slice(0, 3);
+  if (!lignes.length) return [];
+  JV.view.push({ r: "a", t: "Monsieur, mes propositions de la semaine pour mieux vous servir :\n" + lignes.join("\n") + "\nPour en retenir une, dites « Nestor, garde la 2 » : je la noterai pour votre prochaine séance de réglages.", prop: 1 });
+  try { await cvSave(); } catch (e) {}
+  try { if (cvVisible()) cvPaint(); } catch (e) {}
+  LS.set("copilote_propositions", { at: Date.now(), lignes });
+  toast("Nestor a des propositions pour la semaine", "voir", () => openConv(), 9000);
+  return lignes;
+}
+
+/* ---------- idées cadeaux au fil de l'eau : gardées dans sa mémoire chiffrée, ressorties 3 semaines avant l'anniversaire ---------- */
+const JV_CADEAU_TOOLS = [
+  { name: "noter_idee_cadeau", description: "Note une idée de cadeau pour un proche (sans validation). Elle ressortira 3 semaines avant son anniversaire.",
+    input_schema: { type: "object", properties: {
+      personne: { type: "string", description: "Prénom du proche, comme il l'appelle." },
+      idee: { type: "string", description: "L'idée, courte (ex. « une montre automatique »)." } }, required: ["personne", "idee"] } },
+  { name: "idees_cadeaux", description: "Les idées cadeaux qu'il a notées (pour une personne ou toutes) et les anniversaires connus.",
+    input_schema: { type: "object", properties: { personne: { type: "string" } } } }
+];
+const jvIdees = () => [...MEM.items.values()].filter(m => m.cad && m.cad.nom && m.cad.idee).map(m => ({ id: m.id, nom: m.cad.nom, idee: m.cad.idee }));
+const jvMemePers = (a, b) => { const x = busKey(a).split(" ")[0], y = busKey(b).split(" ")[0]; return !!x && x === y; };
+function jvIdeesPour(nom){ try { return jvIdees().filter(c => jvMemePers(c.nom, nom)); } catch (e) { return []; } }
+async function toolCadeauNoter(x){
+  const nom = String((x && x.personne) || "").trim().replace(/^(?:à|a|pour)\s+/i, "").slice(0, 40), idee = String((x && x.idee) || "").trim().slice(0, 120);
+  if (!nom || !idee) return { erreur: "il faut la personne et l'idée" };
+  if (!MEM.key) return { erreur: "mémoire verrouillée" };
+  if (jvIdeesPour(nom).some(c => busKey(c.idee) === busKey(idee))) return { ok: true, deja: true };
+  await memRememberMany([{ t: `Idée cadeau pour ${nom} : ${idee}`, d: "perso", pin: false, cad: { nom, idee } }], "cadeau");
+  try { jvAnnivTaches(); } catch (e) {}
+  return { ok: true, note: `idée notée pour ${nom}` };
+}
+async function toolCadeaux(x){
+  const L = x && x.personne ? jvIdeesPour(x.personne) : jvIdees();
+  return { idees: L.map(c => `${c.nom} : ${c.idee}`), anniversaires: jvAnnivs().map(a => `${a.nom} : ${jvQuand(a)}`).slice(0, 30) };
+}
+JV_LOCAL.noter_idee_cadeau = toolCadeauNoter; JV_LOCAL.idees_cadeaux = toolCadeaux;
+JV_ATTENTE.noter_idee_cadeau = "je note l'idée…"; JV_ATTENTE.idees_cadeaux = "je regarde vos idées cadeaux…";
+// au cercle, sans « Nestor » : « idée cadeau pour Léo : une montre »
+const JV_CAD_RX = /^\s*(?:id[ée]es?\s+(?:de\s+)?cadeaux?|cadeau)\s+pour\s+([\p{L}][\p{L}'’ -]{0,30}?)\s*[:,–-]\s*(.{2,120}?)[\s.]*$/iu;
+
+/* ---------- aller chercher quelqu'un : lieu demandé une fois, départ calculé, adresse dans l'agenda ---------- */
+const JV_CHERCHE_RX = /\b(?:cherch\w*|r[ée]cup[ée]r\w*|d[ée]pos\w*|emmen\w*|ramen\w*)\s+([\p{L}][\p{L}'’-]*)\s+(à la|à l['’]|au|aux|à|chez)\s+([^,.;!?]{2,60})/iu;
+function jvLieuCite(it){
+  for (const src of [it.raw, it.title]) {
+    const txt = String(src || "").replace(/(^|\s)(?:à|a|vers)\s+\d{1,2}\s*(?:h|heures?)(?:\s*\d{2})?/gi, " ").replace(/\s+/g, " ");
+    const m = JV_CHERCHE_RX.exec(txt); if (!m) continue;
+    let p = m[3].replace(/\s+(?:et|puis|pour|avant|après|apres|demain|ce soir|cet après-midi|aujourd'hui|vers|à)(?:\s.*)?$/i, "").trim();
+    if (/^chez$/i.test(m[2])) p = "chez " + p;
+    if (p) return p.slice(0, 50);
+  }
+  return "";
+}
+function jvLieuInconnu(it){
+  if (!it || it.done || it.cat !== "rdv" || !it.time || !it.due || it.due < ymd(new Date()) || it.src === "jarvis" || !MEM.key) return "";
+  if (jvLieuDans(it) || JV_SANS_VOITURE.test([it.raw, it.title].join(" "))) return "";
+  const p = jvLieuCite(it), k = busKey(p); if (!p || k.length < 3) return "";
+  const vus = LS.get("copilote_lieu_demande", null) || []; if (vus.includes(k)) return "";
+  LS.set("copilote_lieu_demande", vus.concat(k).slice(-60));
+  JV.view.push({ r: "a", t: `Monsieur, où se trouve « ${p} » ? Donnez-moi l'adresse une fois : je la garderai et calculerai votre heure de départ.` });
+  cvSave().catch(() => {});
+  setTimeout(() => toast(`adresse de « ${p} » ? je calculerai votre départ`, "répondre", () => openConv(), 10000), 4500);
+  return p;
+}
+// un lieu vient d'être ajouté : les rendez-vous qui l'attendaient ont leur heure de départ (et l'adresse dans l'agenda)
+function jvSortieRescan(){
+  const tod = ymd(new Date());
+  for (const it of S.items.slice()) if (!it.done && it.cat === "rdv" && it.due && it.due >= tod && !it.jvBus && jvSortieMode(it)) { try { calSync(it); } catch (e) {} }
+}
+
 
 /* ---------- ouverture, micro, branchements ---------- */
 /* lot 17 : réglages de la section Bêta, et « reprendre la conversation précédente » */
@@ -7017,6 +7142,107 @@ $("cvLockBtn").onclick = async () => { const b = $("cvLockBtn"); if (!b.dataset.
 setTimeout(() => { memUnlock().then(ok => { if (ok) { memSync(); jvGeoSync(); } }).catch(() => {}).finally(() => setTimeout(jvJournalier, 3000)); }, 2500);
 setInterval(jvJournalier, 30 * 60000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(() => { try { jvRelancesAuto(); } catch (e) {} }, 2500); });
+
+
+/* ---------- lot 21 : branchements (messages, cercle, agenda, voix) ---------- */
+// toutes les annulations passent par le bouton « annuler » d'un message en bas d'écran
+const _jvToast21 = toast;
+toast = function(msg, btn, fn, ms){
+  if (typeof fn === "function" && /^annuler$/i.test(String(btn || ""))) { const f = fn; fn = function(){ jvFriction("annulé", msg); return f.apply(this, arguments); }; }
+  return _jvToast21(msg, btn, fn, ms);
+};
+const _jvCapture21 = capture;
+capture = async function(text, src, kind, ctx){
+  const m = !kind && !(ctx && (ctx.reprise || ctx.cr)) && typeof text === "string" ? JV_CAD_RX.exec(text) : null;
+  if (m && MEM.key) {
+    const r = await toolCadeauNoter({ personne: m[1], idee: m[2] });
+    if (r && r.ok) {
+      try { idle(); flashOk(); vib(18); } catch (e) {}
+      toast(r.deja ? `idée déjà notée pour ${m[1].trim()}` : `idée cadeau notée pour ${m[1].trim()} · elle ressortira avant son anniversaire`, "", null, 6000);
+      try { if (src === "voix" && shouldSpeak()) speak(`Noté, monsieur : ${m[2].trim()} pour ${m[1].trim()}.`); } catch (e) {}
+      return true;
+    }
+  }
+  return _jvCapture21.apply(this, arguments);
+};
+const _jvCalSync21 = calSync;
+calSync = function(it){ try { jvLieuInconnu(it); } catch (e) {} return _jvCalSync21(it); };
+
+/* ---------- écouteurs (appui long) et assistant du téléphone : Nestor écoute, mains libres ---------- */
+let JV_ASSIST = null, JV_PARLE = 0;
+const _jvSpeak21 = speak;
+speak = function(t, then){
+  JV_PARLE++; let f = false;
+  const fin = () => { if (!f) { f = true; JV_PARLE = Math.max(0, JV_PARLE - 1); } if (then) then(); };
+  try { return _jvSpeak21(t, fin); } catch (e) { fin(); }
+};
+function jvBip(){
+  try {
+    const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+    const c = jvBip.c || (jvBip.c = new C()); if (c.state === "suspended" && c.resume) c.resume();
+    const o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
+    o.frequency.value = 880; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.2);
+  } catch (e) {}
+}
+/* écran verrouillé : rien de sa liste ne s'affiche, seulement Nestor qui écoute */
+function jvVoile(on){
+  let v = $("jvVoile");
+  if (on && !v) {
+    const st = document.createElement("style");
+    st.textContent = "#jvVoile{position:fixed;inset:0;z-index:2147483000;background:#0b0f14;color:#cfd6dd;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-size:15px;letter-spacing:.08em}#jvVoile .n{font-size:22px;letter-spacing:.32em;color:#d69e3a}";
+    document.head.appendChild(st);
+    v = document.createElement("div"); v.id = "jvVoile"; v.innerHTML = `<div class="n">N.E.S.T.O.R.</div><div id="jvVoileS">je vous écoute…</div>`;
+    document.body.appendChild(v);
+  }
+  if (v) v.style.display = on ? "flex" : "none";
+  document.body.classList.toggle("verrou", !!on);
+}
+const jvAssistOccupe = () => listening || typing || $("ring").classList.contains("think") || !!(JV && JV.busy) || JV_PARLE > 0 || !!JV_VQ.joue || !!(JV_AUDIO && !JV_AUDIO.paused && !JV_AUDIO.ended);
+async function jvAssistant(d){
+  d = d || {};
+  if (JV_ASSIST) { if (listening) { try { validate(); } catch (e) {} } return; }   // deuxième appui : il a fini de parler
+  const a = JV_ASSIST = { verrou: !!d.verrou, t0: Date.now(), mic: false, vues: JV.view.length };
+  if (a.verrou) {
+    jvVoile(true);
+    try { await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); } catch (e) {}
+    try { tn("voileOk"); } catch (e) {}   // le téléphone ne montre la page qu'une fois le voile posé
+  }
+  try { document.querySelectorAll(".sheet.show").forEach(s => s.classList.remove("show")); } catch (e) {}
+  try { hush(); } catch (e) {}
+  if ((await jvNative()) >= 14) { try { const r = await tn("micCasque", { on: true }); a.mic = !!(r && r.ok); } catch (e) {} }
+  if (a.mic) await new Promise(r => setTimeout(r, 600));   // le temps que le micro des écouteurs s'ouvre
+  jvBip();
+  for (let k = 0; k < 8 && !listening; k++) { try { startListen({ auto: true, noSpeech: 8000 }); } catch (e) {} if (!listening) await new Promise(r => setTimeout(r, 400)); }
+  jvAssistSuivi(a);
+}
+async function jvAssistSuivi(a){
+  let calme = 0, tick = 0;
+  while (JV_ASSIST === a && Date.now() - a.t0 < 150000) {
+    await new Promise(r => setTimeout(r, 500)); tick++;
+    const occ = jvAssistOccupe();
+    const s = $("jvVoileS"); if (s) s.textContent = listening ? "je vous écoute…" : $("ring").classList.contains("think") || (JV && JV.busy) ? "un instant…" : occ ? "…" : "";
+    if (a.verrou && tick % 3 === 0 && NATIVE) { try { const v = await tn("verrou"); if (v && v.verrou === false) { a.verrou = false; jvVoile(false); } } catch (e) {} }   // déverrouillé entre-temps : il voit tout
+    calme = occ ? 0 : calme + 1;
+    if (calme >= 5 && Date.now() - a.t0 > 2500) break;
+  }
+  await jvAssistFin(a);
+}
+async function jvAssistFin(a){
+  if (JV_ASSIST !== a) return;
+  if (a.mic) { try { await tn("micCasque", { on: false }); } catch (e) {} }
+  if (a.verrou) {
+    // une proposition à valider (message, mail…) : elle attend qu'il déverrouille
+    const attend = JV.view.slice(a.vues).some(v => v.r === "p" && !v.st && !JV_AUTO.has(v.k));
+    if (attend) {
+      await new Promise(r => { try { speak("Une proposition vous attend, monsieur. Déverrouillez pour la valider.", r); } catch (e) { r(); } setTimeout(r, 8000); });
+      try { const u = await tn("deverrouiller"); if (u && u.ok) { JV_ASSIST = null; jvVoile(false); try { await tn("finVerrou", { fond: false }); } catch (e) {} try { openConv(); } catch (e) {} return; } } catch (e) {}
+    }
+    jvVoile(false);
+    try { await tn("finVerrou", { fond: true }); } catch (e) {}
+  }
+  JV_ASSIST = null;
+}
 </script>
 </body>
 </html>
