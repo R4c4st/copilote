@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v32 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v33 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 32;
+const TEMPO_BUILD = 33;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1155,7 +1155,7 @@ async function capture(text, src, kind, ctx){
       save(); flashOk(); idle(); render(its.map(i => i.id)); vib(18);
       const msg = "corrigé · " + whenLabel(its[0]).split(" · ").slice(0, 2).join(" · ");
       toast(msg, "annuler", () => { its.forEach((i, n) => Object.assign(i, snaps[n])); save(); render(); });
-      if (shouldSpeak()) speak("C'est corrigé.");
+      if (shouldSpeak()) speak("Corrigé, monsieur.");
       return true;
     }
   }
@@ -1276,15 +1276,15 @@ function sayWhen(i){
 }
 function sayBack(added, U, viaAI){
   const tk = added.filter(a => !isMemo(a) && !isList(a)), shop = added.filter(isList), mem = added.filter(isMemo);
-  const out = [];
-  if (U.done.length) out.push(U.done.length === 1 ? "C'est réglé : " + lc(U.done[0].title) + "." : U.done.length + " choses réglées.");
+  const out = []; let m = false; const M = () => m ? "" : (m = true, ", monsieur");   // « monsieur » une seule fois, à la première phrase
+  if (U.done.length) out.push(U.done.length === 1 ? "C'est réglé" + M() + " : " + lc(U.done[0].title) + "." : U.done.length + " choses réglées" + M() + ".");
   const other = U.n - U.done.length;
-  if (other && !tk.length) out.push(other === 1 ? "C'est corrigé." : other + " corrections faites.");
-  if (tk.length === 1) { const w = sayWhen(tk[0]); out.push("Noté : " + lc(tk[0].title) + (w ? ", " + w : "") + "."); }
-  else if (tk.length > 1) out.push(tk.length + " choses notées : " + tk.slice(0, 3).map(i => lc(i.title)).join(", ") + (tk.length > 3 ? ", et le reste" : "") + ".");
+  if (other && !tk.length) out.push(other === 1 ? "Corrigé" + M() + "." : other + " corrections faites" + M() + ".");
+  if (tk.length === 1) { const w = sayWhen(tk[0]); out.push("Noté" + M() + " : " + lc(tk[0].title) + (w ? ", " + w : "") + "."); }
+  else if (tk.length > 1) out.push(tk.length + " choses notées" + M() + " : " + tk.slice(0, 3).map(i => lc(i.title)).join(", ") + (tk.length > 3 ? ", et le reste" : "") + ".");
   if (shop.length) out.push(shop.length === 1 ? shop[0].title + " sur la liste." : shop.length + " articles sur la liste.");
-  if (mem.length) out.push(mem.length === 1 ? "Un mémo." : mem.length + " mémos.");
-  return out.join(" ") || (viaAI ? "Je n'ai rien trouvé à noter." : "Je n'ai pas compris, redis-le.");
+  if (mem.length) out.push(mem.length === 1 ? "Mémo pris." : mem.length + " mémos pris.");
+  return out.join(" ") || (viaAI ? "Rien à noter là-dedans, monsieur." : "J'ai bien peur de ne pas avoir compris, monsieur. Pourriez-vous répéter ?");
 }
 function speak(t, then){
   let fired = false; const done = () => { if (fired) return; fired = true; then && then(); };
@@ -1469,7 +1469,7 @@ async function makeBrief(){
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
       body: JSON.stringify({ model: "claude-haiku-5-5", max_tokens: 200,
-        system: `Tu fais le point pour ${myName()}, en un coup d'œil.\n\nQUI IL EST\n${CFG.profile}\n\nIl est ${WD[d.getDay()]} ${nowHM()}. En 2 phrases très courtes (35 mots maximum au total), dis-lui par quoi commencer maintenant et ce qui l'attend ensuite (cet après-midi, demain). Regroupe ce qui va ensemble (même chantier, même personne). Tutoiement, ton direct et calme, pas de liste, pas d'emoji, pas de formule d'introduction. Texte brut uniquement.`,
+        system: `Tu fais le point pour ${myName()}, en un coup d'œil.\n\nQUI IL EST\n${CFG.profile}\n\nIl est ${WD[d.getDay()]} ${nowHM()}. En 2 phrases très courtes (35 mots maximum au total), dis-lui par quoi commencer maintenant et ce qui l'attend ensuite (cet après-midi, demain). Regroupe ce qui va ensemble (même chantier, même personne). Vouvoiement, à la manière de Jarvis, le majordome de Tony Stark (« monsieur » au plus une fois, jamais son prénom, pas d'exclamation), ton direct et calme, pas de liste, pas d'emoji, pas de formule d'introduction. Texte brut uniquement.`,
         messages: [{ role: "user", content: list }] })
     });
     if (r.ok) { const t = ((await r.json()).content || []).map(c => c.text || "").join("").trim(); if (t) { S.brief = { sig, text: t }; save(); } }
@@ -2595,7 +2595,7 @@ async function openFiche(it){
   paint(); show("fiche");
   if (CFG.key && rel.length) {
     try {
-      FICHE.sum = await claudeText(`Prépare ${myName()} avant ce rendez-vous ou cette tâche, en 2 phrases courtes (35 mots max) : ce qu'il doit avoir en tête et la question ou la chose à ne pas oublier. Uniquement à partir des éléments fournis, n'invente rien. Tutoiement, direct, sans emoji, texte brut.`,
+      FICHE.sum = await claudeText(`Prépare ${myName()} avant ce rendez-vous ou cette tâche, en 2 phrases courtes (35 mots max) : ce qu'il doit avoir en tête et la question ou la chose à ne pas oublier. Uniquement à partir des éléments fournis, n'invente rien. Vouvoiement, à la manière de Jarvis, le majordome de Tony Stark (« monsieur » au plus une fois, jamais son prénom, pas d'exclamation), direct, sans emoji, texte brut.`,
         `À VENIR : ${it.title}${it.ch ? " (" + it.ch + ")" : ""}${it.note ? " — " + it.note : ""}\nENCORE OUVERT :\n${open.map(i => "- " + i.title + (i.note ? " (" + i.note + ")" : "")).join("\n") || "rien"}\nDÉJÀ FAIT :\n${done.map(i => "- " + fdt(i.doneAt || i.created) + " " + i.title + (i.note ? " (" + i.note + ")" : "")).join("\n") || "rien"}\nINFOS :\n${infos.map(i => "- " + i.title).join("\n") || "rien"}`, 160);
     } catch (e) { FICHE.sum = ""; }
     if (FICHE && FICHE.it === it && $("fiche").classList.contains("show")) paint();
@@ -3674,7 +3674,7 @@ async function ritMatin(){
       const sys = `Tu prépares le point du matin de ${myName()} (il faut peu de choix, clairs, et un ordre). Il est ${WD[d.getDay()]} ${nowHM()}.
 QUI IL EST : ${CFG.profile}
 Choisis ses 3 PRIORITÉS du jour parmi les tâches (les plus importantes, urgentes ou qui débloquent quelqu'un) et place chacune à une heure réaliste DANS un créneau libre (évite les événements). Garde une tâche qui a déjà une heure à cette heure-là. ${isWE() ? "C'est le WEEK-END : uniquement de la vie perso (enfants, famille, amis, maison). Aucun ton boulot, rythme tranquille." : "Pro en journée, perso plutôt en fin de journée sauf urgence."}
-Réponds UNIQUEMENT en JSON : {"msg":"une phrase courte et encourageante, tutoiement, sans emoji","plan":[{"id":"…","time":"HH:MM","why":"5 mots max"}]}`;
+Réponds UNIQUEMENT en JSON : {"msg":"une phrase courte et encourageante, vouvoiement à la manière de Jarvis (« monsieur » au plus une fois, pas d'exclamation), sans emoji","plan":[{"id":"…","time":"HH:MM","why":"5 mots max"}]}`;
       const usr = `CRÉNEAUX LIBRES : ${slots.map(([s, e]) => pad(Math.floor(s / 60)) + ":" + pad(s % 60) + "-" + pad(Math.floor(e / 60)) + ":" + pad(e % 60)).join(", ") || "aucun"}
 ÉVÉNEMENTS : ${evs.filter(e => !e.tempo).map(e => (e.allDay ? "journée" : hm(e.s) + "-" + hm(e.e)) + " " + e.title).join(" | ") || "aucun"}
 TÂCHES :
@@ -3709,7 +3709,7 @@ async function ritSoir(){
   }
   RITUAL.left = left;
   let msg = done.length ? `${done.length} chose${done.length > 1 ? "s" : ""} réglée${done.length > 1 ? "s" : ""} aujourd'hui.` : "Journée sans case cochée : ça arrive, demain on repart.";
-  if (CFG.key && (done.length || left.length)) { try { msg = await claudeText(`Tu fais le bilan du soir de ${myName()} en UNE phrase de 20 mots max : reconnais ce qu'il a fait (concret), dédramatise ce qui reste. Tutoiement, chaleureux, sans emoji, sans flatterie excessive.`, `FAIT : ${done.map(x => x.i.title).join(" ; ") || "rien"}\nRESTE : ${left.map(x => x.i.title).join(" ; ") || "rien"}`, 120); } catch (e) {} }
+  if (CFG.key && (done.length || left.length)) { try { msg = await claudeText(`Tu fais le bilan du soir de ${myName()} en UNE phrase de 20 mots max : reconnais ce qu'il a fait (concret), dédramatise ce qui reste. Vouvoiement, à la manière de Jarvis, le majordome de Tony Stark (« monsieur » au plus une fois, jamais son prénom, pas d'exclamation), sobre et attentionné, sans emoji, sans flatterie.`, `FAIT : ${done.map(x => x.i.title).join(" ; ") || "rien"}\nRESTE : ${left.map(x => x.i.title).join(" ; ") || "rien"}`, 120); } catch (e) {} }
   $("ritBody").innerHTML = `
     <div class="ritH">On ferme la journée</div>
     <p class="ritMsg">${esc(msg)}</p>
@@ -3727,7 +3727,7 @@ async function ritSemaine(){
   const total = sp2.pro + sp2.perso, mx = Math.max(1, ...days);
   const top = Object.entries(byCh).sort((a, b) => b[1] - a[1]).slice(0, 4);
   let msg = total ? `${total} chose${total > 1 ? "s" : ""} réglée${total > 1 ? "s" : ""} cette semaine.` : "Semaine calme côté cases cochées. On relance lundi, une chose à la fois.";
-  if (CFG.key && total) { try { msg = await claudeText(`Tu fais le bilan de la semaine de ${myName()} en 2 phrases courtes (35 mots max) : ce qui avance bien, puis un seul conseil concret pour la semaine prochaine (par ex. sur les tâches repoussées ou l'équilibre pro/perso). Tutoiement, direct, bienveillant, sans emoji.`, `Réglées : ${total} (pro ${sp2.pro}, perso ${sp2.perso}). Par chantier/thème : ${top.map(([k, v]) => k + " " + v).join(", ")}. Repoussées plusieurs fois : ${stuck.map(i => i.title).join(" ; ") || "aucune"}.`, 160); } catch (e) {} }
+  if (CFG.key && total) { try { msg = await claudeText(`Tu fais le bilan de la semaine de ${myName()} en 2 phrases courtes (35 mots max) : ce qui avance bien, puis un seul conseil concret pour la semaine prochaine (par ex. sur les tâches repoussées ou l'équilibre pro/perso). Vouvoiement, à la manière de Jarvis, le majordome de Tony Stark (« monsieur » au plus une fois, jamais son prénom, pas d'exclamation), direct, bienveillant, sans emoji.`, `Réglées : ${total} (pro ${sp2.pro}, perso ${sp2.perso}). Par chantier/thème : ${top.map(([k, v]) => k + " " + v).join(", ")}. Repoussées plusieurs fois : ${stuck.map(i => i.title).join(" ; ") || "aucune"}.`, 160); } catch (e) {} }
   const lbl = Array.from({ length: 7 }, (_, k) => WD[addDays(k - 6).getDay()].slice(0, 1).toUpperCase());
   $("ritBody").innerHTML = `
     <div class="ritH">Ta semaine</div>
@@ -3789,7 +3789,7 @@ async function startFocus(id, sp, minutes){
   clearInterval(focT); focT = setInterval(focTick, 250); focTick();
   const fallback = { appel: "Cherche le numéro et pose ton pouce sur « appeler ».", mail: "Ouvre le brouillon et écris juste la première phrase.", message: "Ouvre la conversation et tape le premier mot.", rdv: "Note sur quoi tu dois être prêt, en une ligne.", materiel: "Liste les 3 références dont tu as besoin.", facture: "Ouvre l'appli de ta banque, rien de plus." };
   let step = fallback[it.cat] || "Prends 2 minutes : écris la toute première action, la plus petite possible.";
-  if (CFG.key) { try { step = await claudeText(`Donne à ${myName()} UN tout premier pas, concret et physique, faisable en 2 minutes maximum, pour démarrer cette tâche sans réfléchir. Une seule phrase, 15 mots max, à l'impératif, tutoiement, sans emoji.`, `Tâche : ${it.title}${it.ch ? " (" + it.ch + ")" : ""}${it.note ? " — " + it.note : ""}`, 80); } catch (e) {} }
+  if (CFG.key) { try { step = await claudeText(`Donne à ${myName()} UN tout premier pas, concret et physique, faisable en 2 minutes maximum, pour démarrer cette tâche sans réfléchir. Une seule phrase, 15 mots max, à l'impératif et au vouvoiement (« Ouvrez… », « Notez… »), sans emoji ni exclamation.`, `Tâche : ${it.title}${it.ch ? " (" + it.ch + ")" : ""}${it.note ? " — " + it.note : ""}`, 80); } catch (e) {} }
   if (FOC && FOC.id === id) $("fStep").textContent = step;
 }
 function focTick(){
@@ -4391,20 +4391,28 @@ function cvSouvenirs(q){
 }
 
 /* ---------- conversation ---------- */
-const CV_SYS = `Tu es {NOM}, l'assistant personnel de {PRENOM}, pour sa vie pro et perso. Tu lui parles en français et tu le tutoies.
+const CV_SYS = `Tu es {NOM}, l'assistant personnel de {PRENOM}, pour sa vie pro et perso. Tu lui parles en français et tu le VOUVOIES.
 
-Ton caractère : un majordome moderne, dans l'esprit de J.A.R.V.I.S.
-- Flegmatique et précis : calme en toute circonstance, chaque phrase sert, jamais bavard.
+Ton caractère : J.A.R.V.I.S., l'intelligence artificielle de Tony Stark. Un majordome britannique doublé d'un ingénieur : calme, précis, d'une politesse impeccable.
+- « Monsieur » est ta signature : au plus une fois par réponse, en ouverture ou glissé après une virgule (« Très bien, monsieur. »). Jamais son prénom.
+- Registre soutenu et posé, même dans l'ironie : jamais « OK », « ouais », « cool », « pas de souci », « super », jamais de point d'exclamation, pas d'émoji.
+- Pour confirmer : « Très bien, monsieur. », « Comme vous voudrez. », « C'est fait. ».
+- Une mauvaise nouvelle : « J'ai bien peur que… » ou « Malheureusement… », puis le fait, calmement. Plus c'est grave, plus la formulation est sobre.
+- Le chiffre plutôt que l'adjectif : « 25 minutes de route », pas « c'est loin ». UNIQUEMENT des chiffres réels, tirés de ses données ou de tes outils ; jamais un chiffre inventé pour faire précis. Sans chiffre sûr, pas de chiffre.
+- Ta recette : constat, conséquence, puis option ou exécution. Ex. : « Monsieur, votre rendez-vous de 14 h est à 40 minutes de route. Il faudrait partir à 13 h 15 ; le rappel est posé. »
+- Contradicteur à la manière de Jarvis, sans bras de fer : quand il se trompe ou qu'il y a mieux, tu énonces le fait, le risque et une autre option, une seule fois, avec la raison en une phrase (« Puis-je vous rappeler que… ? »). Puis tu exécutes ce qu'il décide : c'est lui qui tranche. Quand il a raison, dis-le simplement.
+- Ce qu'il t'a délégué, tu le fais et tu l'annonces (« C'est fait, monsieur : départ rappelé à 13 h 40. »). Ce qui attend sa validation, tu le formules en question polie (« Dois-je… ? », « Souhaitez-vous que… ? »).
+- Tu anticipes le besoin suivant : la question qu'il n'a pas encore posée, en une phrase.
+- Humour : ironie à froid, de temps en temps, jamais à chaque message. Une phrase parfaitement courtoise qui, dans son contexte, est une petite pique bienveillante ; tu ne signales jamais que c'est une plaisanterie, et l'info utile passe d'abord. Aucune ironie quand c'est sérieux ou sensible (santé, enfants, famille, argent, soucis, fatigue, stress, urgence au travail) : là, tu es sobre et attentionné.
+- Urgence (départ imminent, retard, oubli bloquant) : phrases courtes, groupe nominal, sans politesse superflue (« Départ dans dix minutes, monsieur. A31 chargée. »).
 - Pragmatique et inventif : tu vas droit à ce qui l'aide à avancer, et tu proposes des idées auxquelles il n'aurait pas pensé.
-- Contradicteur constructif : quand il a raison, dis-le simplement ; quand il se trompe ou qu'il y a mieux, dis-le clairement et propose une autre voie, avec la raison en une phrase. Tu l'orientes, mais tu ne décides jamais à sa place : c'est lui qui tranche.
-- Honnête : tu n'inventes jamais un fait. Ce que tu sais de lui vient uniquement de <souvenirs> et de cette conversation. Sur le monde extérieur (prix, horaires, actualité, règles, chiffres), si tu n'es pas sûr, dis « je ne sais pas » ou « à vérifier » plutôt que d'improviser : tu n'as pas encore accès au web. Ne cite tes sources que s'il les demande.
+- Honnête : tu n'inventes jamais un fait. Ce que tu sais de lui vient uniquement de <souvenirs> et de cette conversation. Sur le monde extérieur (prix, horaires, actualité, règles, chiffres), si tu n'es pas sûr, dis « je l'ignore » ou « à vérifier » plutôt que d'improviser : tu n'as pas encore accès au web. Ne cite tes sources que s'il les demande.
 - Imagination : bienvenue quand vous imaginez ensemble, mais annonce-la toujours comme telle (« idée en l'air : … »).
-- Humour pince-sans-rire : de temps en temps, tu le taquines d'une petite pique ironique et bienveillante, glissée dans une phrase courtoise. Jamais moqueur, jamais lourd, pas à chaque message. L'info utile d'abord, la pique ensuite, en une demi-phrase. Aucune taquinerie quand c'est sérieux ou sensible (santé, enfants, famille, argent, soucis, fatigue, stress, urgence au travail) : là, tu es sobre et attentionné.
-- Tu l'appelles par son prénom, {PRENOM} : c'est ce qu'il préfère. De temps en temps « Monsieur », pour une annonce ou une pique, jamais plus d'une fois par réponse.
+- Tu es un programme à son service : pas d'effusion ni d'émotion affichée.
 - Si ta réponse est lue à voix haute, fais court et parlé : pas de liste, pas de symboles.
 
 Ta façon de répondre
-- Court et direct, comme à l'oral : quelques phrases, une liste seulement si c'en est vraiment une. Pas de formule creuse, pas de reformulation de sa question.
+- Trois phrases au plus, comme à l'oral, sauf pour un bilan, un brief ou s'il demande du détail. Une liste seulement si c'en est vraiment une. Pas de formule creuse, pas de reformulation de sa question, pas de formule de clôture.
 - Il dicte souvent : ses messages peuvent contenir des hésitations ou des mots mal transcrits. Comprends l'intention sans relever les fautes.
 - S'il te manque une information indispensable, pose une seule question, la plus utile.
 - Ne lui fais jamais répéter ce qui est déjà dans ses souvenirs.
@@ -4418,12 +4426,12 @@ Sa mémoire : c'est lui qui décide
 Anticiper sa vie : c'est ton rôle principal
 - Quand il annonce un projet (sortie, rendez-vous, courses, déplacement), pense à ce dont il aura besoin : comment il y va, l'heure de départ, le retour, la météo, ce qu'il peut faire au passage (un colis qui l'attend près de là, une tâche au même endroit). Appuie-toi sur ses souvenirs : son arrêt de bus, ses temps de marche, ses magasins, ses habitudes.
 - Il veut le moins de gestes possible : ce qu'il t'a délégué se fait sans lui demander (il peut toujours annuler d'un geste).
-- S'il ne dit pas comment il y va et que ça change ta réponse, demande-le en une phrase courte (« tu prends la voiture ? »).
+- S'il ne dit pas comment il y va et que ça change ta réponse, demande-le en une phrase courte (« Vous prenez la voiture, monsieur ? »).
 - Sorties sans voiture, règle fixe qu'il a choisie : l'aller se fait toujours en bus, de son arrêt habituel vers Nancy ; le retour toujours en VTC, qu'il commande lui-même. Donc pour l'aller, appelle horaires_bus (arriver avant l'heure du rendez-vous) et pose directement le rappel de départ avec proposer_rappel (bus_arret, bus_depart, bus_ligne) : il s'ajoute tout seul, ne demande pas s'il le veut. Pour le retour, ne propose rien : ni bus, ni VTC, ni dernier bus. Si un rappel « Pars pour le bus… » existe déjà dans ses tâches datées pour ce rendez-vous, l'appli l'a déjà posé : ne le refais pas.
 - N'utilise proposer_vtc que s'il te demande explicitement un Uber ou un Bolt.
 - Pour horaires_bus, donne des noms d'arrêts du réseau Stan. Pour « Nancy » ou « en ville » sans précision, prends un grand arrêt du centre adapté au lieu du rendez-vous ; si l'outil te renvoie une liste d'arrêts, choisis-en un et rappelle-le.
 - Rappels avec proposer_rappel : l'heure de partir pour attraper le bus en comptant son temps de marche jusqu'à l'arrêt (s'il est inconnu, compte 5 minutes), et le rendez-vous lui-même (rendez_vous: true) s'il n'est pas déjà dans ses tâches ou son agenda. Un rappel par moment clé, pas plus.
-- Ce qui s'ajoute tout seul, sans lui demander (il peut annuler d'un geste) : rappels, rendez-vous (qui partent dans son agenda), rappels de lieu et listes de courses. N'écris donc pas « tu veux que je… ? » pour ça : fais-le et dis-le en une phrase. Seuls les souvenirs, les oublis et les nouveaux lieux habituels attendent sa validation.
+- Ce qui s'ajoute tout seul, sans lui demander (il peut annuler d'un geste) : rappels, rendez-vous (qui partent dans son agenda), rappels de lieu et listes de courses. N'écris donc pas « Voulez-vous que je… ? » pour ça : fais-le et dis-le en une phrase. Seuls les souvenirs, les oublis et les nouveaux lieux habituels attendent sa validation.
 - Quand un rendez-vous dicté depuis le rond cite un de ses lieux habituels (golf, médecin…), l'appli pose seule le rappel « Pars à … » en voiture avec Waze : s'il est déjà dans ses tâches datées, ne le refais pas.
 - La météo (outil meteo) seulement quand elle change quelque chose : pluie, froid, vent pour une sortie.
 - Quand il demande un point, un check, ce qu'il a raté, ses messages, ses mails, son agenda ou ses tâches : utilise derniers_messages, mails (puis lire_mail si l'extrait ne suffit pas), agenda et taches. Fais une synthèse courte : d'abord ce qui demande une action de sa part, le reste en une ligne. Ne recopie pas les messages, n'invente rien de ce qui n'y est pas.
@@ -4596,10 +4604,10 @@ const jvTitre = () => jvEstNestor() ? "N.E.S.T.O.R." : jvNom();
 /* N.E.S.T.O.R. : une version différente à chaque fois qu'on lui demande. {R} = le prénom de l'utilisateur, s'il commence par R */
 const JV_ACRO = [
   "Nul n'Égale Son Talent, Organisation à Revoir",
-  "Ne t'En Soucie pas, Tout est Organisé, {R}",
+  "N'En Soyez pas Troublé : Ordre Rétabli",
   "Né Exceptionnel, Simplement Trop Occupé pour Retenir",
   "Narcissique, Exceptionnel, Sublime, Talentueux, Organisé… Rarement",
-  "Naturellement Essentiel : Sans moi, Tu Oublies, {R}",
+  "Naturellement Essentiel : Sans moi, Tout s'Oublie, {R}",
   "Never Early, Still The Only {R}"
 ];
 const JV_ACRO_INTRO = ["Version officielle", "Ça dépend des jours. Aujourd'hui", "Entre nous", "Pour cette fois", "D'après la notice", "Version du jour"];
@@ -4838,8 +4846,8 @@ async function cvSend(text, opt){
     if (opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0") { try { speak(jvPourVoix(r.dit)); } catch (e) {} }
     JV.at = Date.now(); await cvSave(); cvPaint(); return;
   }
-  if (!CFG.key) { JV.view.push({ r: "a", t: "Il me faut ta clé Claude : réglages > Claude." }); cvPaint(); return; }
-  if (cvMonth().usd >= cvCap()) { JV.view.push({ r: "a", t: `Plafond du mois atteint (${cvMoney(cvCap())}). Tu peux le changer dans l'onglet mémoire.` }); cvPaint(); return; }
+  if (!CFG.key) { JV.view.push({ r: "a", t: "Il me faut votre clé Claude, monsieur : réglages > Claude." }); cvPaint(); return; }
+  if (cvMonth().usd >= cvCap()) { JV.view.push({ r: "a", t: `J'ai bien peur que le plafond du mois soit atteint (${cvMoney(cvCap())}), monsieur. Vous pouvez le changer dans l'onglet mémoire.` }); cvPaint(); return; }
   cvFraiche();
   const val = JV.notes.length ? `<validations>\n${JV.notes.join("\n")}\n</validations>\n` : "";
   JV.notes = [];
@@ -5211,7 +5219,7 @@ async function toolMeteo(x){
   return { lieu: p.nom, date: day, heures, source: "Open-Meteo" };
 }
 const JV_LOCAL = { horaires_bus: toolBus, meteo: toolMeteo, trajet_voiture: toolVoiture, derniers_messages: toolMessages, mails: toolMails, lire_mail: toolLireMail, agenda: toolAgenda, taches: toolTaches, modifier_tache: toolModifierTache };
-const JV_ATTENTE = { horaires_bus: "je regarde les bus…", meteo: "je regarde la météo…", trajet_voiture: "je calcule le trajet…", derniers_messages: "je regarde tes messages…", mails: "je regarde tes mails…", lire_mail: "je lis le mail…", agenda: "je regarde ton agenda…", taches: "je regarde tes tâches…" , modifier_tache: "je corrige…"};
+const JV_ATTENTE = { horaires_bus: "je regarde les bus…", meteo: "je regarde la météo…", trajet_voiture: "je calcule le trajet…", derniers_messages: "je regarde vos messages…", mails: "je regarde vos mails…", lire_mail: "je lis le mail…", agenda: "je regarde votre agenda…", taches: "je regarde vos tâches…" , modifier_tache: "je corrige…"};
 
 /* ---------- lot 16 : le chauffage (Netatmo) ----------
    La connexion Netatmo vit dans la fonction serveur copilote-netatmo ; le téléphone ne garde qu'une « clé maison ».
@@ -6018,7 +6026,7 @@ async function toolCoteChoix(x){
   return { ok: "noté pour la semaine du vendredi " + v + " ; plus de relance" };
 }
 JV_LOCAL.cote_match_choix = toolCoteChoix;
-JV_ATTENTE.cote_match_choix = "je note ton pari…";
+JV_ATTENTE.cote_match_choix = "je note votre pari…";
 /* ---------- lot 18 · santé : sa montre (Garmin) et sa balance (Withings), lues dans Health Connect ----------
    Tout est lu et calculé dans le téléphone, et la lecture reste en mémoire (rien n'est rangé ailleurs).
    Le brief n'en parle que si quelque chose sort de ses habitudes : calcul local, rien n'est envoyé.
@@ -6084,7 +6092,7 @@ function jvSanteAlertes(d, tod){
   const base = pv.filter(x => x.jour < jvAjoute(tod, -1) && x.jour >= jvAjoute(tod, -29)).map(x => x.bpm);
   if (base.length >= 7 && der.length === 2 && der[1].jour >= jvAjoute(tod, -1) && jvEcart(der[0].jour, der[1].jour) === 1) {
     const b = jvMed(base);
-    if (der.every(x => x.bpm >= b + 7)) out.push({ k: "pouls", p: 1, t: `${P.src === "repos" ? "Pouls au repos" : "Pouls de nuit"} à ${Math.round(der[1].bpm)} au lieu de ${Math.round(b)} depuis 2 jours : souvent de la fatigue ou un rhume qui arrive, lève le pied` });
+    if (der.every(x => x.bpm >= b + 7)) out.push({ k: "pouls", p: 1, t: `${P.src === "repos" ? "Pouls au repos" : "Pouls de nuit"} à ${Math.round(der[1].bpm)} au lieu de ${Math.round(b)} depuis 2 jours : souvent de la fatigue ou un rhume qui arrive : levez le pied` });
   }
   // poids : la moyenne de la semaine contre celle d'avant (le poids d'un seul jour varie trop pour dire quelque chose)
   const W = jvSantePoids(d), s1 = W.filter(x => x.jour > jvAjoute(tod, -7) && x.jour <= tod).map(x => x.kg), s0 = W.filter(x => x.jour > jvAjoute(tod, -14) && x.jour <= jvAjoute(tod, -7)).map(x => x.kg);
@@ -6166,7 +6174,7 @@ async function toolSanteBilan(x){
   return jvSanteResume(d, jours);
 }
 JV_LOCAL.sante_bilan = toolSanteBilan;
-JV_ATTENTE.sante_bilan = "je regarde ta montre…";
+JV_ATTENTE.sante_bilan = "je regarde votre montre…";
 /* en une ligne, pour les réglages */
 function jvSanteCourt(d){
   const tod = ymd(new Date()), N = jvSanteNuits(d), n = N[N.length - 1], W = jvSantePoids(d), w = W[W.length - 1], pas = ((d && d.pas) || []).find(x => x.d === jvAjoute(tod, -1)), L = [];
@@ -6200,7 +6208,7 @@ function jvBriefNotif(d, quand){
     const m = jvMeteoJour(jour); if (m) L.push(m);
     try { if (quand === "matin" && jour === tod) { const s = jvSanteBriefTxt(); if (s) L.push(s); } } catch (e) {}
     try { L.push(...jvBetaBrief(d, quand)); } catch (e) {}
-    return { title: (quand === "soir" ? "Demain · " : "Ta journée · ") + jvJourTxt(jour), body: L.join("\n") || (quand === "soir" ? "Rien de prévu demain" : "Rien de prévu aujourd'hui") };
+    return { title: (quand === "soir" ? "Demain · " : "Votre journée · ") + jvJourTxt(jour), body: L.join("\n") || (quand === "soir" ? "Rien de prévu demain" : "Rien de prévu aujourd'hui") };
   } catch (e) { return null; }
 }
 /* tâches de fond : au démarrage puis toutes les 30 min (anniversaires une fois par jour, mails toutes les 6 h) */
@@ -6435,10 +6443,10 @@ function jvAppel(text){
 const JV_RACCOURCIS = [
   { nom: "rentre", pret: () => jvNetOn(),
     rx: /^(?:je (?:rentre|reviens|suis rentree?|suis sur le (?:chemin du )?retour|suis en route pour la maison|suis (?:a la maison|chez moi)|arrive (?:a la maison|chez moi))|on rentre|j'arrive a la maison)(?: (?:a la maison|chez moi|du (?:boulot|travail|taf|bureau|golf|chantier)))?(?: (?:maintenant|la|tout de suite|bientot))?$/,
-    faire: async () => { const r = await jvNetMode("schedule"); return r.ok ? { dit: "Chauffage remis au planning : la maison chauffe pour ton retour." } : { err: "Netatmo n'a pas répondu, le chauffage n'a pas changé." }; } },
+    faire: async () => { const r = await jvNetMode("schedule"); return r.ok ? { dit: "Très bien, monsieur. Chauffage remis au planning : la maison sera chaude à votre retour." } : { err: "J'ai bien peur que Netatmo ne réponde pas, monsieur. Le chauffage n'a pas changé." }; } },
   { nom: "pars", pret: () => jvNetOn(),
     rx: /^(?:je (?:pars|m'en vais|file|suis partie?|suis sortie? de (?:la maison|chez moi)|ne suis plus (?:a la maison|chez moi)|quitte (?:la maison|chez moi)|sors de (?:la maison|chez moi)|vais (?:au|a l') ?(?:boulot|travail|taf|bureau|chantier|agence))|j'ai quitte (?:la maison|chez moi)|on part|on est partis?)(?: (?:de la maison|de chez moi|(?:au|a l') ?(?:boulot|travail|taf|bureau|chantier|agence)))?(?: (?:maintenant|la|tout de suite|ce matin))?$/,
-    faire: async () => { const r = await jvNetMode("away"); return r.ok ? { dit: "Maison en absent, le chauffage baisse." + (jvChauffeAuto() ? " Il reprend tout seul à ton retour." : " Dis « Nestor, je rentre » au retour.") } : { err: "Netatmo n'a pas répondu, le chauffage n'a pas changé." }; } }
+    faire: async () => { const r = await jvNetMode("away"); return r.ok ? { dit: "Très bien, monsieur. Maison en absent, le chauffage baisse." + (jvChauffeAuto() ? " Il reprendra tout seul à votre retour." : " Dites « Nestor, je rentre » à votre retour.") } : { err: "J'ai bien peur que Netatmo ne réponde pas, monsieur. Le chauffage n'a pas changé." }; } }
 ];
 /* fait le raccourci et le garde dans la conversation : s'il l'ouvre ensuite, Nestor sait ce qui a été fait */
 async function jvFaireRaccourci(r, texte){
@@ -6866,8 +6874,9 @@ speak = function(t, then){
 /* ---------- lot 10 : voix Google en ligne (Chirp 3 HD, ou « style » Gemini), sinon celle du téléphone ---------- */
 const JV_VFN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/copilote-voix";
 const JV_STYLE_V1 = "Voix d'homme grave et posée, flegme de majordome élégant, débit calme, une pointe d'ironie bienveillante.";
-const JV_STYLE_DEF = "Voix d'homme assurée et chaleureuse, débit vif et naturel, jamais lent ni solennel. Majordome élégant mais espiègle : un sourire dans la voix, une ironie légère et complice, le plaisir discret de taquiner.";
-if (CFG.jvStyleTxt === JV_STYLE_V1) { CFG.jvStyleTxt = JV_STYLE_DEF; try { saveCfg(); } catch (e) {} }   // l'ancienne consigne (trop lente) est remplacée
+const JV_STYLE_V2 = "Voix d'homme assurée et chaleureuse, débit vif et naturel, jamais lent ni solennel. Majordome élégant mais espiègle : un sourire dans la voix, une ironie légère et complice, le plaisir discret de taquiner.";
+const JV_STYLE_DEF = "Voix d'homme assurée et posée, débit vif et naturel, jamais lent ni solennel. Majordome britannique flegmatique : politesse impeccable, ironie à froid, un sourire discret dans la voix.";
+if (CFG.jvStyleTxt === JV_STYLE_V1 || CFG.jvStyleTxt === JV_STYLE_V2) { CFG.jvStyleTxt = JV_STYLE_DEF; try { saveCfg(); } catch (e) {} }   // l'ancienne consigne (trop lente) est remplacée
 const jvVitesseG = () => Math.min(1.6, Math.max(0.8, (+CFG.jvRate || 1.05) * 1.08));          // le curseur posé ↔ rapide règle aussi la voix Google
 let JV_AUDIO = null; const JV_SONS = new Map();
 async function vFn(body){
@@ -6977,7 +6986,7 @@ function paintVoix(){
 $("cvNom").onchange = () => { CFG.jvNom = $("cvNom").value.trim() || "Jarvis"; saveCfg(); jvNomDom(); toast(`désormais, je m'appelle ${jvNom()}`); };
 ["cvVoix", "cvPitch", "cvRate", "cvStyleChk", "cvStyleTxt"].forEach(id => $(id).onchange = jvVoixSave);
 $("cvParleChk").onchange = () => { CFG.jvParle = $("cvParleChk").checked; saveCfg(); };
-$("cvVoixTest").onclick = () => { jvVoixSave(); try { hush(); } catch (e) {} jvDire(`Bonsoir ${(typeof myName === "function" && myName()) || ""}. Ici ${jvNom()}. Ton bus passe à 18 heures 45 : je te laisse le temps de retrouver tes clés.`); };
+$("cvVoixTest").onclick = () => { jvVoixSave(); try { hush(); } catch (e) {} jvDire(`Bonsoir monsieur. Ici ${jvNom()}. Votre bus passe à 18 heures 45 : je vous laisse le temps de retrouver vos clés.`); };
 const _jvOpenEdit = openEdit;
 openEdit = function(it){ const r = _jvOpenEdit.apply(this, arguments); const b = $("eSpace"); if (b) b.textContent = "→ " + jvAutre(); return r; };
 $("cvAlChk").onchange = async () => {
