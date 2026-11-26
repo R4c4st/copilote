@@ -244,6 +244,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
 @keyframes cvp{50%{transform:scale(1.45);opacity:.55}}
 .cv-go{font-size:14px;color:var(--fg);font-weight:500;padding:12px 0;flex:none}
 #cvStat{min-height:18px;margin-top:0}
+#bConv{display:none!important}
 </style>
 </head>
 <body>
@@ -397,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v30 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v31 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -493,6 +494,11 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <p class="small" id="cvSanteSt" style="margin-top:4px"></p>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvSanteBriefChk" style="width:auto"> dans le brief du matin, seulement ce qui sort de mes habitudes</label>
     <div class="foot" style="margin-top:10px"><button id="cvSanteOff" style="color:var(--mut);display:none">couper</button><button id="cvSanteGerer" style="display:none">autorisations</button><button class="ok" id="cvSanteGo">relier ma montre et ma balance</button></div>
+    <div class="lab">Mail « Nestor »</div>
+    <p class="small" id="cvMnSt" style="margin-top:4px"></p>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvMnChk" style="width:auto"> lire mes mails « Nestor » (Gmail)</label>
+    <input id="cvMnDe" placeholder="accepter aussi les mails envoyés depuis… (adresse pro, par ex.)" autocomplete="off" style="margin-top:8px">
+    <div class="foot" style="margin-top:10px"><button class="ok" id="cvMnGo">relever maintenant</button></div>
     <div class="lab">Bêta</div>
     <p class="small" style="margin-top:4px">Des essais : décoche ce qui t'encombre. Si tu n'en veux plus, je les retire.</p>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBetaMatchChk" style="width:auto"> Cote &amp; Match : ta sélection le jeudi soir et le vendredi matin</label>
@@ -648,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 30;
+const TEMPO_BUILD = 31;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1153,7 +1159,7 @@ async function capture(text, src, kind, ctx){
   }
   let parsed = null, viaAI = false, U = { n: 0, done: [], undo: [] }, aiErr = null;
   /* en fond (messages reçus, dictée remise à ranger) : le cercle reste libre, rien à l'écran tant que ce n'est pas fini */
-  const fond = kind === "phone" || !!(ctx && ctx.reprise);
+  const fond = kind === "phone" || !!(ctx && (ctx.reprise || ctx.fond));
   if (CFG.key) {
     if (!fond) { ringState("think"); hint(kind === "mail" ? "je lis tes mails…" : "je range…"); }
     try { const r = await aiParseSur(text, kind, ctx); parsed = r.items; U = applyUpdates(kind === "phone" ? (r.updates || []).map(u => ({ id: u.id, note: u.note, due: u.due, time: u.time, u: u.u })) : r.updates); viaAI = true; } catch (e) { parsed = null; aiErr = e; }   // un message peut préciser une tâche, jamais la cocher ni la supprimer
@@ -3460,7 +3466,7 @@ function toast(msg, btn, fn, ms){
   let used = false;
   b.textContent = btn || ""; b.style.display = btn ? "" : "none"; b.onclick = () => { if (used) return; used = true; b.onclick = null; fn && fn(); $("toast").classList.remove("show"); };
   // le temps de lire : plus le message est long, plus il reste
-  const lire = Math.min(12000, 1200 + String(msg || "").length * 55);
+  const lire = String(msg || "").length > 60 ? Math.min(12000, 1200 + String(msg || "").length * 55) : 0;   // les messages courts gardent leur durée
   $("toast").classList.add("show"); clearTimeout(tt); tt = setTimeout(() => { $("toast").classList.remove("show"); b.onclick = null; }, Math.max(ms || (btn ? 4000 : 2200), lire));
 }
 
@@ -4671,6 +4677,141 @@ async function cvCall(extras){
   if (!r.ok) throw { status: r.status, j };
   return j;
 }
+/* ---------- lot 20 : la réponse au fil de l'eau ----------
+   Claude envoie sa réponse morceau par morceau : le texte s'affiche dès le premier mot, et la voix part dès la première phrase.
+   Le message reconstitué est le même qu'avant (texte, outils, réflexion signée), le reste de la conversation ne change pas. */
+const jvNow = () => typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+const jvEffort = t => CFG.cvEffort || (String(t || "").length > 400 || /\b(bilan|analys|compar|expliqu|pourquoi|strat[ée]gi|recherche|prépare|rédige|redige)/i.test(t || "") ? "medium" : "low");
+async function cvCallFlux(extras, surTexte, effort){
+  const from = JV.from != null && JV.from < JV.msgs.length ? JV.from : cvFenetre();
+  const body = { model: CV_MODEL, max_tokens: 4000, system: jvSys(), tools: jvOutils(), messages: JV.msgs.slice(from), stream: CFG.cvFlux !== false };
+  if (extras !== false) { body.cache_control = { type: "ephemeral" }; body.output_config = { effort: effort || "low" }; }
+  const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+    body: JSON.stringify(body) });
+  if (!r.ok) {
+    let j = null; try { j = await r.json(); } catch (e) {}
+    if (extras !== false && r.status === 400 && /cache_control|output_config|effort/i.test(JSON.stringify(j || ""))) return cvCallFlux(false, surTexte, effort);
+    throw { status: r.status, j };
+  }
+  // pas de flux (réglage, ou réponse déjà entière) : comme avant
+  if (!body.stream || !r.body || !r.body.getReader) { const j = await r.json(); (j.content || []).forEach(b => { if (b.type === "text" && b.text && surTexte) surTexte(b.text); }); return j; }
+  const msg = { content: [], stop_reason: null, usage: {} }, json = {};
+  const evenement = d => {
+    if (d.type === "message_start") Object.assign(msg.usage, (d.message && d.message.usage) || {});
+    else if (d.type === "content_block_start") { msg.content[d.index] = JSON.parse(JSON.stringify(d.content_block)); if (/tool_use$/.test(d.content_block.type)) json[d.index] = ""; }
+    else if (d.type === "content_block_delta") {
+      const b = msg.content[d.index], x = d.delta || {}; if (!b) return;
+      if (x.type === "text_delta") { b.text = (b.text || "") + x.text; if (surTexte) surTexte(x.text); }
+      else if (x.type === "input_json_delta") json[d.index] += x.partial_json || "";
+      else if (x.type === "thinking_delta") b.thinking = (b.thinking || "") + x.thinking;
+      else if (x.type === "signature_delta") b.signature = (b.signature || "") + x.signature;
+      else if (x.type === "citations_delta") (b.citations = b.citations || []).push(x.citation);
+    }
+    else if (d.type === "content_block_stop") { if (d.index in json) { const b = msg.content[d.index]; try { b.input = json[d.index] ? JSON.parse(json[d.index]) : (b.input || {}); } catch (e) { b.input = {}; } delete json[d.index]; } }
+    else if (d.type === "message_delta") { if (d.delta && d.delta.stop_reason) msg.stop_reason = d.delta.stop_reason; if (d.usage) Object.assign(msg.usage, d.usage); }
+    else if (d.type === "error") throw { status: (d.error && d.error.type) === "overloaded_error" ? 529 : 500, j: { error: d.error } };
+  };
+  const rd = r.body.getReader(), dec = new TextDecoder(); let buf = "";
+  for (;;) {
+    const { value, done } = await rd.read();
+    if (value) buf += dec.decode(value, { stream: true });
+    let k;
+    while ((k = buf.indexOf("\n\n")) >= 0) {
+      const bloc = buf.slice(0, k); buf = buf.slice(k + 2);
+      const data = bloc.split("\n").filter(l => l.startsWith("data:")).map(l => l.slice(5).trim()).join("");
+      if (data) { let d = null; try { d = JSON.parse(data); } catch (e) {} if (d) evenement(d); }
+    }
+    if (done) break;
+  }
+  msg.content = msg.content.filter(Boolean);
+  return msg;
+}
+/* découpe le texte qui arrive en phrases à dire (pas après « M. », « Dr. »…) */
+function jvDecoupe(){
+  let tampon = "";
+  const sortir = fin => {
+    const out = [];
+    for (;;) {
+      const rx = /[.!?…](?=\s)|\n/g; let m, cut = -1;
+      while ((m = rx.exec(tampon))) {
+        const i = m.index + 1, avant = tampon.slice(0, i);
+        if (avant.trim().length < 25) continue;
+        if (m[0] === "." && /(?:^|\s)(?:M|Mme|Mlle|Dr|St|Ste|cf|ex|etc|n°|[A-Z])\.$/.test(avant)) continue;
+        cut = i; break;
+      }
+      if (cut < 0) break;
+      out.push(tampon.slice(0, cut).trim()); tampon = tampon.slice(cut);
+    }
+    if (fin && tampon.trim()) { out.push(tampon.trim()); tampon = ""; }
+    return out.filter(Boolean);
+  };
+  return { ajoute: t => { tampon += t; return sortir(false); }, fin: () => sortir(true) };
+}
+/* la voix phrase par phrase : chaque phrase est demandée tout de suite, et jouée à son tour */
+const JV_VQ = { gen: 0, file: [], joue: false, ok: null, t0: 0 };
+function jvVoixDebut(){
+  JV_VQ.gen++; JV_VQ.file = []; JV_VQ.joue = false; JV_VQ.ok = null; JV_VQ.t0 = 0;
+  try { if (JV_AUDIO) { JV_AUDIO.pause(); JV_AUDIO = null; } } catch (e) {}
+}
+async function jvVoixPermise(){
+  if (CFG.jvDiscret || CFG.jvParle === false || CFG.vSay === "0") return false;
+  if (NATIVE && CFG.jvDiscretAuto !== false) { try { const r = await tn("sonState"); if (r && (r.ringer < 2 || r.dnd) && !r.casque) return false; } catch (e) {} }
+  return true;
+}
+async function jvVoixAudio(t){
+  const voix = CFG.jvVoix.slice(2), mode = CFG.jvStyle ? "style" : "hd", style = mode === "style" ? (CFG.jvStyleTxt || JV_STYLE_DEF) : "";
+  const k = [mode, voix, style, t].join("|");
+  if (JV_SONS.has(k)) return JV_SONS.get(k);
+  const r = await vFn({ action: "dire", texte: t, voix, mode, style });
+  if (r && r.mois) LS.set("copilote_vmois", { m: curMonth(), u: r.mois });
+  if (!r || !r.ok || !r.audio) return null;
+  const src = "data:" + (r.mime || "audio/mpeg") + ";base64," + r.audio;
+  JV_SONS.set(k, src); if (JV_SONS.size > 30) JV_SONS.delete(JV_SONS.keys().next().value);
+  return src;
+}
+function jvVoixPhrase(t){
+  t = jvPourVoix(t).trim(); if (!t) return;
+  const g = JV_VQ.gen;
+  JV_VQ.file.push({ t, src: jvVoixGoogle() && MEM.tok && navigator.onLine !== false ? jvVoixAudio(t).catch(() => null) : null });
+  if (!JV_VQ.joue) { JV_VQ.joue = true; jvVoixSuite(g); }
+}
+async function jvVoixSuite(g){
+  if (JV_VQ.ok === null) JV_VQ.ok = jvVoixPermise();
+  if (!(await JV_VQ.ok) || g !== JV_VQ.gen) { if (g === JV_VQ.gen) { JV_VQ.file = []; JV_VQ.joue = false; } return; }
+  const it = JV_VQ.file.shift(); if (!it) { JV_VQ.joue = false; return; }
+  const suite = () => { if (g === JV_VQ.gen) jvVoixSuite(g); };
+  let src = null; if (it.src) { try { src = await it.src; } catch (e) {} }
+  if (g !== JV_VQ.gen) return;
+  if (!JV_VQ.t0) { JV_VQ.t0 = jvNow(); jvChrono({ voix: JV_VQ.t0 }); }
+  if (src) {
+    try {
+      if (JV_AUDIO) JV_AUDIO.pause();
+      const a = new Audio(src); JV_AUDIO = a; let fini = false;
+      const f = () => { if (!fini) { fini = true; suite(); } }, repli = () => { if (!fini) { fini = true; _jvSpeak(it.t, suite); } };
+      try { a.preservesPitch = true; a.playbackRate = jvVitesseG(); } catch (e) {}
+      a.onended = f; a.onerror = repli;
+      const p = a.play(); if (p && p.catch) p.catch(repli);
+      setTimeout(f, 6000 + it.t.length * 110);
+      return;
+    } catch (e) {}
+  }
+  speak(it.t, suite);
+}
+/* le chronomètre : où passe le temps (Claude, voix) */
+let JV_CHRONO = null;
+function jvChrono(x){
+  if (!JV_CHRONO) return;
+  for (const k of Object.keys(x)) if (JV_CHRONO[k] == null) JV_CHRONO[k] = x[k];
+  const c = JV_CHRONO, s = v => v == null ? null : Math.round((v - c.t0) / 100) / 10;
+  const L = (LS.get("copilote_chrono", null) || []).filter(e => e.id !== c.id);
+  L.push({ id: c.id, at: Date.now(), premier: s(c.premier), total: s(c.fin), voix: s(c.voix), etapes: c.etapes || 1 }); LS.set("copilote_chrono", L.slice(-20));
+}
+function jvChronoTxt(){
+  const L = (LS.get("copilote_chrono", null) || []).filter(e => e.total != null); if (!L.length) return "";
+  const d = L[L.length - 1], f = v => v == null ? "—" : String(v).replace(".", ",") + " s";
+  return `dernière réponse : premier mot ${f(d.premier)}, complète ${f(d.total)}${d.voix != null ? ", voix " + f(d.voix) : ""}`;
+}
 function cvCount(u){
   if (!u) return 0;
   const usd = ((u.input_tokens || 0) * CV_PRICE.in + (u.cache_creation_input_tokens || 0) * CV_PRICE.cw + (u.cache_read_input_tokens || 0) * CV_PRICE.cr + (u.output_tokens || 0) * CV_PRICE.out) / 1e6;
@@ -4704,16 +4845,31 @@ async function cvSend(text, opt){
   const base = JV.msgs.length;
   JV.msgs.push({ role: "user", content: `<souvenirs>\n${cvSouvenirs(text)}\n</souvenirs>\n<contexte>\n${await cvContexte()}\n</contexte>\n${val}\n${text}` });
   JV.from = cvFenetre();
+  // lot 20 : la réponse s'affiche et se dit au fil de l'eau
+  const voix = !!(opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0"), dec = jvDecoupe(), effort = jvEffort(text);
+  if (voix) jvVoixDebut();
+  JV_CHRONO = { id: Date.now(), t0: jvNow() };
+  let vivant = null, peint = 0, etapes = 0;
+  const surTexte = t => {
+    if (JV_CHRONO && JV_CHRONO.premier == null) { JV_CHRONO.premier = jvNow(); cvStatus(""); }
+    if (!vivant) { vivant = { r: "a", t: "", live: 1 }; JV.view.push(vivant); }
+    vivant.t += t;
+    if (voix) dec.ajoute(t).forEach(jvVoixPhrase);
+    const n = jvNow(); if (n - peint > 120) { peint = n; cvPaint(); }
+  };
   try {
     let usd = 0; const texts = [], tools = [], seen = new Set();
     for (let step = 0; step < 6; step++) {
-      const j = await cvCall();
+      etapes = step + 1;
+      const j = await cvCallFlux(undefined, surTexte, effort);
       usd += cvCount(j.usage);
       const content = j.content || [];
       const t1 = content.filter(b => b.type === "text").map(b => b.text).join("\n").trim(); if (t1) texts.push(t1);
       const uses = content.filter(b => b.type === "tool_use");
       for (const t of uses) if (!JV_LOCAL[t.name]) { const k = t.name + JSON.stringify(t.input || {}); if (!seen.has(k)) { seen.add(k); tools.push(t); } }
       if (j.stop_reason !== "tool_use" || !uses.some(t => JV_LOCAL[t.name])) break;
+      if (t1 && vivant) vivant.t += "\n\n";
+      if (voix) dec.fin().forEach(jvVoixPhrase);   // la phrase d'attente (« je regarde ton agenda ») se dit tout de suite
       // il a besoin d'une info (bus, météo) : on la calcule ici et on la lui rend
       JV.msgs.push({ role: "assistant", content });
       const results = [];
@@ -4730,8 +4886,10 @@ async function cvSend(text, opt){
     JV.msgs.splice(base + 1);
     const txt = texts.join("\n\n").trim();
     JV.msgs.push({ role: "assistant", content: txt || "(je te propose quelque chose ci-dessous)" });
-    if (txt) JV.view.push({ r: "a", t: txt, usd });
-    if (txt && opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0") { try { speak(jvPourVoix(txt)); } catch (e) {} }
+    if (txt) { if (vivant) { vivant.t = txt; delete vivant.live; vivant.usd = usd; } else JV.view.push({ r: "a", t: txt, usd }); }
+    else if (vivant) JV.view.splice(JV.view.indexOf(vivant), 1);
+    if (voix) dec.fin().forEach(jvVoixPhrase);
+    JV_CHRONO.etapes = etapes; jvChrono({ fin: jvNow() });
     const v0 = JV.view.length;
     for (const t of tools) {
       const x = t.input || {};
@@ -4751,6 +4909,8 @@ async function cvSend(text, opt){
     for (let i = v0; i < JV.view.length; i++) { const p = JV.view[i]; if (p.r === "p" && JV_AUTO.has(p.k)) { p.auto = true; try { await cvDecide(i, true); } catch (e) {} } }
     JV.at = Date.now();
   } catch (e) {
+    if (vivant && JV.view.includes(vivant)) JV.view.splice(JV.view.indexOf(vivant), 1);   // pas de réponse à moitié
+    if (voix) jvVoixDebut();
     JV.msgs.splice(base);   // la question non répondue ne reste pas dans l'historique envoyé
     const s = e && e.status, m = e && e.j && e.j.error && e.j.error.message || "";
     const why = !s ? "pas de réseau" : s === 401 ? "clé Claude refusée" : s === 429 ? "Claude est saturé, réessaie dans un instant" : s === 529 ? "Claude est surchargé, réessaie dans un instant" : `erreur ${s}${m ? " : " + m.slice(0, 120) : ""}`;
@@ -6049,6 +6209,7 @@ async function jvJournalier(){
   try { await jvCinePrep(); } catch (e) {}
   try { await jvSantePrep(); } catch (e) {}
   try { await jvRangerAttente(); } catch (e) {}
+  try { await jvMailNestor(); } catch (e) {}
 }
 /* branché sur l'agenda : chaque création ou modification d'une tâche passe par calSync */
 function jvSortieCheck(it){
@@ -6083,6 +6244,7 @@ function paintLieux(){
   try { paintNet(); } catch (e) {}
   try { paintBeta(); } catch (e) {}
   try { paintSante(); } catch (e) {}
+  try { paintMailNestor(); } catch (e) {}
 }
 
 /* ---------- le tri des dictées s'appuie sur la mémoire (une seule source) ---------- */
@@ -6161,6 +6323,71 @@ async function jvRangerAttente(force){
   try { x.essai = Date.now(); LS.set(JV_RANGER_LS, L); await capture(x.text, x.src, undefined, { reprise: x.id }); }
   finally { JV_RANGE_ON = false; }
 }
+/* ---------- lot 20 : le mail « Nestor » ----------
+   Il s'envoie un mail sur son Gmail, « Nestor » en objet, une info par ligne : chaque ligne est rangée comme une dictée.
+   Garde-fou : seuls ses propres mails comptent (envoyés depuis ce Gmail), plus les adresses qu'il ajoute lui-même,
+   et pour celles-là, le mail doit être authentifié (SPF ou DKIM) : personne d'autre ne peut lui glisser des tâches. */
+const jvMailNestorOn = () => CFG.jvMailNestor !== false;
+const jvMailNestorDe = () => String(CFG.jvMailNestorDe || "").toLowerCase().split(/[\s,;]+/).filter(a => /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(a)).slice(0, 5);
+let JV_MN_ON = false;
+/* le texte du mail en gardant ses lignes (une ligne = une info) */
+function jvGmLignes(p){
+  const dec = d => { try { return new TextDecoder().decode(Uint8Array.from(atob(d.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0))); } catch (e) { return ""; } };
+  const parts = [], walk = x => { if (!x) return; if (x.parts) x.parts.forEach(walk); else if (x.body && x.body.data) parts.push({ t: x.mimeType || "", d: x.body.data }); };
+  walk(p);
+  const plain = parts.find(x => x.t === "text/plain"), html = parts.find(x => x.t === "text/html");
+  if (plain) return dec(plain.d).replace(/\r/g, "");
+  if (html) {
+    const doc = new DOMParser().parseFromString(dec(html.d).replace(/<br\s*\/?>|<\/(?:p|div|li|tr|h\d)>/gi, "$&\n"), "text/html");
+    doc.querySelectorAll("style,script,head,blockquote").forEach(x => x.remove());
+    return (doc.body && doc.body.textContent) || "";
+  }
+  return "";
+}
+async function jvMailNestor(force){
+  if (!jvMailNestorOn() || !gMailOk() || JV_MN_ON) return null;
+  if (!force && Date.now() - (LS.get("copilote_mn_last", 0) || 0) < 10 * 60e3) return null;
+  JV_MN_ON = true; LS.set("copilote_mn_last", Date.now());
+  let ranges = 0;
+  try {
+    const de = ["from:me"].concat(jvMailNestorDe().map(a => "from:" + a)).join(" OR ");
+    const l = await jvGmail("messages?maxResults=10&q=" + encodeURIComponent(`subject:Nestor newer_than:7d -in:trash -in:spam (${de})`));
+    if (!l || l.erreur) { LS.set("copilote_mn_etat", { at: Date.now(), err: (l && l.erreur) || "Gmail injoignable" }); return null; }
+    const vus = new Set(LS.get("copilote_mn_vus", null) || []);
+    const ids = (l.messages || []).map(m => m.id).filter(id => !vus.has(id)).reverse();
+    for (const id of ids.slice(0, 5)) {
+      const m = await jvGmail(`messages/${id}?format=full`); if (!m || m.erreur) continue;
+      vus.add(id); LS.set("copilote_mn_vus", [...vus].slice(-200));
+      const sujet = jvHd(m, "subject");
+      if (!/^\s*(?:(?:re|tr|fwd?)\s*:\s*)*nestor\b/i.test(sujet)) continue;   // l'objet commence par « Nestor »
+      const exp = (/<([^>]+)>/.exec(jvHd(m, "from")) || [, jvHd(m, "from")])[1].trim().toLowerCase();
+      const moi = (m.labelIds || []).includes("SENT");
+      const auth = /\b(?:dkim|spf)=pass\b/i.test(jvHd(m, "authentication-results") + " " + jvHd(m, "arc-authentication-results"));
+      if (!moi && !(jvMailNestorDe().includes(exp) && auth)) continue;
+      // le corps, sans la signature ni le message cité
+      let corps = String(jvGmLignes(m.payload) || m.snippet || "").replace(/[ \t\u00a0]+/g, " ").replace(/\n{3,}/g, "\n\n");
+      corps = corps.split(/\n\s*(?:--\s*\n|_{5,}|Envoyé de |Envoyé depuis |Sent from |Le .{3,120} a écrit ?:|On .{3,120} wrote:|De ?: .+\n|>)/)[0];
+      const texte = [sujet.replace(/^\s*(?:(?:re|tr|fwd?)\s*:\s*)*nestor\b[\s:,.-]*/i, "").trim(), corps.trim()].filter(Boolean).join("\n").slice(0, 4000);
+      if (!texte) continue;
+      const n0 = ["pro", "perso"].reduce((n, sp) => n + (spaceState(sp).items || []).length, 0);
+      const ok = await capture(texte, "mail", undefined, { fond: true });
+      const n = ["pro", "perso"].reduce((n, sp) => n + (spaceState(sp).items || []).length, 0) - n0;
+      if (ok !== false) { ranges++; toast(`mail « Nestor » de ${jvHM(+m.internalDate || Date.now())} rangé${n > 0 ? " : " + n + " ajout" + (n > 1 ? "s" : "") : ""} ✓`, "", null, 7000); }
+    }
+    LS.set("copilote_mn_etat", { at: Date.now(), n: ranges });
+  } catch (e) { LS.set("copilote_mn_etat", { at: Date.now(), err: "Gmail injoignable" }); }
+  finally { JV_MN_ON = false; }
+  return ranges;
+}
+function paintMailNestor(){
+  const st = $("cvMnSt"); if (!st) return;
+  $("cvMnChk").checked = jvMailNestorOn(); $("cvMnDe").value = CFG.jvMailNestorDe || "";
+  const e = LS.get("copilote_mn_etat", null);
+  st.textContent = !gMailOk() ? "Il faut d'abord autoriser Gmail (réglages > Colis > autoriser Gmail)."
+    : !jvMailNestorOn() ? "Coupé."
+    : "Envoie-toi un mail avec « Nestor » en objet, une info par ligne : je le relève toutes les 10 minutes quand l'appli est ouverte, sinon toutes les 30."
+      + (e ? (e.err ? ` Dernier relevé : ${e.err}.` : ` Dernier relevé : ${jvHM(e.at)}${e.n ? ", " + e.n + " mail" + (e.n > 1 ? "s" : "") + " rangé" + (e.n > 1 ? "s" : "") : ""}.`) : "");
+}
 /* ---------- lot 19 : au cercle, « Nestor, … » s'adresse à lui (ni tâche ni mémo) ---------- */
 /* ce qui suit son nom (« Dis Nestor, je rentre » → « je rentre ») ; null si la phrase ne commence pas par son nom */
 function jvAppel(text){
@@ -6195,6 +6422,9 @@ function jvRaccourci(reste){
 function jvPourNestor(text){
   const reste = jvAppel(text); if (reste === null) return false;
   if (!reste) { try { idle(); } catch (e) {} openConv(); return true; }   // « Nestor » tout seul : la conversation s'ouvre
+  if (/^(?:(?:fais|donne|lance)[- ]moi |(?:mon|le|ton) )?(?:brief|point)(?: du (?:jour|matin))?[ .!?]*$/i.test(cvNorm(reste))) {   // « Nestor, mon brief »
+    try { idle(); } catch (e) {} LS.set("copilote_brief", ymd(new Date())); openConv(); setTimeout(() => jvBrief().catch(() => {}), 500); return true;
+  }
   jvAuCercle(reste).catch(() => { try { idle(); } catch (e) {} toast("je n'ai pas pu répondre", "", null, 5000); });
   return true;
 }
@@ -6218,6 +6448,7 @@ async function jvAuCercle(reste){
   const nv = JV.view.slice(n0);
   // une proposition à valider (souvenir, lieu, oubli) ou une erreur : la conversation s'ouvre
   if (nv.some(v => (v.r === "p" && !v.st) || v.r === "e")) { openConv(); return; }
+  if (nv.filter(v => v.r === "a").map(v => v.t).join(" ").length > 240) { openConv(); return; }   // lot 20 : longue, elle se lit mieux à l'écran
   const rep = jvPourVoix(nv.filter(v => v.r === "a").map(v => v.t).join(" "));
   let court = rep; if (court.length > 140) { const k = court.slice(0, 140).search(/[.!?…](?=\s[^.!?…]*$)/); court = k > 40 ? court.slice(0, k + 1) : court.slice(0, 137) + "…"; }
   flashOk(); toast(court || "c'est fait", "voir", () => openConv(), 10000);
@@ -6282,7 +6513,7 @@ function cvPaint(){
     return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">${head}</div><div>${esc(v.t)}</div>${v.why ? `<div class="sub">${esc(v.why)}</div>` : ""}${act}</div>`;
   }).join("") + `<div style="display:flex;justify-content:center;gap:22px">${JV.view.length ? `<button class="cv-new" id="cvNew">nouvelle conversation</button>` : ""}<button class="cv-new" id="cvBrief">brief du jour</button></div>`;
   const m = cvMonth();
-  $("cvCost").textContent = `Claude Sonnet · ce mois : ${cvMoney(m.usd)} sur ${cvMoney(cvCap())} · ${MEM.items.size} souvenir${MEM.items.size > 1 ? "s" : ""}`;
+  $("cvCost").textContent = `Claude Sonnet · ce mois : ${cvMoney(m.usd)} sur ${cvMoney(cvCap())} · ${MEM.items.size} souvenir${MEM.items.size > 1 ? "s" : ""}` + (jvChronoTxt() ? " · " + jvChronoTxt() : "");
   L.querySelectorAll("[data-ok]").forEach(b => b.onclick = () => cvDecide(+b.dataset.ok, true));
   L.querySelectorAll("[data-no]").forEach(b => b.onclick = () => cvDecide(+b.dataset.no, false));
   L.querySelectorAll("[data-vtc]").forEach(b => b.onclick = () => cvDecide(+b.dataset.vtc, b.dataset.app));
@@ -6431,6 +6662,18 @@ $("cvSanteBriefChk").onchange = () => {
   if (!CFG.jvSanteBrief) LS.set("copilote_sante_brief", null); else jvSantePrep(true).catch(() => {});
   try { schedulePushSync(); } catch (e) {}
 };
+/* lot 20 : un seul cercle — l'appui long ouvre la conversation (le bouton Nestor disparaît) */
+{ const R = $("ring"); let lp = null, long = false;
+  R.addEventListener("pointerdown", () => { long = false; clearTimeout(lp); lp = setTimeout(() => { if (listening || typing) return; long = true; try { vib(15); } catch (e) {} openConv(); }, 600); });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(t => R.addEventListener(t, () => clearTimeout(lp)));
+  R.addEventListener("click", e => { if (long) { long = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+  R.addEventListener("contextmenu", e => e.preventDefault()); }
+if (!LS.get("copilote_info20", 0)) setTimeout(() => { LS.set("copilote_info20", 1); toast("nouveau : appui long sur le cercle pour parler avec " + jvNom(), "", null, 8000); }, 4000);
+/* lot 20 : réglages du mail « Nestor » */
+$("cvMnChk").onchange = () => { CFG.jvMailNestor = $("cvMnChk").checked; saveCfg(); paintMailNestor(); };
+$("cvMnDe").onchange = () => { CFG.jvMailNestorDe = jvMailNestorDe().join(", "); saveCfg(); paintMailNestor(); };
+$("cvMnGo").onclick = async () => { $("cvMnSt").textContent = "je relève…"; const n = await jvMailNestor(true); paintMailNestor(); if (n === 0) toast("aucun nouveau mail « Nestor »"); };
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") setTimeout(() => jvMailNestor().catch(() => {}), 4000); });
 /* une dictée restée « à ranger » : dès que le réseau revient, ou au retour dans l'appli */
 window.addEventListener("online", () => setTimeout(() => jvRangerAttente(true).catch(() => {}), 2000));
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") setTimeout(() => jvRangerAttente().catch(() => {}), 3000); });
@@ -6627,7 +6870,7 @@ function jvDire(t, then){
   }, repli);
 }
 const _jvHush = hush;
-hush = function(){ try { if (JV_AUDIO) { JV_AUDIO.pause(); JV_AUDIO = null; } } catch (e) {} return _jvHush.apply(this, arguments); };
+hush = function(){ try { jvVoixDebut(); } catch (e) {} try { if (JV_AUDIO) { JV_AUDIO.pause(); JV_AUDIO = null; } } catch (e) {} return _jvHush.apply(this, arguments); };   // lot 20 : les phrases en attente se taisent aussi
 $("cvDiscretChk").onchange = () => { CFG.jvDiscret = $("cvDiscretChk").checked; saveCfg(); if (CFG.jvDiscret) { try { hush(); } catch (e) {} } };
 $("cvDiscretAutoChk").onchange = () => { CFG.jvDiscretAuto = $("cvDiscretAutoChk").checked; saveCfg(); };
 
