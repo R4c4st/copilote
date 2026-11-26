@@ -99,7 +99,7 @@ import org.json.JSONObject;
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 13;
+    static final int NATIVE_BUILD = 14;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -126,12 +126,139 @@ public class TempoNativePlugin extends Plugin {
                 .apply();
         }
         handleShare(getActivity() != null ? getActivity().getIntent() : null);
+        handleAssist(getActivity() != null ? getActivity().getIntent() : null);
     }
 
     @Override
     protected void handleOnNewIntent(Intent intent) {
         super.handleOnNewIntent(intent);
         handleShare(intent);
+        handleAssist(intent);
+    }
+
+    // ------------------------------------------------------------------ lot 21 : écouteurs et assistant du téléphone
+
+    /** appui long sur l'écouteur (commande vocale Bluetooth) ou assistant du téléphone : la page écoute */
+    private void handleAssist(Intent intent) {
+        if (!MainActivity.estAssist(intent)) return;
+        JSObject d = new JSObject();
+        d.put("verrou", verrouille());
+        d.put("source", Intent.ACTION_VOICE_COMMAND.equals(intent.getAction()) ? "casque" : "assistant");
+        intent.setAction("fr.rc4st.copilote.ASSIST_DONE");
+        notifyListeners("assistant", d, true);
+    }
+
+    private boolean verrouille() {
+        try {
+            android.app.KeyguardManager km = (android.app.KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
+            return km != null && km.isKeyguardLocked();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @PluginMethod
+    public void verrou(PluginCall call) {
+        JSObject r = new JSObject();
+        r.put("verrou", verrouille());
+        call.resolve(r);
+    }
+
+    /** fin de l'échange sur l'écran verrouillé : on ne s'affiche plus par-dessus, et on y retourne s'il est toujours verrouillé */
+    @PluginMethod
+    public void finVerrou(PluginCall call) {
+        final boolean fond = Boolean.TRUE.equals(call.getBoolean("fond", false));
+        final Activity a = getActivity();
+        if (!(a instanceof MainActivity)) {
+            call.resolve();
+            return;
+        }
+        a.runOnUiThread(() -> {
+            try {
+                ((MainActivity) a).finVerrou(fond && verrouille());
+            } catch (Exception ignored) {}
+            call.resolve();
+        });
+    }
+
+    /** demande de déverrouiller (avant d'envoyer un message, d'ouvrir une autre appli…) */
+    @PluginMethod
+    public void deverrouiller(PluginCall call) {
+        final Activity a = getActivity();
+        if (Build.VERSION.SDK_INT < 26 || a == null || !verrouille()) {
+            JSObject r = new JSObject();
+            r.put("ok", true);
+            call.resolve(r);
+            return;
+        }
+        final android.app.KeyguardManager km = (android.app.KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
+        a.runOnUiThread(() -> {
+            try {
+                km.requestDismissKeyguard(a, new android.app.KeyguardManager.KeyguardDismissCallback() {
+                    @Override
+                    public void onDismissSucceeded() {
+                        JSObject r = new JSObject();
+                        r.put("ok", true);
+                        call.resolve(r);
+                    }
+
+                    @Override
+                    public void onDismissCancelled() {
+                        JSObject r = new JSObject();
+                        r.put("ok", false);
+                        call.resolve(r);
+                    }
+
+                    @Override
+                    public void onDismissError() {
+                        JSObject r = new JSObject();
+                        r.put("ok", false);
+                        call.resolve(r);
+                    }
+                });
+            } catch (Exception e) {
+                JSObject r = new JSObject();
+                r.put("ok", false);
+                call.resolve(r);
+            }
+        });
+    }
+
+    /** le micro des écouteurs Bluetooth pour la dictée (sinon c'est celui du téléphone) */
+    @PluginMethod
+    public void micCasque(PluginCall call) {
+        boolean on = Boolean.TRUE.equals(call.getBoolean("on", false)), ok = false;
+        try {
+            android.media.AudioManager am = (android.media.AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+            if (am != null) {
+                if (Build.VERSION.SDK_INT >= 31) {
+                    if (on) {
+                        for (android.media.AudioDeviceInfo dv : am.getAvailableCommunicationDevices()) {
+                            int t = dv.getType();
+                            if (t == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO || t == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET) {
+                                ok = am.setCommunicationDevice(dv);
+                                if (ok) break;
+                            }
+                        }
+                    } else {
+                        am.clearCommunicationDevice();
+                        ok = true;
+                    }
+                } else {
+                    if (on) {
+                        am.startBluetoothSco();
+                        am.setBluetoothScoOn(true);
+                    } else {
+                        am.setBluetoothScoOn(false);
+                        am.stopBluetoothSco();
+                    }
+                    ok = true;
+                }
+            }
+        } catch (Exception ignored) {}
+        JSObject r = new JSObject();
+        r.put("ok", ok);
+        call.resolve(r);
     }
 
     /** « Partager → Tempo » depuis n'importe quelle appli */

@@ -39,6 +39,16 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
 
+            <!-- lot 21 : appui long sur l'écouteur (commande vocale Bluetooth) et assistant du téléphone -->
+            <intent-filter>
+                <action android:name="android.intent.action.VOICE_COMMAND" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
 
