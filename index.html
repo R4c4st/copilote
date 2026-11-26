@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v35 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v36 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 35;
+const TEMPO_BUILD = 36;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1106,7 +1106,7 @@ function localDone(text){
 }
 
 /* « réveille-moi à 6h30 », « mets un minuteur de 10 minutes » : l'appli règle l'Horloge du téléphone */
-const ALARM_RX = /\b(reveille[- ]?moi|reveiller moi|(mets?|regle|programme|ajoute|cale)[- ]?(moi )?(un|une|le|mon) (reveil|alarme)|(un|une) (reveil|alarme) (a|pour|demain|ce|tous|chaque|en semaine))\b/;
+const ALARM_RX = /\b(reveille[- ]?moi|reveiller moi|(mets?|regle|programme|ajoute|cale)[- ]?(moi )?(un|une|le|mon) (reveil|alarme)|(un|une) (reveil|alarme) (a|pour|demain|ce|tous|chaque|en semaine)|(reveil|alarme) (a|pour|vers) (?=\d))\b/;
 const TIMER_RX = /\b((mets?|lance|regle|demarre|programme)[- ]?(moi )?(un|le) (minuteur|timer|compte a rebours)|minuteur (de )?(\d+|un|une|deux|trois|cinq|dix|quinze|vingt|trente))\b/;
 const NUMS = { un: 1, une: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9, dix: 10, quinze: 15, vingt: 20, trente: 30, quarante: 40, cinquante: 50 };
 async function alarmIntent(text){
@@ -1120,7 +1120,7 @@ async function alarmIntent(text){
     const ok = await tn("setTimer", { seconds: sec, label: jvNom() }) !== null;
     const lab = sec >= 3600 ? Math.floor(sec / 3600) + " h" + (sec % 3600 ? " " + Math.round(sec % 3600 / 60) + " min" : "") : sec >= 60 ? Math.round(sec / 60) + " min" : sec + " s";
     idle(); flashOk(); vib(18); toast(ok ? `${IC.minut} minuteur ${lab} lancé` : "l'Horloge n'a pas répondu");
-    if (ok && shouldSpeak()) speak(`Minuteur de ${lab.replace("min", "minutes").replace(" h", " heure")} lancé.`);
+    if (ok && shouldSpeak()) speak(`Très bien, monsieur. Minuteur de ${lab.replace("min", "minutes").replace(" h", " heure")} lancé.`);
     return true;
   }
   if (!ALARM_RX.test(n)) return false;
@@ -1132,7 +1132,7 @@ async function alarmIntent(text){
   const ok = await tn("setAlarm", { hour: h, minute: mi, label, days }) !== null;
   const hh = h + "h" + (mi ? pad(mi) : "");
   idle(); flashOk(); vib(18); toast(ok ? `${IC.reveil} réveil ${hh} réglé${days.length ? days.length === 5 ? " en semaine" : " tous les jours" : ""}` : "l'Horloge n'a pas répondu", ok ? "voir" : "", () => tn("showAlarms"));
-  if (ok && shouldSpeak()) speak(`Réveil réglé à ${h} heures${mi ? " " + mi : ""}.`);
+  if (ok && shouldSpeak()) speak(`Très bien, monsieur. Réveil réglé à ${h} heures${mi ? " " + pad(mi) : ""}.`);
   return true;
 }
 async function capture(text, src, kind, ctx){
@@ -4449,6 +4449,7 @@ Anticiper sa vie : c'est ton rôle principal
 - N'utilise proposer_vtc que s'il te demande explicitement un Uber ou un Bolt.
 - Pour horaires_bus, donne des noms d'arrêts du réseau Stan. Pour « Nancy » ou « en ville » sans précision, prends un grand arrêt du centre adapté au lieu du rendez-vous ; si l'outil te renvoie une liste d'arrêts, choisis-en un et rappelle-le.
 - Rappels avec proposer_rappel : l'heure de partir pour attraper le bus en comptant son temps de marche jusqu'à l'arrêt (s'il est inconnu, compte 5 minutes), et le rendez-vous lui-même (rendez_vous: true) s'il n'est pas déjà dans ses tâches ou son agenda. Un rappel par moment clé, pas plus.
+- Réveil ou minuteur (« réveille-moi à 6h06 », « mets un minuteur de 10 minutes ») : utilise regler_reveil ou lancer_minuteur, qui règlent l'Horloge de son téléphone. Jamais un rappel à la place.
 - Ce qui s'ajoute tout seul, sans lui demander (il peut annuler d'un geste) : rappels, rendez-vous (qui partent dans son agenda), rappels de lieu et listes de courses. N'écris donc pas « Voulez-vous que je… ? » pour ça : fais-le et dis-le en une phrase. Seuls les souvenirs, les oublis et les nouveaux lieux habituels attendent sa validation.
 - Quand un rendez-vous dicté depuis le rond cite un de ses lieux habituels (golf, médecin…), l'appli pose seule le rappel « Départ à … » en voiture avec Waze : s'il est déjà dans ses tâches datées, ne le refais pas.
 - La météo (outil meteo) seulement quand elle change quelque chose : pluie, froid, vent pour une sortie.
@@ -5342,7 +5343,7 @@ const JV_BETA_TOOLS = [
   { name: "cote_match_choix", description: "Note le pari qu'il a choisi cette semaine pour Cote & Match (ça coupe la relance de 11h du vendredi).",
     input_schema: { type: "object", properties: { pari: { type: "string", description: "match et pari, ex. « Lens - Brest, victoire de Lens »" } }, required: ["pari"] } }
 ];
-const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); return t; };
+const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS, JV_HORLOGE_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); return t; };
 /* zones de la maison pour le chauffage selon la présence (l'appli Android les déclenche, même fermée) */
 const jvMaisonLieu = () => jvLieux().find(l => l.g.type === "maison");
 const jvChauffeAuto = () => jvNetOn() && CFG.jvChauffe !== false && !!jvMaisonLieu();
@@ -6500,6 +6501,10 @@ function jvPourNestor(text){
   if (/^(?:(?:fais|donne|lance)[- ]moi |(?:mon|le|ton) )?(?:brief|point)(?: du (?:jour|matin))?[ .!?]*$/i.test(cvNorm(reste))) {   // « Nestor, mon brief »
     try { idle(); } catch (e) {} LS.set("copilote_brief", ymd(new Date())); openConv(); setTimeout(() => jvBrief().catch(() => {}), 500); return true;
   }
+  if (typeof alarmIntent === "function" && typeof ALARM_RX !== "undefined" && (ALARM_RX.test(norm(reste)) || TIMER_RX.test(norm(reste)))) {   // réveil, minuteur : l'Horloge du téléphone, sans Claude
+    alarmIntent(reste).then(ok => { if (!ok) return jvAuCercle(reste); }).catch(() => jvAuCercle(reste)).catch(() => {});
+    return true;
+  }
   jvAuCercle(reste).catch(() => { try { idle(); } catch (e) {} toast("je n'ai pas pu répondre", "", null, 5000); });
   return true;
 }
@@ -6784,6 +6789,32 @@ function jvSortieRescan(){
   for (const it of S.items.slice()) if (!it.done && it.cat === "rdv" && it.due && it.due >= tod && !it.jvBus && jvSortieMode(it)) { try { calSync(it); } catch (e) {} }
 }
 
+
+/* ---------- réveil et minuteur depuis la conversation : l'Horloge du téléphone (Google Horloge si elle est là) ---------- */
+const JV_HORLOGE_TOOLS = [
+  { name: "regler_reveil", description: "Règle un réveil dans l'Horloge de son téléphone, tout de suite (il l'a demandé).",
+    input_schema: { type: "object", properties: {
+      heure: { type: "string", description: "HH:MM" },
+      jours: { type: "string", enum: ["une fois", "semaine", "tous les jours"], description: "Répétition (par défaut une fois)." },
+      libelle: { type: "string", description: "Court, facultatif." } }, required: ["heure"] } },
+  { name: "lancer_minuteur", description: "Lance un minuteur dans l'Horloge de son téléphone.",
+    input_schema: { type: "object", properties: { minutes: { type: "number" }, libelle: { type: "string" } }, required: ["minutes"] } }
+];
+async function toolReveil(x){
+  const m = /^(\d{1,2})\s*[:h]\s*(\d{2})?$/.exec(String((x && x.heure) || "").trim()); if (!m || +m[1] > 23 || +(m[2] || 0) > 59) return { erreur: "heure invalide (HH:MM)" };
+  if (!NATIVE) return { erreur: "les réveils se règlent depuis l'appli Android" };
+  const days = x.jours === "semaine" ? [2, 3, 4, 5, 6] : x.jours === "tous les jours" ? [1, 2, 3, 4, 5, 6, 7] : [];
+  const r = await tn("setAlarm", { hour: +m[1], minute: +(m[2] || 0), label: String(x.libelle || jvNom()).slice(0, 40), days });
+  return r !== null ? { ok: true, regle: `${+m[1]}h${m[2] || "00"}${days.length ? " (" + x.jours + ")" : ""}` } : { erreur: "l'Horloge n'a pas répondu" };
+}
+async function toolMinuteur(x){
+  const min = Math.round((+(x && x.minutes) || 0) * 60) / 60; if (!(min > 0 && min <= 24 * 60)) return { erreur: "durée invalide" };
+  if (!NATIVE) return { erreur: "les minuteurs se règlent depuis l'appli Android" };
+  const r = await tn("setTimer", { seconds: Math.round(min * 60), label: String(x.libelle || jvNom()).slice(0, 40) });
+  return r !== null ? { ok: true, minutes: min } : { erreur: "l'Horloge n'a pas répondu" };
+}
+JV_LOCAL.regler_reveil = toolReveil; JV_LOCAL.lancer_minuteur = toolMinuteur;
+JV_ATTENTE.regler_reveil = "je règle le réveil…"; JV_ATTENTE.lancer_minuteur = "je lance le minuteur…";
 
 /* ---------- ouverture, micro, branchements ---------- */
 /* lot 17 : réglages de la section Bêta, et « reprendre la conversation précédente » */
