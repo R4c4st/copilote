@@ -142,10 +142,52 @@ public class TempoNativePlugin extends Plugin {
     private void handleAssist(Intent intent) {
         if (!MainActivity.estAssist(intent)) return;
         JSObject d = new JSObject();
-        d.put("verrou", verrouille());
+        boolean v = verrouille();
+        d.put("verrou", v);
         d.put("source", Intent.ACTION_VOICE_COMMAND.equals(intent.getAction()) ? "casque" : "assistant");
+        if (v) {
+            // écran verrouillé : la page reste invisible tant que le voile n'est pas posé (rien de sa liste ne s'affiche)
+            voileAttendu = true;
+            cacherPage(true);
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                if (!voileAttendu) return;
+                voileAttendu = false;
+                cacherPage(false);
+                Activity a = getActivity();
+                if (a instanceof MainActivity) ((MainActivity) a).finVerrou(verrouille());
+            }, 10000);
+        }
         intent.setAction("fr.rc4st.copilote.ASSIST_DONE");
         notifyListeners("assistant", d, true);
+    }
+
+    private boolean voileAttendu = false;
+
+    private void cacherPage(final boolean cache) {
+        final Activity a = getActivity();
+        if (a == null || getBridge() == null) return;
+        a.runOnUiThread(() -> {
+            try {
+                getBridge().getWebView().setAlpha(cache ? 0f : 1f);
+            } catch (Exception ignored) {}
+        });
+    }
+
+    @Override
+    protected void handleOnResume() {
+        super.handleOnResume();
+        if (!verrouille()) {
+            voileAttendu = false;
+            cacherPage(false);
+        }
+    }
+
+    /** le voile est posé par la page : on peut la montrer */
+    @PluginMethod
+    public void voileOk(PluginCall call) {
+        voileAttendu = false;
+        cacherPage(false);
+        call.resolve();
     }
 
     private boolean verrouille() {
@@ -168,6 +210,8 @@ public class TempoNativePlugin extends Plugin {
     @PluginMethod
     public void finVerrou(PluginCall call) {
         final boolean fond = Boolean.TRUE.equals(call.getBoolean("fond", false));
+        voileAttendu = false;
+        cacherPage(false);
         final Activity a = getActivity();
         if (!(a instanceof MainActivity)) {
             call.resolve();
