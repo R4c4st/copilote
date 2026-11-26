@@ -134,6 +134,7 @@
         <intent><action android:name="android.speech.RecognitionService" /></intent>
         <intent><action android:name="android.intent.action.TTS_SERVICE" /></intent>
         <intent><action android:name="android.intent.action.SET_ALARM" /></intent>
+        <package android:name="com.google.android.deskclock" />
         <intent><action android:name="android.intent.action.SET_TIMER" /></intent>
         <intent><action android:name="android.intent.action.DIAL" /></intent>
         <intent><action android:name="android.intent.action.VIEW" /><data android:scheme="tel" /></intent>

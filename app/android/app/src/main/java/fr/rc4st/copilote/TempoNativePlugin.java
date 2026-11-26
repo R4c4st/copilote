@@ -99,7 +99,7 @@ import org.json.JSONObject;
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 14;
+    static final int NATIVE_BUILD = 15;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -926,7 +926,16 @@ public class TempoNativePlugin extends Plugin {
             for (int k = 0; k < days.length(); k++) d.add(days.optInt(k));
             i.putIntegerArrayListExtra(AlarmClock.EXTRA_DAYS, d);
         }
+        horlogeGoogle(i);
         startSafely(i, call);
+    }
+
+    /** son Horloge Google si elle est installée (sinon l'horloge par défaut du téléphone) */
+    private void horlogeGoogle(Intent i) {
+        try {
+            Intent g = new Intent(i).setPackage("com.google.android.deskclock");
+            if (g.resolveActivity(getContext().getPackageManager()) != null) i.setPackage("com.google.android.deskclock");
+        } catch (Exception ignored) {}
     }
 
     @PluginMethod
@@ -935,12 +944,15 @@ public class TempoNativePlugin extends Plugin {
         i.putExtra(AlarmClock.EXTRA_LENGTH, (int) call.getInt("seconds", 300));
         i.putExtra(AlarmClock.EXTRA_MESSAGE, call.getString("label", "Nestor"));
         i.putExtra(AlarmClock.EXTRA_SKIP_UI, true);
+        horlogeGoogle(i);
         startSafely(i, call);
     }
 
     @PluginMethod
     public void showAlarms(PluginCall call) {
-        startSafely(new Intent(AlarmClock.ACTION_SHOW_ALARMS), call);
+        Intent i = new Intent(AlarmClock.ACTION_SHOW_ALARMS);
+        horlogeGoogle(i);
+        startSafely(i, call);
     }
 
     // ------------------------------------------------------------------ widget
