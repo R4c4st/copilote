@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v31 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v32 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 31;
+const TEMPO_BUILD = 32;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -963,7 +963,7 @@ ICI CE NE SONT PAS DES DICTÉES : ce sont des SMS, WhatsApp et messages (Snapcha
 - Mets toujours l'expéditeur dans note (« SMS de Paul », « Snapchat de Léa »). Si rien n'est utile : {"items":[],"updates":[]}.`;
 async function aiParse(text, kind, ctx, maxTok){
   const d = new Date();
-  const last = kind ? [] : lastItems();
+  const last = kind || (ctx && ctx.ligneMail) ? [] : lastItems();
   const cr = ctx && ctx.cr;
   const learn = (CFG.learn || []).slice(-25).map(l => `- « ${l.t} » → type ${l.cat}, chantier ${l.ch || "aucun"}, urgence ${l.u}${l.slot ? ", moment " + l.slot : ""}`).join("\n");
   const open = S.items.filter(i => !i.done && !isMemo(i)).slice(0, 40).map(i => `- id=${i.id} : ${i.title}${i.ch ? " [" + i.ch + "]" : ""}${i.due ? " (" + i.due + (i.time ? " " + i.time : "") + ")" : ""}`).join("\n");
@@ -1015,7 +1015,9 @@ Réponds UNIQUEMENT en JSON : {"items":[{"title":"","sp":"pro|perso","cat":"${(C
 
 ICI CE NE SONT PAS DES DICTÉES : ce sont des mails qu'il a reçus. Extrais uniquement ce que LUI doit faire (répondre, rappeler, commander, intervenir, transmettre…). Ignore pubs, newsletters, notifications automatiques, mails purement informatifs. Mets l'expéditeur et l'objet dans note. Si une réponse est attendue d'un contact clé, prépare "mail" (réponse). Si rien n'est à faire : {"items":[],"updates":[]}.` : kind === "phone" ? PHONEX : kind === "cr" ? `
 
-ICI C'EST UN COMPTE RENDU qu'il dicte juste après un appel${cr && cr.who ? " avec " + cr.who : ""}${cr && cr.title ? " (tâche : « " + cr.title + " »)" : ""}. Ajoute au JSON un champ "summary" : le compte rendu résumé en 1 ou 2 lignes, avec SES mots (ce qui a été dit, décidé, promis). Dans "items", mets UNIQUEMENT les nouvelles choses à faire qui en découlent (rappeler, commander, envoyer, passer sur site…), sinon une liste vide. N'utilise pas "updates".` : ""), messages: [{ role: "user", content: text }] })
+ICI C'EST UN COMPTE RENDU qu'il dicte juste après un appel${cr && cr.who ? " avec " + cr.who : ""}${cr && cr.title ? " (tâche : « " + cr.title + " »)" : ""}. Ajoute au JSON un champ "summary" : le compte rendu résumé en 1 ou 2 lignes, avec SES mots (ce qui a été dit, décidé, promis). Dans "items", mets UNIQUEMENT les nouvelles choses à faire qui en découlent (rappeler, commander, envoyer, passer sur site…), sinon une liste vide. N'utilise pas "updates".` : "") + (ctx && ctx.ligneMail ? `
+
+ICI C'EST UNE LIGNE D'UN MAIL qu'il s'est envoyé à lui-même pour te confier quelque chose (pas un mail reçu). Une ligne = en principe UNE seule action : la liste de matériel, les références, les détails et les numéros de téléphone vont dans note, pas dans des actions séparées. Ne fais plusieurs actions que si la ligne demande clairement des choses différentes (ex. appeler quelqu'un ET envoyer un mail à un autre).` : ""), messages: [{ role: "user", content: text }] })
   });
   if (!r.ok) { clearTimeout(to); let m = ""; try { m = ((await r.json()).error || {}).message || ""; } catch (e) {} throw new Error("API " + r.status + (m ? " " + m : "")); }
   const j = await r.json(); clearTimeout(to);
@@ -1166,8 +1168,8 @@ async function capture(text, src, kind, ctx){
   }
   /* Claude n'a pas répondu : une longue dictée n'est pas découpée phrase par phrase (elle reste entière, Nestor la range dès qu'il répond) */
   if (!viaAI && CFG.key && !kind) {
-    if (ctx && ctx.reprise) return false;
-    if (typeof jvARanger === "function" && jvLongue(text)) { jvARanger(text, src, aiErr); return true; }
+    if (ctx && (ctx.reprise || ctx.sansSecours)) return false;
+    if (typeof jvARanger === "function" && jvLongue(text)) { jvARanger(text, src, aiErr, !!(ctx && ctx.muet)); return true; }
   }
   if (viaAI && ctx && ctx.reprise && typeof jvRangeFin === "function") jvRangeFin(ctx.reprise);
   if ((kind === "mail" || kind === "phone") && viaAI && typeof jvSansDoublons === "function") parsed = jvSansDoublons(parsed);
@@ -1188,6 +1190,7 @@ async function capture(text, src, kind, ctx){
   if (added.length) { S.items.unshift(...added); added.forEach(calSync); }
   save(); if (!fond) { flashOk(); idle(); } else if (!listening && !typing) flashOk();
   render(added.map(a => a.id));
+  if (ctx && ctx.muet) return true;   // une ligne parmi d'autres (mail « Nestor ») : le bilan est donné à la fin
   vib(U.done.length ? [12, 50, 18] : 18);
   const ids = added.map(a => a.id), nm = added.filter(a => a.mail).length, other = U.n - U.done.length;
   const parts = [];
@@ -6300,13 +6303,13 @@ function jvCommandeVoix(text){
 const jvLongue = t => String(t || "").length > 160 || splitText(String(t || "")).length >= 3;
 const JV_RANGER_LS = "copilote_a_ranger";
 const jvHM = t => { const d = new Date(t); return `${d.getHours()} h ${String(d.getMinutes()).padStart(2, "0")}`; };
-function jvARanger(text, src, err){
+function jvARanger(text, src, err, muet){
   const now = Date.now();
-  const it = { id: uid(), created: now, done: false, doneAt: null, src: src || "voix", raw: text, title: `Dictée de ${jvHM(now)} à ranger`, cat: "remarque", ch: "", u: 2, due: null, time: null, note: text, aRanger: 1 };
+  const it = { id: uid(), created: now, done: false, doneAt: null, src: src || "voix", raw: text, title: src === "mail" ? "À ranger · " + (text.length > 60 ? text.slice(0, 58).trim() + "…" : text) : `Dictée de ${jvHM(now)} à ranger`, cat: "remarque", ch: "", u: 2, due: null, time: null, note: text, aRanger: 1 };
   it.orig = { cat: it.cat, ch: "", u: 2, slot: bucket(it) };
-  S.items.unshift(it); save(); idle(); render([it.id]); vib([12, 50, 12]);
+  S.items.unshift(it); save(); if (!muet) idle(); render([it.id]); if (!muet) vib([12, 50, 12]);
   const L = LS.get(JV_RANGER_LS, null) || []; L.push({ id: it.id, sp: SPACE, text, src: src || "voix", at: now, essai: now }); LS.set(JV_RANGER_LS, L);
-  toast(`Claude : ${aiRaison(err)}. Ta dictée reste entière, je la range dès qu'il répond.`, "", null, 9000);
+  if (!muet) toast(`Claude : ${aiRaison(err)}. Ta dictée reste entière, je la range dès qu'il répond.`, "", null, 9000);
 }
 function jvRangeFin(id){
   for (const sp of ["pro", "perso"]) { const st = spaceState(sp); if ((st.items || []).some(i => i.id === id)) { st.items = st.items.filter(i => i.id !== id); putSpace(sp, st); } }
@@ -6320,7 +6323,22 @@ async function jvRangerAttente(force){
   LS.set(JV_RANGER_LS, L);
   const x = L.find(x => force || Date.now() - (x.essai || 0) > 10 * 60e3); if (!x) return;
   JV_RANGE_ON = true;
-  try { x.essai = Date.now(); LS.set(JV_RANGER_LS, L); await capture(x.text, x.src, undefined, { reprise: x.id }); }
+  try {
+    x.essai = Date.now(); LS.set(JV_RANGER_LS, L);
+    const lignes = x.src === "mail" ? jvLignesMail(x.text) : [];
+    if (lignes.length < 2) { await capture(x.text, x.src, undefined, { reprise: x.id }); return; }
+    // un mail en plusieurs lignes : une ligne à la fois ; ce que Claude n'a pas pu ranger reste à ranger
+    const avant = jvIdsTous(), reste = [];
+    for (const l of lignes) if (await capture(l, "mail", undefined, { fond: true, muet: true, sansSecours: true, ligneMail: true }) === false) reste.push(l);
+    if (!reste.length) jvRangeFin(x.id);
+    else if (reste.length < lignes.length) {
+      const t = reste.join("\n"), st = spaceState(x.sp), it = (st.items || []).find(i => i.id === x.id);
+      if (it) { it.raw = it.note = t; putSpace(x.sp, st); }
+      LS.set(JV_RANGER_LS, (LS.get(JV_RANGER_LS, null) || []).map(y => y.id === x.id ? Object.assign(y, { text: t }) : y));
+    }
+    const n = [...jvIdsTous()].filter(id => !avant.has(id)).length;
+    if (reste.length < lignes.length) { render(); toast(`mail « Nestor » rangé${n ? " : " + n + " ajout" + (n > 1 ? "s" : "") : ""}${reste.length ? " · " + reste.length + " ligne" + (reste.length > 1 ? "s" : "") + " encore à ranger" : ""} ✓`, "", null, 7000); }
+  }
   finally { JV_RANGE_ON = false; }
 }
 /* ---------- lot 20 : le mail « Nestor » ----------
@@ -6330,6 +6348,19 @@ async function jvRangerAttente(force){
 const jvMailNestorOn = () => CFG.jvMailNestor !== false;
 const jvMailNestorDe = () => String(CFG.jvMailNestorDe || "").toLowerCase().split(/[\s,;]+/).filter(a => /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(a)).slice(0, 5);
 let JV_MN_ON = false;
+/* correctif du 26/11 : les lignes du mail, une info chacune (numéros et puces retirés).
+   Avec des numéros ou des puces, une ligne qui n'en a pas prolonge la précédente (ligne repliée par la messagerie). */
+const JV_PUCE = /^\s*(?:\d{1,2}\s*[.)\-–]|[-•*–·])\s+/;
+function jvLignesMail(t){
+  const L = String(t || "").replace(/\r/g, "").split("\n").map(l => l.trim()).filter(Boolean), out = [];
+  if (L.filter(l => JV_PUCE.test(l)).length >= 2) {
+    for (const l of L) { if (JV_PUCE.test(l) || !out.length) out.push(l.replace(JV_PUCE, "")); else out[out.length - 1] += " " + l; }
+  } else {
+    for (const l of L) { const p = out[out.length - 1]; if (p && p.length >= 60 && !/[.!?:;)]$/.test(p) && /^[a-zà-ÿ(]/.test(l)) out[out.length - 1] = p + " " + l; else out.push(l.replace(JV_PUCE, "")); }
+  }
+  return out.map(x => x.replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+function jvIdsTous(){ return new Set(["pro", "perso"].flatMap(sp => (spaceState(sp).items || []).map(i => i.id))); }
 /* le texte du mail en gardant ses lignes (une ligne = une info) */
 function jvGmLignes(p){
   const dec = d => { try { return new TextDecoder().decode(Uint8Array.from(atob(d.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0))); } catch (e) { return ""; } };
@@ -6367,12 +6398,16 @@ async function jvMailNestor(force){
       // le corps, sans la signature ni le message cité
       let corps = String(jvGmLignes(m.payload) || m.snippet || "").replace(/[ \t\u00a0]+/g, " ").replace(/\n{3,}/g, "\n\n");
       corps = corps.split(/\n\s*(?:--\s*\n|_{5,}|Envoyé de |Envoyé depuis |Sent from |Le .{3,120} a écrit ?:|On .{3,120} wrote:|De ?: .+\n|>)/)[0];
-      const texte = [sujet.replace(/^\s*(?:(?:re|tr|fwd?)\s*:\s*)*nestor\b[\s:,.-]*/i, "").trim(), corps.trim()].filter(Boolean).join("\n").slice(0, 4000);
-      if (!texte) continue;
-      const n0 = ["pro", "perso"].reduce((n, sp) => n + (spaceState(sp).items || []).length, 0);
-      const ok = await capture(texte, "mail", undefined, { fond: true });
-      const n = ["pro", "perso"].reduce((n, sp) => n + (spaceState(sp).items || []).length, 0) - n0;
-      if (ok !== false) { ranges++; toast(`mail « Nestor » de ${jvHM(+m.internalDate || Date.now())} rangé${n > 0 ? " : " + n + " ajout" + (n > 1 ? "s" : "") : ""} ✓`, "", null, 7000); }
+      // une ligne = une info : chaque ligne est rangée à part (petite demande, réponse rapide, jamais tout en un bloc)
+      const sr = sujet.replace(/^\s*(?:(?:re|tr|fwd?)\s*:\s*)*nestor\b[\s:,.-]*/i, "").trim();
+      const lignes = jvLignesMail(corps.slice(0, 4000));
+      let textes = lignes.length ? lignes.map(l => sr ? `${sr} : ${l}` : l) : sr ? [sr] : [];
+      if (!textes.length) continue;
+      if (textes.length > 12) { const k = Math.ceil(textes.length / 12), g = []; for (let i = 0; i < textes.length; i += k) g.push(textes.slice(i, i + k).join("\n")); textes = g; }
+      const avant = jvIdsTous(); let ok = false;
+      for (const t of textes) if (await capture(t, "mail", undefined, { fond: true, muet: true, ligneMail: true }) !== false) ok = true;
+      const nv = ["pro", "perso"].flatMap(sp => spaceState(sp).items || []).filter(i => !avant.has(i.id)), aR = nv.filter(i => i.aRanger).length, n = nv.length - aR;
+      if (ok) { ranges++; render(); toast(`mail « Nestor » de ${jvHM(+m.internalDate || Date.now())} rangé${n > 0 ? " : " + n + " ajout" + (n > 1 ? "s" : "") : ""}${aR ? " · " + aR + " ligne" + (aR > 1 ? "s" : "") + " à ranger dès que Claude répond" : ""} ✓`, "", null, 7000); }
     }
     LS.set("copilote_mn_etat", { at: Date.now(), n: ranges });
   } catch (e) { LS.set("copilote_mn_etat", { at: Date.now(), err: "Gmail injoignable" }); }
