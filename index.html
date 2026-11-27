@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v43 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v44 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 43;
+const TEMPO_BUILD = 44;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -6748,7 +6748,8 @@ body.jv-bulle #jvBulle .h-svg{transform:none;opacity:1}
 #jvBulle .h-radar{position:absolute;inset:0;border-radius:50%;opacity:0;transition:opacity .5s;background:conic-gradient(from 0deg,transparent 0deg 250deg,rgba(var(--glow),0) 262deg,rgba(var(--glow),.6) 352deg,rgba(var(--glow),0) 360deg);-webkit-mask:radial-gradient(closest-side,transparent 79%,#000 84%,#000 93%,transparent 98%);mask:radial-gradient(closest-side,transparent 79%,#000 84%,#000 93%,transparent 98%)}
 #jvBulle .h-anneau.pense .h-radar{opacity:1}
 #jvBulle .h-nom{position:absolute;left:0;right:0;text-align:center;font-size:10px;font-weight:500;letter-spacing:.24em;color:#56717a}
-#jvBulle .h-fen{position:absolute;left:50%;transform:translateX(-50%);overflow:hidden;-webkit-mask-image:linear-gradient(transparent 0,#000 24%,#000 76%,transparent 100%);mask-image:linear-gradient(transparent 0,#000 24%,#000 76%,transparent 100%)}
+#jvBulle .h-fen{position:absolute;left:50%;transform:translateX(-50%);overflow:hidden;touch-action:none;-webkit-mask-image:linear-gradient(transparent 0,#000 24%,#000 76%,transparent 100%);mask-image:linear-gradient(transparent 0,#000 24%,#000 76%,transparent 100%)}
+#jvBulle .h-fen.fin{-webkit-mask-image:linear-gradient(transparent 0,#000 7%,#000 93%,transparent 100%);mask-image:linear-gradient(transparent 0,#000 7%,#000 93%,transparent 100%)}
 #jvBulle .b-txt{position:absolute;left:0;right:0;top:0;text-align:center;font-size:20px;line-height:1.42;letter-spacing:-.01em;font-weight:300;color:#6a858d;will-change:transform}
 #jvBulle .b-txt p{margin:0 0 .5em;text-wrap:balance}
 #jvBulle .b-txt .dit{color:var(--fg);font-weight:400;transition:color .4s}
@@ -6859,6 +6860,7 @@ function jvBulleDom(){
   $("jvBulleMic").addEventListener("click", e => { e.stopPropagation(); jvBulleMicro(); });
   $("jvBulleAct").addEventListener("click", jvBulleClic);
   $("jvHalo").addEventListener("click", () => jvBulleSursis());
+  jvBulleGlisse();
   try { if (typeof TN !== "undefined" && TN && TN.addListener) TN.addListener("srNiveau", e => jvHaloMic(e && e.rms)); } catch (e) {}
   return b;
 }
@@ -6890,7 +6892,7 @@ function jvBulle(question){
   const B = JV_BULLE = { ph: [], dit: -1, muet: !(CFG.jvParle !== false && CFG.vSay !== "0"), fini: false, err: false, to: null, lit: null, n0: JV.view.length, q: String(question || "").trim(), suite: false };
   $("jvBulleNom").textContent = jvEstNestor() ? "N.E.S.T.O.R." : String(jvNom()).toUpperCase();
   $("jvBulle").setAttribute("aria-label", "Réponse de " + jvNom());
-  const x = $("jvBulleTxt"); x.className = "b-txt"; x.style.transition = "none"; x.innerHTML = `<span class="b-pts" aria-label="un instant"><i></i><i></i><i></i></span>`;
+  const x = $("jvBulleTxt"); x.className = "b-txt"; x.style.transition = "none"; $("jvHaloFen").classList.remove("fin"); x.innerHTML = `<span class="b-pts" aria-label="un instant"><i></i><i></i><i></i></span>`;
   $("jvBulleAct").innerHTML = "";
   jvBullePlace(); jvBulleQ(B);
   x.style.transform = `translateY(${Math.round($("jvHaloFen").clientHeight * 0.4)}px)`;
@@ -6916,8 +6918,8 @@ function jvBulleVeille(B){
   $("jvHalo").classList.toggle("ecoute", ec); $("jvBulleMic").classList.toggle("on", ec);
   $("jvBulleMic").setAttribute("aria-label", ec ? "j'ai fini de parler" : "répondre à la voix");
   if (ec || B.ecoutait) jvBulleQ(B);
-  if (B.ecoutait && !ec) { B.ecoutait = false; jvBulleRange(B); }   // il n'a rien dit : on reprend le rangement
-  if (ec) B.ecoutait = true;
+  if (B.ecoutait && !ec) { B.ecoutait = false; jvBulleRange(B); }   // il a fini (ou rien dit) : on reprend le rangement
+  if (ec && !B.ecoutait) { B.ecoutait = true; clearTimeout(B.to); if (B.fini) B.to = setTimeout(() => jvBulleRange(B), 400); }
 }
 function jvBullePeins(B){
   if (!B || JV_BULLE !== B) return;
@@ -6928,7 +6930,7 @@ function jvBullePeins(B){
 }
 /* le générique : la phrase qui se dit monte lentement vers le centre, pendant le temps qu'elle se dit */
 function jvBulleDefile(B, anime){
-  const x = $("jvBulleTxt"), f = $("jvHaloFen"); if (!x || !f) return;
+  const x = $("jvBulleTxt"), f = $("jvHaloFen"); if (!x || !f || B.main || B.pose) return;
   const H = f.clientHeight || 200, P = x.querySelectorAll("p");
   if (!P.length) return;
   const i = Math.min(Math.max(B.dit, -1), P.length - 1);
@@ -6937,6 +6939,23 @@ function jvBulleDefile(B, anime){
   else y = H * 0.5 - (P[i].offsetTop + P[i].offsetHeight);                  // la phrase dite finit au centre
   if (anime) x.style.transition = `transform ${anime}ms linear`;
   x.style.transform = `translateY(${Math.round(y)}px)`;
+}
+/* la voix a fini : la réponse entière au centre si elle tient, sinon son début (le reste au doigt) */
+function jvBullePose(B){
+  const x = $("jvBulleTxt"), f = $("jvHaloFen"); if (!x || !f || JV_BULLE !== B) return;
+  const H = f.clientHeight || 200, T = x.scrollHeight || x.offsetHeight || 0;
+  f.classList.add("fin");
+  const y = T <= H * 0.9 ? (H - T) / 2 : H * 0.08;
+  x.style.transition = "transform .9s cubic-bezier(.2,.8,.2,1)"; x.style.transform = `translateY(${Math.round(y)}px)`; B.y = y;
+}
+/* glisser le doigt dans l'anneau : le texte monte ou descend */
+function jvBulleGlisse(){
+  const f = $("jvHaloFen"), x = $("jvBulleTxt"); let y0 = null, b0 = 0;
+  const cur = () => { try { const m = getComputedStyle(x).transform; if (m && m !== "none" && typeof DOMMatrixReadOnly !== "undefined") return new DOMMatrixReadOnly(m).m42; } catch (e) {} const r = /translateY\((-?[\d.]+)px\)/.exec(x.style.transform); return r ? +r[1] : 0; };
+  f.addEventListener("pointerdown", e => { if (!JV_BULLE) return; y0 = e.clientY; b0 = cur(); x.style.transition = "none"; x.style.transform = `translateY(${Math.round(b0)}px)`; JV_BULLE.main = true; jvBulleSursis(); try { f.setPointerCapture(e.pointerId); } catch (er) {} });
+  f.addEventListener("pointermove", e => { if (y0 == null || !JV_BULLE) return; const H = f.clientHeight || 200, T = x.scrollHeight || 0; const y = Math.max(Math.min(H * 0.3, H - T - H * 0.3), Math.min(H * 0.3, b0 + e.clientY - y0)); x.style.transform = `translateY(${Math.round(y)}px)`; });
+  const fin = () => { y0 = null; jvBulleSursis(); };
+  f.addEventListener("pointerup", fin); f.addEventListener("pointercancel", fin);
 }
 /* la voix a commencé la phrase i (Infinity : tout est dit, ou la voix est coupée) */
 function jvBulleDit(i){
@@ -7034,6 +7053,7 @@ function jvBulleRange(B){
   const defile = !!B.lit || (B.muet && B.dit < B.ph.length - 1);
   if (parle || defile || listening) { B.to = setTimeout(() => jvBulleRange(B), 400); return; }
   if (B.dit < B.ph.length - 1) { B.dit = Infinity; jvBullePeins(B); }
+  if (!B.pose) { B.pose = true; jvBullePose(B); }
   if (!B.suite && jvFinitParQuestion(B)) { B.suite = true; jvSuiteEcoute(B); B.to = setTimeout(() => jvBulleRange(B), 600); return; }
   const n = B.ph.join(" ").length, ms = jvBulleAttend(B) || B.err ? 30000 : Math.min(25000, 8000 + Math.max(0, n - 140) * 35);
   B.to = setTimeout(() => jvBulleFerme(false), ms);
@@ -7043,12 +7063,13 @@ function jvBulleSursis(){ const B = JV_BULLE; if (B && B.fini) jvBulleRange(B); 
 const jvSuiteOn = () => !!JV_SUITE && typeof MIC_GEN !== "undefined" && JV_SUITE.gen === MIC_GEN && Date.now() < JV_SUITE.until;
 function jvSuiteEcoute(B){
   if (B && JV_BULLE !== B) return false;
-  if (typeof listening !== "undefined" && listening) return true;
+  if (typeof listening !== "undefined" && listening) { if (!jvSuiteOn()) JV_SUITE = { gen: MIC_GEN, until: Date.now() + 120000 }; return true; }
   try { if ($("ring").classList.contains("think")) return false; } catch (e) {}
   try { if (typeof jvBip === "function") jvBip(); } catch (e) {}
+  const g0 = MIC_GEN;
   try { startListen({ noSpeech: 8000 }); } catch (e) { return false; }
-  if (!listening) return false;
-  JV_SUITE = { gen: MIC_GEN, until: Date.now() + 120000 };
+  if (MIC_GEN === g0) return false;   // le micro n'a pas démarré
+  JV_SUITE = { gen: MIC_GEN, until: Date.now() + 120000 };   // avec Voxtral, le micro s'ouvre un instant après : sa réponse ira quand même à Nestor
   return true;
 }
 function jvBulleMicro(){
@@ -7070,7 +7091,7 @@ function jvBulleFerme(stop){
 }
 const jvPourVoix = t => String(t || "").replace(/\*\*/g, "").replace(/\b(?:[A-Z]\.\s?){3,}[A-Z]?\.?/g, m => m.replace(/[.\s]/g, "").toLowerCase() === cvNorm(jvNom()) ? jvNom() + (/\s$/.test(m) ? " " : "") : m).replace(/^\s*[-•]\s*/gm, "").replace(/https?:\/\/\S+/g, "").replace(/\s*\n+\s*/g, " ").trim().slice(0, 900);
 const _jvVoxBias = voxBias;
-voxBias = function(){ const r = _jvVoxBias.apply(this, arguments) || []; try { const have = new Set(r); [jvNom(), ...jvNoms()].forEach(n => { if (!have.has(n) && r.length < 80) r.push(n); }); } catch (e) {} return r; };
+voxBias = function(){ const r = _jvVoxBias.apply(this, arguments) || []; try { const have = new Set(r), lieux = []; jvLieux().forEach(l => { lieux.push(l.g.nom); String(l.g.alias || "").split(/[,;]/).forEach(a => lieux.push(a)); const v = /\b\d{5}\s+([A-ZÉÈÀ][\wÀ-ÿ'-]+(?:[ -][A-ZÉÈÀa-zà-ÿ'-]+){0,3})/.exec(String(l.t || "") + " " + String(l.g.adresse || "")); if (v) lieux.push(v[1]); }); [jvNom(), ...jvNoms(), ...lieux].map(n => String(n || "").trim()).filter(n => n.length > 1 && n.length < 60).forEach(n => { if (!have.has(n) && r.length < 80) { have.add(n); r.push(n); } }); } catch (e) {} return r; };
 
 /* ---------- brief du jour ---------- */
 const jvBriefFait = () => LS.get("copilote_brief", "") === ymd(new Date());
