@@ -257,9 +257,9 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <button class="ring" id="ring" aria-label="Parler"><span class="ripple"></span><span class="ripple"></span><span class="ripple"></span><span class="orbit"></span><span class="orbit o2"></span><span class="core"></span><canvas id="constel" width="320" height="320"></canvas></button>
   <div class="hint" id="hint"></div>
   <div class="live" id="live"></div>
-  <textarea class="typed" id="typed" rows="2" placeholder="écris en vrac…"></textarea>
+  <textarea class="typed" id="typed" rows="2" placeholder="écrivez en vrac…"></textarea>
   <div class="acts" id="acts"><button id="aNo">annuler</button><button class="yes" id="aYes">c'est noté</button></div>
-  <div class="alt" id="alt"><button id="bConv">Jarvis</button><button id="bType">écrire</button><button id="bPaste">coller</button><button id="bMail" style="display:none">mails</button></div>
+  <div class="alt" id="alt"><button id="bConv">Nestor</button><button id="bType">écrire</button><button id="bPaste">coller</button><button id="bMail" style="display:none">mails</button></div>
 </div>
 
 <div class="list" id="list"></div>
@@ -313,11 +313,11 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <div id="appBox">
     <div class="lab">Appli Android</div>
     <p class="small" id="appState"></p>
-    <div class="foot" style="margin-top:10px"><div class="l"><button id="appGet" style="color:var(--fg)">installer l'appli</button><button id="appMove" style="color:var(--fg)">transférer mes données</button><button id="appUpd">mettre à jour</button></div></div>
+    <div class="foot" style="margin-top:10px"><div class="l"><button id="appGet" style="color:var(--fg)">installer l'appli</button><button id="appUpd">mettre à jour</button></div></div>
   </div>
-  <p class="small">Sans clé, Jarvis trie seul avec ses règles. Avec, c'est Claude qui comprend, découpe et range — en s'appuyant sur la fiche ci-dessous et sur tes corrections.</p>
+  <p class="small">Sans clé, Nestor trie seul avec ses règles. Avec, c'est Claude qui comprend, découpe et range — en s'appuyant sur la fiche ci-dessous et sur vos corrections.</p>
   <div class="lab" id="lProf">Qui je suis (lu par Claude à chaque tri)</div>
-  <textarea id="sProfile" rows="7" placeholder="Prénom Nom, ton métier, ce que tu fais, tes contacts clés, ce qui passe en premier pour toi…"></textarea>
+  <textarea id="sProfile" rows="7" placeholder="Prénom Nom, votre métier, ce que vous faites, vos contacts clés, ce qui passe en premier pour vous…"></textarea>
   <div class="lab">Signature des rapports (espace pro)</div>
   <input id="sSign" placeholder="Prénom Nom, fonction">
   <div class="lab" id="lChs">Mes chantiers — Nom : mots-clés</div>
@@ -354,7 +354,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <select id="sVis"><option value="const">la constellation</option><option value="rond">le rond (pulsar)</option></select>
   <div class="lab">Fin de dictée</div>
   <select id="sSil"><option value="0">je touche le rond pour finir</option><option value="2">après 2 s de silence</option><option value="3">après 3 s de silence</option><option value="5">après 5 s de silence</option></select>
-  <p class="small">Tu peux aussi finir en disant « c'est tout ».</p>
+  <p class="small">Vous pouvez aussi finir en disant « c'est tout ».</p>
   <div class="lab">Reconnaissance vocale</div>
   <select id="vMode"><option value="google">Google — gratuit, dans le téléphone</option><option value="voxtral">Voxtral (Mistral) — plus précis, payant</option></select>
   <div id="vBox" style="display:none">
@@ -362,31 +362,31 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <div class="two"><div><div class="lab">Plafond par mois</div><select id="vCap"><option value="1">1 €</option><option value="2">2 €</option><option value="3">3 €</option><option value="5">5 €</option><option value="10">10 €</option></select></div><div><div class="lab">Dictée max</div><select id="vMax"><option value="60">1 min</option><option value="120">2 min</option><option value="180">3 min</option></select></div></div>
     <p class="small" id="vUse"></p>
   </div>
-  <div class="lab">Jarvis me répond à voix haute</div>
+  <div class="lab">Nestor me répond à voix haute</div>
   <select id="vSay"><option value="auto">quand il m'écoute dès l'ouverture</option><option value="1">toujours</option><option value="0">jamais</option></select>
-  <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" id="vAuto" style="width:auto"> ouvrir Jarvis = il m'écoute tout de suite (idéal avec la touche latérale)</label>
+  <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" id="vAuto" style="width:auto"> ouvrir Nestor = il m'écoute tout de suite (idéal avec la touche latérale)</label>
   <div id="wBox" style="display:none">
     <div class="lab">Widget de l'écran d'accueil</div>
     <div class="wPrev" title="aperçu sur un fond d'écran"><i id="wPrevBg"></i><img id="wPrevImg" alt=""></div>
     <div class="two"><div><div class="lab">Fond · <span id="wBgV"></span></div><input type="range" id="wBg" min="0" max="100" step="5"></div><div><div class="lab">Éclat · <span id="wImgV"></span></div><input type="range" id="wImg" min="20" max="100" step="5"></div></div>
     <div class="two"><div><div class="lab">Teinte du fond</div><select id="wTone"><option value="clair">clair</option><option value="sombre">sombre</option></select></div><div><div class="lab">Points</div><select id="wCol"><option value="blanc">blancs</option><option value="espace">couleur de l'espace</option><option value="turquoise">turquoise</option><option value="nuit">bleu nuit</option><option value="or">dorés</option></select></div></div>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" id="wStars" style="width:auto"> les étoiles dorées de la semaine</label>
-    <p class="small">Fond à 0 % : la constellation flotte directement sur ton fond d'écran. Un appui sur le widget = Jarvis t'écoute.</p>
+    <p class="small">Fond à 0 % : la constellation flotte directement sur votre fond d'écran. Un appui sur le widget = Nestor vous écoute.</p>
   </div>
   <div class="lab">Téléphone · appels manqués, SMS, WhatsApp</div>
   <p class="small" id="iState"></p>
   <div class="lab">Messages lus par Claude</div>
   <select id="sMsg"><option value="connus">seulement mes contacts (recommandé)</option><option value="tous">tout le monde</option><option value="aucun">aucun (seulement les appels manqués)</option></select>
   <p class="small">Claude ne garde que ce qui compte : une question à laquelle répondre, un rendez-vous, une chose à faire, une info à garder (code, adresse, référence) ou une tâche à mettre à jour. Le reste est oublié.</p>
-  <div class="foot" style="margin-top:10px"><div class="l"><button id="iGo" style="color:var(--fg)">créer mon lien MacroDroid</button><button id="iCopy">copier le lien</button><button id="iOff">couper</button></div></div>
+  <div class="foot" style="margin-top:10px"><div class="l"><button id="iGo" style="color:var(--fg)">activer</button></div></div>
   <div id="aBox" style="display:none">
-    <div class="lab">Autres applis lues par Jarvis</div>
-    <p class="small">En plus de Téléphone, Messages et WhatsApp, Jarvis lit seulement les applis cochées. Applis de colis : il n'en garde que les colis. Messageries (Snapchat…) : seulement les prénoms ci-dessous et tes contacts.</p>
+    <div class="lab">Autres applis lues par Nestor</div>
+    <p class="small">En plus de Téléphone, Messages et WhatsApp, Nestor lit seulement les applis cochées. Applis de colis : il n'en garde que les colis. Messageries (Snapchat…) : seulement les prénoms ci-dessous et vos contacts.</p>
     <div id="aList" style="margin-top:8px"></div>
     <button id="aMore" style="margin-top:6px;font-size:13px;color:rgb(var(--glow))">voir toutes mes applis</button>
     <div class="lab">Snapchat et messageries · prénoms lus</div>
     <input id="sChat" placeholder="prénoms, comme affichés dans Snapchat (séparés par des virgules)">
-    <p class="small">Les Snaps photo ne se lisent pas : seulement les messages écrits, quand Snapchat affiche le texte dans la notification. Jarvis n'ouvre et ne marque rien comme lu.</p>
+    <p class="small">Les Snaps photo ne se lisent pas : seulement les messages écrits, quand Snapchat affiche le texte dans la notification. Nestor n'ouvre et ne marque rien comme lu.</p>
   </div>
   <div class="lab">Colis</div>
   <p class="small" id="cState"></p>
@@ -398,12 +398,12 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v46 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v47 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
   <div class="menu">
-    <button id="mConv">parler à Jarvis</button>
+    <button id="mConv">parler à Nestor</button>
     <button id="mRep">rapport</button>
     <button id="mMemo">mémos & frais</button>
     <button id="mHist">historique & chantiers</button>
@@ -443,7 +443,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
 
 <div class="sheet" id="jvRel">
   <div class="lab" style="margin-top:0">Elles traînent depuis plus d'une semaine</div>
-  <p class="small" style="margin:4px 0 0">Je ne te les ressortirai pas une deuxième fois.</p>
+  <p class="small" style="margin:4px 0 0">Je ne vous les ressortirai pas une deuxième fois.</p>
   <div id="jvRelList"></div>
   <div class="foot" style="margin-top:14px"><div class="l"></div><button class="ok" id="jvRelOk">fermer</button></div>
 </div>
@@ -454,7 +454,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   </div>
   <div id="cBody" style="margin-top:10px"></div>
   <div class="lab">Ajouter à la main</div>
-  <textarea id="cAdd" rows="2" placeholder="colle le SMS du colis, ou tape juste le code"></textarea>
+  <textarea id="cAdd" rows="2" placeholder="collez le SMS du colis, ou tapez juste le code"></textarea>
   <div class="foot" style="margin-top:10px"><div class="l"><button id="cGmail">relever Gmail</button></div><button class="ok" id="cAddGo">ajouter</button></div>
 </div>
 
@@ -472,8 +472,8 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <div class="cv-list" id="cvList"></div>
     <p class="small" id="cvStat"></p>
     <div class="cv-bar">
-      <textarea id="cvIn" rows="1" placeholder="écris, ou touche le rond pour parler…"></textarea>
-      <button class="cv-mic" id="cvMic" aria-label="Parler à Jarvis"></button>
+      <textarea id="cvIn" rows="1" placeholder="écrivez, ou touchez le rond pour parler…"></textarea>
+      <button class="cv-mic" id="cvMic" aria-label="Parler à Nestor"></button>
       <button class="cv-go" id="cvGo">envoyer</button>
     </div>
     <p class="small" id="cvCost"></p>
@@ -500,16 +500,16 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <input id="cvMnDe" placeholder="accepter aussi les mails envoyés depuis… (adresse pro, par ex.)" autocomplete="off" style="margin-top:8px">
     <div class="foot" style="margin-top:10px"><button class="ok" id="cvMnGo">relever maintenant</button></div>
     <div class="lab">Bêta</div>
-    <p class="small" style="margin-top:4px">Des essais : décoche ce qui t'encombre. Si tu n'en veux plus, je les retire.</p>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBetaMatchChk" style="width:auto"> Cote &amp; Match : ta sélection le jeudi soir et le vendredi matin</label>
-    <input id="cvBetaClub" placeholder="ton club de cœur (facultatif)" style="margin-top:6px">
+    <p class="small" style="margin-top:4px">Des essais : décochez ce qui vous encombre. Si vous n'en voulez plus, je les retire.</p>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBetaMatchChk" style="width:auto"> Cote &amp; Match : votre sélection le jeudi soir et le vendredi matin</label>
+    <input id="cvBetaClub" placeholder="votre club de cœur (facultatif)" style="margin-top:6px">
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:12px"><input type="checkbox" id="cvBetaCineChk" style="width:auto"> Ciné du week-end : les sorties de la semaine, le vendredi soir et le samedi matin</label>
-    <input id="cvBetaCinema" placeholder="ton cinéma (nom et ville)" style="margin-top:6px">
+    <input id="cvBetaCinema" placeholder="votre cinéma (nom et ville)" style="margin-top:6px">
     <p class="small" id="cvBetaSt" style="margin-top:6px"></p>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBriefChk" style="width:auto"> brief du jour à la première ouverture du matin</label>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvProChk" style="width:auto"> Jarvis anticipe aussi le pro</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvProChk" style="width:auto"> Nestor anticipe aussi le pro</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBnChk" style="width:auto"> brief en notification, le matin et le soir (aux heures des rituels)</label>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvMeteoChk" style="width:auto"> météo automatique dans les briefs (sinon, demande-la à Jarvis)</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvMeteoChk" style="width:auto"> météo automatique dans les briefs (sinon, demandez-la à Nestor)</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvEchChk" style="width:auto"> repérer les échéances dans mes mails et SMS</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvRelChk" style="width:auto"> relancer une fois les tâches qui traînent</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvEspChk" style="width:auto"> ranger tout seul chaque chose en pro ou en perso</label>
@@ -525,7 +525,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:6px">posé <input type="range" id="cvRate" min="0.75" max="1.3" step="0.05" style="flex:1"> rapide</label>
     <div class="foot" style="margin-top:10px"><p class="small" id="cvVoixSt" style="margin:0;flex:1;min-width:0;overflow-wrap:anywhere"></p><button class="ok" id="cvVoixTest">écouter</button></div>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvParleChk" style="width:auto"> il me répond à voix haute quand je lui parle</label>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvDiscretChk" style="width:auto"> mode discret : il ne parle plus du tout (ou dis-lui « mode discret » / « tu peux parler »)</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvDiscretChk" style="width:auto"> mode discret : il ne parle plus du tout (ou dites-lui « mode discret » / « tu peux parler »)</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvDiscretAutoChk" style="width:auto"> se taire tout seul quand le téléphone est en silencieux, vibreur ou « ne pas déranger » (sauf casque ou Bluetooth)</label>
     <div class="lab">Mes souvenirs</div>
     <input id="cvQ" placeholder="chercher dans ma mémoire…" style="margin-top:4px">
@@ -534,14 +534,14 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <textarea id="cvAdd" rows="2" placeholder="une chose à retenir, en une phrase"></textarea>
     <div class="foot" style="margin-top:12px"><div class="sl" id="cvAddDom"><button data-d="pro">pro</button><button data-d="perso" class="on">perso</button><button data-d="pin">épingler</button></div><button class="ok" id="cvAddGo">retenir</button></div>
     <div class="lab">Importer une liste</div>
-    <p class="small" style="margin-top:0">Choisis un fichier .txt ou colle ta liste : chaque ligne qui commence par « - » devient un souvenir. Repères reconnus : (pro), (perso), [épingle].</p>
-    <textarea id="cvImpTxt" rows="3" placeholder="colle ta liste ici…"></textarea>
+    <p class="small" style="margin-top:0">Choisissez un fichier .txt ou collez votre liste : chaque ligne qui commence par « - » devient un souvenir. Repères reconnus : (pro), (perso), [épingle].</p>
+    <textarea id="cvImpTxt" rows="3" placeholder="collez votre liste ici…"></textarea>
     <input type="file" id="cvImpIn" accept=".txt,text/plain" hidden>
     <div class="foot" style="margin-top:12px"><div class="l"><button id="cvImpFile">choisir un fichier</button></div><button class="ok" id="cvImpGo">lire la liste</button></div>
     <div id="cvImpList"></div>
     <div class="lab">Plafond mensuel de la conversation (Claude Sonnet)</div>
     <input id="cvCapIn" type="number" min="1" max="200" step="1" inputmode="numeric">
-    <p class="small">Ta mémoire est chiffrée sur ce téléphone avec ta phrase secrète : le serveur ne garde que du chiffré illisible, et seuls les souvenirs utiles à une question partent chez Claude. Ce plafond s'ajoute à celui que tu fixes dans la console Claude.</p>
+    <p class="small">Votre mémoire est chiffrée sur ce téléphone avec votre phrase secrète : le serveur ne garde que du chiffré illisible, et seuls les souvenirs utiles à une question partent chez Claude. Ce plafond s'ajoute à celui que vous fixez dans la console Claude.</p>
     <div class="foot" style="margin-top:18px"><div class="l"><button id="cvLockBtn">verrouiller sur cet appareil</button></div><span></span></div>
   </div>
 </div>
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 46;
+const TEMPO_BUILD = 47;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -688,7 +688,7 @@ class NativeSR {
   }
   _end(){ if (!this._on) return; this._on = false; tn("srCancel"); if (this._h) { try { this._h.remove(); } catch (e) {} this._h = null; } if (this.onend) this.onend(); }   // srCancel : rend le micro et la reconnaissance Google aux autres applis
 }
-/* une notification (appli, titre, texte) → un événement Jarvis (même logique que le serveur MacroDroid) */
+/* une notification (appli, titre, texte) → un événement Nestor */
 const MISSED_RX = /appels? (?:vocal |vid[ée]o )?manqu|missed (?:voice |video )?call|appels? en absence|appels? non r[ée]pondu/i;
 const isNumS = s => /^[+\d][\d\s.()-]{5,}$/.test(s || "");
 function fromNotification(app, title, text){
@@ -1048,7 +1048,7 @@ async function aiParseSur(text, kind, ctx){
 }
 function aiRaison(e){
   const m = String((e && e.message) || "");
-  if (/^API (401|403)\b/.test(m)) return "ta clé est refusée";
+  if (/^API (401|403)\b/.test(m)) return "votre clé est refusée";
   if (/credit|balance|billing/i.test(m)) { try { if (typeof jvCreditAlerte === "function") jvCreditAlerte(); } catch (x) {} return "crédit Claude épuisé"; }
   if (/^API 429\b/.test(m)) return "trop de demandes d'un coup";
   if (/^API (5\d\d)\b/.test(m)) return "surchargé pour l'instant";
@@ -1166,7 +1166,7 @@ async function capture(text, src, kind, ctx){
   /* en fond (messages reçus, dictée remise à ranger) : le cercle reste libre, rien à l'écran tant que ce n'est pas fini */
   const fond = kind === "phone" || !!(ctx && (ctx.reprise || ctx.fond));
   if (CFG.key) {
-    if (!fond) { ringState("think"); hint(kind === "mail" ? "je lis tes mails…" : "je range…"); }
+    if (!fond) { ringState("think"); hint(kind === "mail" ? "je lis vos mails…" : "je range…"); }
     try { const r = await aiParseSur(text, kind, ctx); parsed = r.items; U = applyUpdates(kind === "phone" ? (r.updates || []).map(u => ({ id: u.id, note: u.note, due: u.due, time: u.time, u: u.u })) : r.updates); viaAI = true; } catch (e) { parsed = null; aiErr = e; }   // un message peut préciser une tâche, jamais la cocher ni la supprimer
   }
   /* Claude n'a pas répondu : une longue dictée n'est pas découpée phrase par phrase (elle reste entière, Nestor la range dès qu'il répond) */
@@ -1178,7 +1178,7 @@ async function capture(text, src, kind, ctx){
   if ((kind === "mail" || kind === "phone") && viaAI && typeof jvSansDoublons === "function") parsed = jvSansDoublons(parsed);
   if (kind === "mail" || kind === "phone") {
     if (!viaAI) { if (!fond) idle(); if (kind === "mail") toast("il faut Claude pour lire les mails"); return false; }
-    if (!parsed.length && !U.n) { if (!fond) idle(); if (kind === "mail") { flashOk(); toast("rien à faire dans tes mails"); } return true; }
+    if (!parsed.length && !U.n) { if (!fond) idle(); if (kind === "mail") { flashOk(); toast("rien à faire dans vos mails"); } return true; }
   }
   if (!viaAI) {
     const ld = localDone(text);
@@ -1220,7 +1220,7 @@ async function capture(text, src, kind, ctx){
   const canOpen = navigator.userActivation ? navigator.userActivation.isActive : false;
   if (ag.length && CFG.agenda !== false && canOpen) { addToAgenda(ag[0]); toast("rendez-vous noté · agenda ouvert"); }
   else if (ag.length && CFG.agenda !== false) toast((ag[0].cat === "rdv" ? "rendez-vous noté" : parts.join(" · ")) + " · l'ajouter à l'agenda ?", "ajouter", () => addToAgenda(ag[0]), 9000);
-  else toast(parts.join(" · ") || (viaAI ? "rien à noter là-dedans · dis ce qu'il faut faire ou ce qui est fait" : "rien compris, redis-le"), parts.length ? "annuler" : "", () => {
+  else toast(parts.join(" · ") || (viaAI ? "rien à noter là-dedans · dites ce qu'il faut faire ou ce qui est fait" : "je n'ai pas compris, redites-le"), parts.length ? "annuler" : "", () => {
     if (moved.length) jvRetireIds(versSp, moved.map(m => m.id));
     S.items = S.items.filter(i => !ids.includes(i.id)); U.undo.reverse().forEach(f => f()); save(); render();
   });
@@ -1359,7 +1359,7 @@ function render(fresh){
   const memoN = S.items.filter(i => isMemo(i) && !(i.rb === "depense" && i.done)).length, toPay = S.items.filter(i => isMemo(i) && i.rb === "depense" && !i.done).reduce((a, i) => a + (+i.amount || 0), 0);
   const doneT = S.items.filter(i => i.done && i.doneAt && ymd(new Date(i.doneAt)) === today()).sort((a, b) => b.doneAt - a.doneAt);
   let h = "";
-  if (!open.length && !shop.length) h = `<p class="empty">${doneT.length ? "tout est réglé." : "rien en tête. touche le rond et parle."}</p>`;
+  if (!open.length && !shop.length) h = `<p class="empty">${doneT.length ? "tout est réglé." : "rien en tête. touchez le rond et parlez."}</p>`;
   const farN = open.filter(i => FAR.includes(bucket(i))).length;
   if (fresh.some(id => { const i = S.items.find(x => x.id === id); return i && FAR.includes(bucket(i)); })) showFar = true;
   for (const [k, lab] of SLOTS) {
@@ -1494,7 +1494,7 @@ async function msLogin(){
   const st = b64u(crypto.getRandomValues(new Uint8Array(12)));
   LS.set("zap_pkce", { v, st });
   const url = `${MS_AUTH}/authorize?client_id=${encodeURIComponent(CFG.msId)}&response_type=code&redirect_uri=${encodeURIComponent(msRedirect())}&response_mode=query&scope=${encodeURIComponent(MS_SCOPE)}&code_challenge=${ch}&code_challenge_method=S256&state=${st}&prompt=select_account`;
-  if (NATIVE) { tn("openUrl", { url }); toast("connexion Microsoft dans Chrome… puis « Ouvrir avec Jarvis »", "", null, 8000); return; }
+  if (NATIVE) { tn("openUrl", { url }); toast("connexion Microsoft dans Chrome… puis « Ouvrir avec Nestor »", "", null, 8000); return; }
   location.href = url;
 }
 /* dans l'appli, l'échange de jetons passe par une requête native (Microsoft refuse ce type d'appli depuis une page web) */
@@ -1523,7 +1523,7 @@ async function msHandleRedirect(){
 async function msFinish(p){
   const code = p.get("code"), pk = LS.get("zap_pkce", null);
   if (p.get("error")) { toast("connexion Outlook annulée"); return true; }
-  if (!pk || pk.st !== p.get("state")) { toast("connexion Outlook invalide, recommence"); return true; }
+  if (!pk || pk.st !== p.get("state")) { toast("connexion Outlook invalide, recommencez"); return true; }
   try {
     await msTokenReq({ grant_type: "authorization_code", code, redirect_uri: msRedirect(), code_verifier: pk.v });
     const me = await (await fetch("https://graph.microsoft.com/v1.0/me", { headers: { Authorization: "Bearer " + MS.at } })).json();
@@ -1680,19 +1680,19 @@ async function gLogin(){
   const st = (NATIVE ? "gsa_" : "gs_") + b64u(crypto.getRandomValues(new Uint8Array(12)));
   LS.set("tempo_gstate", st);
   const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(c.j.client_id)}&redirect_uri=${encodeURIComponent(gRedirect())}&response_type=code&scope=${encodeURIComponent(gScope())}&include_granted_scopes=true&access_type=offline&prompt=consent&state=${st}`;
-  if (NATIVE) { await tn("openUrl", { url }); toast("connecte-toi dans Chrome, Jarvis reprend la main ensuite", "", null, 7000); }
+  if (NATIVE) { await tn("openUrl", { url }); toast("connectez-vous dans Chrome, Nestor reprend la main ensuite", "", null, 7000); }
   else location.href = url;
 }
 async function gFinish(p){
   const st = p.get("state") || "";
   if (p.get("error")) { toast("connexion Google annulée"); return true; }
-  if (st !== LS.get("tempo_gstate", "")) { toast("connexion Google invalide, recommence"); return true; }
+  if (st !== LS.get("tempo_gstate", "")) { toast("connexion Google invalide, recommencez"); return true; }
   try {
     const r = await gFn({ action: "exchange", code: p.get("code"), redirect_uri: gRedirect() });
-    if (!r.j.refresh_token) { toast("Google n'a pas donné l'accès (" + (r.j.error || "?") + "), recommence"); return true; }
-    if (r.j.scope && !r.j.scope.includes("calendar")) { toast("coche bien l'accès à l'agenda, puis reconnecte", "", null, 8000); return true; }
+    if (!r.j.refresh_token) { toast("Google n'a pas donné l'accès (" + (r.j.error || "?") + "), recommencez"); return true; }
+    if (r.j.scope && !r.j.scope.includes("calendar")) { toast("cochez bien l'accès à l'agenda, puis reconnectez", "", null, 8000); return true; }
     G = { rt: r.j.refresh_token, at: r.j.access_token, exp: Date.now() + ((r.j.expires_in || 3600) - 120) * 1000, scope: r.j.scope || "" }; saveG();
-    if (CFG.gmail && !gMailOk()) toast("Google connecté, mais pas Gmail : recommence et coche bien l'accès à Gmail", "", null, 9000);
+    if (CFG.gmail && !gMailOk()) toast("Google connecté, mais pas Gmail : recommencez et cochez bien l'accès à Gmail", "", null, 9000);
     else toast(gMailOk() ? "Google connecté ✓ agenda + colis Gmail" : "Google Agenda connecté ✓"); render();
     if (gMailOk()) setTimeout(() => gmailColis(true), 1500);
     S.items.filter(gWants).forEach(i => gSync(i));
@@ -1714,7 +1714,7 @@ async function gToken(){
     const r = await gFn({ action: "refresh", refresh_token: G.rt });
     if (!r.j.access_token) { G.lastErr = "jeton " + (r.j.error || r.j.error_description || "?"); saveG(); }
     if (r.j.access_token) { G.at = r.j.access_token; G.exp = Date.now() + ((r.j.expires_in || 3600) - 120) * 1000; if (r.j.scope) G.scope = r.j.scope; saveG(); return G.at; }
-    if (r.j.error === "invalid_grant") { G = {}; saveG(); toast("reconnecte Google Agenda (··· > réglages)"); }
+    if (r.j.error === "invalid_grant") { G = {}; saveG(); toast("reconnectez Google Agenda (··· > réglages)"); }
   } catch (e) {}
   return null;
 }
@@ -1745,7 +1745,7 @@ async function gSync(it){
     if (!r.ok) {
       let msg = ""; try { msg = ((await r.json()).error || {}).message || ""; } catch (e2) {}
       G.lastErr = r.status + " " + msg; saveG();
-      if (r.status === 403 || r.status === 401) toast("agenda refusé : reconnecte Google et coche l'accès à l'agenda", "", null, 9000);
+      if (r.status === 403 || r.status === 401) toast("agenda refusé : reconnectez Google et cochez l'accès à l'agenda", "", null, 9000);
       else toast("agenda : erreur " + r.status, "", null, 6000);
     }
   } catch (e) { G.lastErr = "réseau " + e.message; saveG(); toast("agenda injoignable"); }
@@ -1770,7 +1770,7 @@ async function gDel(it){
   it.gId = null; save();
 }
 function paintG(){
-  $("gState").textContent = (G.lastErr ? "dernière erreur : " + G.lastErr + " — " : "") + (gOn() ? "connecté ✓ — tes rendez-vous s'inscrivent tout seuls dans ton Google Agenda, passent en « ✓ » quand c'est fait et bougent quand tu reportes." : "Tes rendez-vous s'inscrivent tout seuls dans ton Google Agenda, sans aucune touche.");
+  $("gState").textContent = (G.lastErr ? "dernière erreur : " + G.lastErr + " — " : "") + (gOn() ? "connecté ✓ — vos rendez-vous s'inscrivent tout seuls dans votre Google Agenda, passent en « ✓ » quand c'est fait et bougent quand vous reportez." : "Vos rendez-vous s'inscrivent tout seuls dans votre Google Agenda, sans aucune touche.");
   $("gGo").style.display = gOn() ? "none" : ""; $("gOff").style.display = gOn() ? "" : "none"; $("gAll").checked = CFG.gAll !== false;
 }
 $("gGo").onclick = gLogin;
@@ -1892,9 +1892,9 @@ async function pickOne(wanted){
   if (NATIVE) {
     const r = await tn("pickContact"); if (!r || r.cancelled || !r.name) return null;
     let em = []; try { em = (await phoneEmails(r.name)).filter(o => norm(o.name) === norm(r.name)).map(o => o.email); } catch (e) {}
-    const c = fromPicked({ name: [r.name], tel: r.phone ? [r.phone] : [], email: em }, wanted); toast(`${c.name} ajouté à tes contacts`); return c;
+    const c = fromPicked({ name: [r.name], tel: r.phone ? [r.phone] : [], email: em }, wanted); toast(`${c.name} ajouté à vos contacts`); return c;
   }
-  try { const r = await navigator.contacts.select(["name", "email", "tel"], { multiple: false }); if (!r || !r.length) return null; const c = fromPicked(r[0], wanted); toast(`${c.name} ajouté à tes contacts`); return c; }
+  try { const r = await navigator.contacts.select(["name", "email", "tel"], { multiple: false }); if (!r || !r.length) return null; const c = fromPicked(r[0], wanted); toast(`${c.name} ajouté à vos contacts`); return c; }
   catch (e) { return null; }
 }
 async function pickMany(){
@@ -1911,8 +1911,8 @@ function sendSms(it, picked){
   const num = (m.phone || (c && c.phone) || "").replace(/[^\d+]/g, "");
   if (m.via && m.via !== "wa" && m.via !== "sms") {
     const pkg = m.via === "snap" ? "com.snapchat.android" : (LS.get("tempo_apppkg", {})[m.via] || "");
-    if (NATIVE && pkg) { tnOk("openApp", { pkg }).then(ok => { if (ok) waitAck(it, viaName(m.via), m.to); else toast("ouvre " + viaName(m.via) + " pour répondre à " + (m.to || "")); }); return; }
-    toast("ouvre " + viaName(m.via) + " pour répondre" + (m.to ? " à " + m.to : "")); return;
+    if (NATIVE && pkg) { tnOk("openApp", { pkg }).then(ok => { if (ok) waitAck(it, viaName(m.via), m.to); else toast("ouvrez " + viaName(m.via) + " pour répondre à " + (m.to || "")); }); return; }
+    toast("ouvrez " + viaName(m.via) + " pour répondre" + (m.to ? " à " + m.to : "")); return;
   }
   if (m.via === "wa") {
     const intl = num.replace(/^\+/, "").replace(/^0(\d{9})$/, "33$1");
@@ -1974,7 +1974,7 @@ async function callFromPhoneBook(it, c){
   const f = norm(who), exact = list.filter(x => norm(x.name) === f || norm(x.name).split(" ")[0] === f.split(" ")[0]);
   const one = list.length === 1 ? list[0] : exact.length === 1 ? exact[0] : null;
   if (one) { const k = upsertContact(who.includes(" ") ? who : who.split(" ")[0], (one.emails || [])[0] || "", one.phones[0]); dial(k.name, one.phones[0]); return; }
-  toast(list.length ? `plusieurs « ${who} » dans ton répertoire` : `« ${who} » introuvable dans ton répertoire`, "choisir", pick, 8000);
+  toast(list.length ? `plusieurs « ${who} » dans votre répertoire` : `« ${who} » introuvable dans votre répertoire`, "choisir", pick, 8000);
 }
 /* on ne coche qu'après confirmation : la tâche reste tant que tu n'as pas dit « oui » */
 function waitAck(it, kind, who){ S.pendingAck = { id: it.id, at: Date.now(), who: who || "", kind }; save(); hide(); render(); }
@@ -1997,7 +1997,7 @@ function openAck(it, p){
     it.due = ymd(d); it.time = pad(d.getHours()) + ":" + pad(d.getMinutes()); it.notified = false; it.tries = (it.tries || 0) + 1;
     it.note = ((it.note ? it.note + " · " : "") + "pas joint " + nowHM().replace(":", "h")).slice(-600);
     save(); render(); calSync(it);
-    toast("je te le remets " + lab, "annuler", () => { Object.assign(it, before); save(); render(); calSync(it); });
+    toast("je vous le remets " + lab, "annuler", () => { Object.assign(it, before); save(); render(); calSync(it); });
   };
   const ch = [
     ["c'est réglé", () => { markDone(it); render(); flashOk(); vib([12, 50, 18]); toast("réglé", "annuler", () => { unDone(it); render(); }); }],
@@ -2011,63 +2011,26 @@ function openAck(it, p){
   show("ack");
 }
 
-/* ===== PONT TÉLÉPHONE (MacroDroid → Supabase → Jarvis) ===== */
-const I_FN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/tempo-inbox";
-async function iFn(body){
-  const r = await fetch(I_FN, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(Object.assign({ device: DEVICE }, body)) });
-  let j = {}; try { j = await r.json(); } catch (e) {} return j;
-}
-const inboxLink = () => { const t = LS.get("tempo_itok", ""); return t ? I_FN + "?k=" + t : ""; };
-async function inboxCreate(){
-  const t = b64u(crypto.getRandomValues(new Uint8Array(24)));
-  let r = {}; try { r = await iFn({ action: "register", token: t }); } catch (e) {}
-  if (!r.ok) return toast("serveur injoignable, réessaie");
-  LS.set("tempo_itok", t); paintInbox(); inboxCopy();
-}
-async function inboxCopy(){
-  const l = inboxLink(); if (!l) return;
-  try { await navigator.clipboard.writeText(l); toast("lien copié · colle-le dans MacroDroid", "", null, 5000); }
-  catch (e) { try { await navigator.share({ text: l }); } catch (er) {} }
-}
-async function inboxOff(){
-  try { await iFn({ action: "off" }); } catch (e) {}
-  LS.set("tempo_itok", ""); LS.set("tempo_ilast", null); paintInbox(); toast("pont téléphone coupé");
-}
+/* ===== NOTIFICATIONS DU TÉLÉPHONE (lues par l'appli, rien ne passe par un serveur) ===== */
 let NOTIF_OK = null;
 async function paintInbox(){
   if (NATIVE) {
     const r = await tn("info"); NOTIF_OK = !!(r && r.notifAccess);
     $("iState").textContent = NOTIF_OK
-      ? "Activé ✓ Jarvis lit tes appels manqués, SMS et WhatsApp, directement dans le téléphone (rien ne passe par un serveur). Appel manqué → « Rappeler … » ; message → Claude ne garde que ce qui demande une action."
-      : "Pour que Jarvis voie tes appels manqués, SMS et WhatsApp : touche « activer », puis allume Jarvis dans la liste « Accès aux notifications ».";
+      ? "Activé ✓ Nestor lit vos appels manqués, SMS et WhatsApp, directement dans le téléphone (rien ne passe par un serveur). Appel manqué → « Rappeler … » ; message → Claude ne garde que ce qui demande une action."
+      : "Pour que Nestor voie vos appels manqués, SMS et WhatsApp : touchez « activer », puis allumez Nestor dans la liste « Accès aux notifications ».";
     $("iGo").textContent = NOTIF_OK ? "réglages Android" : "activer";
-    $("iCopy").style.display = "none"; $("iOff").style.display = "none";
     return;
   }
-  const on = !!LS.get("tempo_itok", ""), last = LS.get("tempo_ilast", null);
-  $("iState").textContent = on
-    ? `Lien actif${last ? " · dernier événement reçu " + new Date(last).toLocaleString("fr-FR", { weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : " · rien reçu pour l'instant"}. Appel manqué → « Rappeler … » ; SMS / WhatsApp → Claude ne garde que ce qui demande une action ; fin d'appel avec un contact → Jarvis propose le compte rendu.`
-    : "Avec l'appli gratuite MacroDroid, Jarvis reçoit tes appels manqués, tes SMS et tes WhatsApp, et en tire les actions tout seul. Guide pas à pas : dans ton guide Jarvis (TEMPO-GUIDE.txt).";
-  $("iGo").textContent = on ? "recréer le lien" : "créer mon lien MacroDroid";
-  $("iCopy").style.display = on ? "" : "none"; $("iOff").style.display = on ? "" : "none";
+  $("iState").textContent = "Seulement dans l'appli Android : Nestor y lit vos appels manqués, SMS et WhatsApp, directement dans le téléphone.";
+  $("iGo").style.display = "none";
 }
-$("iGo").onclick = () => { if (NATIVE) { tn("openNotifAccess"); return; } if (LS.get("tempo_itok", "")) toast("l'ancien lien ne marchera plus", "recréer", inboxCreate, 6000); else inboxCreate(); };
-$("iCopy").onclick = inboxCopy;
-$("iOff").onclick = inboxOff;
+$("iGo").onclick = () => { if (NATIVE) tn("openNotifAccess"); };
 let inboxBusy = false;
 async function pullInbox(){
-  if (inboxBusy || document.hidden) return;
-  if (NATIVE) { inboxBusy = true; await pullNativeInbox(); inboxBusy = false; if (NOTIF_OK || !LS.get("tempo_itok", "")) { await processInbox(); return; } }
-  if (!LS.get("tempo_itok", "")) return;
+  if (inboxBusy || document.hidden || !NATIVE) return;
   inboxBusy = true;
-  try {
-    const j = await iFn({ action: "pull" });
-    if (j.ok) {
-      if (j.last_at) LS.set("tempo_ilast", j.last_at);
-      if (!j.linked) LS.set("tempo_itok", "");
-      if (j.events && j.events.length) LS.set("tempo_iq", LS.get("tempo_iq", []).concat(j.events).slice(-150));
-    }
-  } catch (e) {}
+  try { await pullNativeInbox(); } catch (e) {}
   inboxBusy = false;
   await processInbox();
 }
@@ -2087,7 +2050,7 @@ function fromChatApp(app, title, text){
 const chatWho = () => (CFG.chatWho || "").split(/[,;\n]/).map(x => norm(x.trim()).split(/\s+/)[0]).filter(x => x && x.length > 1);
 const viaName = v => v === "wa" ? "WhatsApp" : v === "snap" ? "Snapchat" : !v || v === "sms" ? "texto" : v;
 const chatVia = app => /snapchat/i.test(app || "") ? "snap" : (app || "sms");
-/* appli : les notifications lues par le téléphone, mises au même format que celles de MacroDroid */
+/* appli : les notifications lues par le téléphone, mises au format des événements */
 async function pullNativeInbox(){
   const r = await tn("getInbox"); if (!r) return;
   NOTIF_OK = !!r.notifAccess;
@@ -2182,7 +2145,6 @@ async function processInbox(){
   /* seulement les gens que tu connais : tes contacts Jarvis, ou un nom enregistré dans le téléphone (pas un numéro, pas « ~pseudo ») */
   const scope = CFG.msgScope || "connus";
   const known = e => { const w = (e.who || "").trim(); if (knownContact(isNumLike(w) ? "" : w, e.num)) return true; return !!w && !isNumLike(w) && !/^~/.test(w) && !/^\d{3,6}$/.test(w) && !(e.kind === "sms" && /^[A-Z0-9 .&_-]{2,11}$/.test(w)); };
-  const msgs0 = msgs.length;
   const chatOk = e => { const w = (e.who || "").trim(); return !!w && (!!knownContact(w, "") || chatWho().includes(norm(w).split(/\s+/)[0])); };
   msgs = scope === "aucun" ? [] : scope === "tous" ? msgs : msgs.filter(e => e.kind === "chat" ? chatOk(e) : e.kind === "notif" ? NATIVE : known(e));   // notif : une appli que tu as cochée toi-même
   if (msgs.length) {
@@ -2318,7 +2280,7 @@ function isParcel(t){
 }
 /* un message → un colis (ou rien) */
 function parseColis(text, who, app, at){
-  const t = [who, text].filter(Boolean).join(" — "), all = [app, who, text].filter(Boolean).join(" ");
+  const all = [app, who, text].filter(Boolean).join(" ");
   if (!isParcel(all)) return null;
   const st = colisStatus(text + " " + (who || ""));
   if (!st) return { st: null, parcel: true };
@@ -2443,7 +2405,7 @@ function paintColis(focusId){
     return `<div class="cc${colisHot(c) ? " hot" : ""}" data-c="${c.id}"><div class="ccN">${esc(colisName(c))}${c.art ? " · " + esc(c.art) : ""}</div>${c.code ? `<button class="ccC" data-ca="copy">${esc(fmtCode(c.code))}</button>` : `<div class="ccC none">pas de code dans le message${ap ? " · il est dans " + esc(ap.label) : ""}</div>`}<div class="small">${esc([c.place, c.until ? "jusqu'à " + dayLab(c.until) : "", "arrivé " + agoLab(c.firstAt), c.n > 1 ? "prévenu " + c.n + " fois" : ""].filter(Boolean).join(" · "))}</div><div class="foot"><div class="l"><button data-ca="done" style="color:var(--fg)">retiré ✓</button>${ap ? `<button data-ca="app">ouvrir ${esc(ap.label)}</button>` : ""}${c.place ? `<button data-ca="map">y aller</button>` : ""}<button data-ca="del">supprimer</button></div></div></div>`; }).join("");
   if (w.length) h += `<div class="lab">en route · ${w.length}</div>` + w.map(c => `<div class="cc dim" data-c="${c.id}"><div class="ccN">${esc(colisName(c))}${c.art ? " · " + esc(c.art) : ""}</div><div class="small">expédié ${esc(agoLab(c.firstAt))}${c.ref ? " · n° " + esc(c.ref) : ""} · <button data-ca="del" style="font-size:12.5px;color:var(--mut)">supprimer</button></div></div>`).join("");
   if (past.length) h += `<div class="lab">retirés · livrés</div>` + past.map(c => `<div class="cc dim" data-c="${c.id}"><div class="ccN">${esc(colisName(c))}${c.art ? " · " + esc(c.art) : ""}</div><div class="small">${c.st === "livre" ? "livré" : "retiré"} ${esc(agoLab(c.doneAt || c.lastAt))} · <button data-ca="undo" style="font-size:12.5px;color:var(--mut)">pas encore retiré</button></div></div>`).join("");
-  h += `<p class="small" style="margin-top:20px">Jarvis lit les SMS${NATIVE ? " et les notifications" : ""} des transporteurs${gMailOk() ? " et tes mails Gmail" : ""}. Un colis = une ligne : les relances la mettent juste à jour. Touche le code pour le copier. Dis « j'ai récupéré le colis » pour le cocher.</p>`;
+  h += `<p class="small" style="margin-top:20px">Nestor lit les SMS${NATIVE ? " et les notifications" : ""} des transporteurs${gMailOk() ? " et vos mails Gmail" : ""}. Un colis = une ligne : les relances la mettent juste à jour. Touchez le code pour le copier. Dites « j'ai récupéré le colis » pour le cocher.</p>`;
   $("cBody").innerHTML = h;
   $("cGmail").style.display = gMailOk() ? "" : "none";
   if (focusId) { const el = document.querySelector(`#cBody [data-c="${focusId}"]`); if (el) setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 350); }
@@ -2489,7 +2451,7 @@ function colisIntent(text){
     const named = d.filter(c => [c.shop, c.carrier, c.place].some(x => x && norm(x).split(" ")[0].length > 2 && n.includes(norm(x).split(" ")[0])));
     const all = /\b(?:les|mes|tous|deux|trois)\b[^.]{0,15}\bcolis\b/.test(n);
     const pick = all ? d : named.length ? named : d.length === 1 ? d : null;
-    if (!pick) { idle(); openColis(); toast("lequel ? touche « retiré ✓ »"); if (shouldSpeak()) speak("Lequel ?"); return true; }
+    if (!pick) { idle(); openColis(); toast("lequel ? touchez « retiré ✓ »"); if (shouldSpeak()) speak("Lequel ?"); return true; }
     colisDone(pick, true); flashOk(); idle(); vib([12, 50, 18]);
     toast(pick.length > 1 ? `${IC.colis} ${pick.length} colis retirés ✓` : `${IC.colis} ${colisName(pick[0])} retiré ✓`, "annuler", () => colisDone(pick, false));
     if (shouldSpeak()) speak(pick.length > 1 ? "C'est noté, colis retirés." : "C'est noté, colis retiré.");
@@ -2545,7 +2507,7 @@ async function gmailBookings(t, cache){
 }
 let gmBusy = false;
 async function gmailColis(manual){
-  if (!gMailOk()) { if (manual) toast(gOn() ? "autorise Gmail : ··· > réglages > Colis" : "connecte Google : ··· > réglages"); return; }
+  if (!gMailOk()) { if (manual) toast(gOn() ? "autorisez Gmail : ··· > réglages > Colis" : "connectez Google : ··· > réglages"); return; }
   if (gmBusy || (!manual && Date.now() - LS.get("tempo_gmlast", 0) < 20 * 60000)) return;
   gmBusy = true; LS.set("tempo_gmlast", Date.now());
   try {
@@ -2557,7 +2519,7 @@ async function gmailColis(manual){
       let why = ""; try { why = ((await r.json()).error || {}).message || ""; } catch (er) {}
       const api = /has not been used|is disabled|not enabled|SERVICE_DISABLED/i.test(why);
       G.lastErr = "Gmail " + r.status + (api ? " (API Gmail pas activée)" : ""); saveG();
-      if (manual) toast(api ? "active « Gmail API » dans la console Google (voir le mémo)" : "Gmail refusé : reconnecte Google en cochant Gmail", "", null, 9000);
+      if (manual) toast(api ? "activez « Gmail API » dans la console Google (voir le mémo)" : "Gmail refusé : reconnectez Google en cochant Gmail", "", null, 9000);
       return;
     }
     if (!r.ok) return;
@@ -2599,7 +2561,7 @@ async function openFiche(it){
   const sec = (t, h) => h ? `<h3 class="rpH">${t}</h3>${h}` : "";
   const paint = () => {
     $("ficheBody").innerHTML = `
-      <div class="rpTop">Jarvis · avant d'y aller</div>
+      <div class="rpTop">Nestor · avant d'y aller</div>
       <h1 class="rpT">${esc(it.title)}</h1>
       <div class="rpP">${[when, it.ch, c && c.name].filter(Boolean).map(esc).join(" · ")}</div>
       ${it.note ? `<p class="rpSum" style="font-size:15px">${esc(it.note)}</p>` : ""}
@@ -2607,7 +2569,7 @@ async function openFiche(it){
       ${sec("Encore ouvert sur ce sujet", open.map(i => row(i.due ? fdt(Date.parse(i.due + "T12:00")) : "—", i.title, i.note || "")).join(""))}
       ${sec("Ce qui a déjà été fait", done.map(i => row(fdt(i.doneAt || i.created), i.title, i.note || "")).join(""))}
       ${sec("Infos notées", infos.map(i => row(fdt(i.created), i.title, i.note || "")).join(""))}
-      ${!rel.length ? `<p class="empty" style="margin-top:30px">rien d'autre dans Jarvis sur ce sujet pour l'instant.</p>` : ""}
+      ${!rel.length ? `<p class="empty" style="margin-top:30px">rien d'autre dans Nestor sur ce sujet pour l'instant.</p>` : ""}
       <div class="rpBtns">${c && c.phone ? `<button id="fiCall" class="ok">appeler ${esc(c.name.split(" ")[0])}</button>` : ""}${it.place ? `<button id="fiWaze" class="ok">y aller (Waze)</button>` : ""}<button id="fiEdit">ouvrir la tâche</button><button id="fiClose">fermer</button></div>`;
   };
   paint(); show("fiche");
@@ -2920,7 +2882,7 @@ async function agendaFile(o){
   const f = icsFile(o);
   try { if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: o.title }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
   const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = "rdv.ics"; a.click();
-  toast("fichier agenda téléchargé · ouvre-le depuis la notification");
+  toast("fichier agenda téléchargé · ouvrez-le depuis la notification");
 }
 function openAgenda(o){
   if (NATIVE) {
@@ -2956,7 +2918,7 @@ $("eShare").onclick = async () => {
 $("bSet").onclick = () => show("menu");
 $("mHist").onclick = () => { hide(); setTimeout(openHist, 60); };
 $("mMemo").onclick = () => { hide(); setTimeout(openMemos, 60); };
-$("mRep").onclick = () => { hide(); setTimeout(() => { toast(`dis par exemple : « sors-moi un état ${((CFG.ch || "").split("\n")[0] || "").split(":")[0].trim() || "chantier"} sur 3 mois »`, "", null, 6000); startListen(); }, 120); };
+$("mRep").onclick = () => { hide(); setTimeout(() => { toast(`dites par exemple : « sors-moi un état ${((CFG.ch || "").split("\n")[0] || "").split(":")[0].trim() || "chantier"} sur 3 mois »`, "", null, 6000); startListen(); }, 120); };
 
 /* mémos & frais */
 let mRb = "depense", mShowPaid = false;
@@ -2969,7 +2931,7 @@ function paintMemos(){
   if (mRb === "depense") {
     const open = all.filter(i => !i.done), paid = all.filter(i => i.done);
     const tot = open.reduce((a, i) => a + (+i.amount || 0), 0);
-    head = `<div style="font-size:13px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mut)">${SPACE === "pro" ? "à te faire rembourser" : "en cours"}</div>
+    head = `<div style="font-size:13px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mut)">${SPACE === "pro" ? "à vous faire rembourser" : "en cours"}</div>
       <div style="font-size:40px;font-weight:200;margin:4px 0 14px">${eur(tot)}</div>
       ${open.length ? `<div style="display:flex;flex-wrap:wrap;gap:10px 22px;font-size:14px;white-space:nowrap"><button id="mSend" style="color:rgb(var(--glow));font-weight:500">envoyer la note de frais</button><button id="mCopy" style="color:var(--mut)">copier</button><button id="mPaid" style="color:var(--mut)">tout remboursé</button></div>` : ""}`;
     list = mShowPaid ? open.concat(paid) : open;
@@ -2983,7 +2945,7 @@ function paintMemos(){
     return `<div class="it${i.done ? " done" : ""}" data-id="${i.id}">${i.rb === "depense" ? `<button class="dot" data-a="done" aria-label="remboursé"></button>` : `<span class="dot" style="opacity:.5"></span>`}
       <div class="tx" data-a="edit"><div class="tt">${esc(i.title)}</div>${sub ? `<div class="sub">${esc(sub)}</div>` : ""}</div>
       ${i.rb === "depense" ? `<div style="font-size:17px;font-weight:300;white-space:nowrap">${eur(i.amount)}</div>` : ""}</div>`;
-  }).join("") : `<p class="empty" style="margin-top:30px">${mRb === "depense" ? "aucun frais en attente. dis « j'ai payé 45 € d'essence pour Liffol »." : mRb === "info" ? "aucune info. dis « note que… »." : "aucune idée. dis « idée : … »."}</p>`;
+  }).join("") : `<p class="empty" style="margin-top:30px">${mRb === "depense" ? "aucun frais en attente. dites « j'ai payé 45 € d'essence pour Liffol »." : mRb === "info" ? "aucune info. dites « note que… »." : "aucune idée. dites « idée : … »."}</p>`;
 }
 function noteDeFrais(){
   const open = S.items.filter(i => isMemo(i) && i.rb === "depense" && !i.done).sort((a, b) => (a.due || "").localeCompare(b.due || ""));
@@ -3008,11 +2970,11 @@ $("mClose").onclick = hide;
 /* réglages · colis et applis lues */
 function paintColisSet(){
   const n = colisOpen().length;
-  $("cState").textContent = (n ? `${n} colis à retirer. ` : "") + "Jarvis lit les SMS et notifications des transporteurs (Mondial Relay, InPost, Relais Colis, Vinted Go, Amazon…) et ne note chaque colis qu'une fois, avec son code ; les relances mettent juste la ligne à jour."
-    + (gMailOk() ? " Gmail : lu ✓ (seulement les mails de colis)." : CFG.gmail ? (gOn() ? " Gmail : touche « autoriser Gmail » et coche l'accès aux e-mails." : " Gmail : connecte d'abord Google (plus haut).") : "");
+  $("cState").textContent = (n ? `${n} colis à retirer. ` : "") + "Nestor lit les SMS et notifications des transporteurs (Mondial Relay, InPost, Relais Colis, Vinted Go, Amazon…) et ne note chaque colis qu'une fois, avec son code ; les relances mettent juste la ligne à jour."
+    + (gMailOk() ? " Gmail : lu ✓ (seulement les mails de colis)." : CFG.gmail ? (gOn() ? " Gmail : touchez « autoriser Gmail » et cochez l'accès aux e-mails." : " Gmail : connectez d'abord Google (plus haut).") : "");
   $("cGm").checked = !!CFG.gmail; $("cGmGo").style.display = CFG.gmail && !gMailOk() ? "" : "none";
 }
-$("cGm").onchange = () => { CFG.gmail = $("cGm").checked; saveCfg(); paintColisSet(); if (CFG.gmail && !gMailOk()) toast("touche « autoriser Gmail »"); };
+$("cGm").onchange = () => { CFG.gmail = $("cGm").checked; saveCfg(); paintColisSet(); if (CFG.gmail && !gMailOk()) toast("touchez « autoriser Gmail »"); };
 $("cGmGo").onclick = () => { CFG.gmail = true; saveCfg(); gLogin(); };
 $("cSee").onclick = () => openColis();
 const APP_SUGG = /snapchat|vinted|amazon|mondial|relay|inpost|relais|colis|chronopost|colissimo|la poste|laposte|dpd|\bgls\b|\bups\b|dhl|fedex|pickup|cainiao|leboncoin|temu|shein|aliexpress|cdiscount|outlook|teams|messenger|instagram|telegram|signal|doctolib|sncf|17track|parcel/i;
@@ -3049,14 +3011,14 @@ $("mSet").onclick = () => { hide(); setTimeout(openSettings, 60); };
 const openSettings = () => {
   $("sKey").value = CFG.key || ""; $("sProfile").value = CFG.profile; $("sSign").value = CFG.meSign || ""; $("sCh").value = CFG.ch; $("sTeam").value = CFG.team;
   $("sMsId").value = CFG.msId || ""; $("sBook").value = CFG.bookWords == null ? "golf" : CFG.bookWords; $("sCal").checked = CFG.calSync !== false; paintG();
-  $("sMsState").textContent = MS.rt || MS.at ? `connecté : ${MS.user || "Outlook"}. En espace perso, Jarvis relève tes mails à l'ouverture (toutes les 20 min max) et via « mails » sous le rond. Les réservations sont lues dans tous les cas.` : "Colle l'ID de ton autorisation Microsoft (voir le guide), puis « connecter Outlook ». Jarvis lit tes mails sans jamais en envoyer, déplacer ni supprimer.";
+  $("sMsState").textContent = MS.rt || MS.at ? `connecté : ${MS.user || "Outlook"}. En espace perso, Nestor relève vos mails à l'ouverture (toutes les 20 min max) et via « mails » sous le rond. Les réservations sont lues dans tous les cas.` : "Collez l'ID de votre autorisation Microsoft (voir le guide), puis « connecter Outlook ». Nestor lit vos mails sans jamais en envoyer, déplacer ni supprimer.";
   const P = SPACE === "perso";
   $("lProf").textContent = (P ? "Qui je suis — vie privée" : "Qui je suis — travail") + " (lu par Claude à chaque tri)";
   $("lChs").textContent = P ? "Mes thèmes — Nom : mots-clés" : "Mes chantiers — Nom : mots-clés";
-  $("lTeam").textContent = P ? "Mes proches (Jarvis complète avec ta mémoire)" : "Mon équipe";
+  $("lTeam").textContent = P ? "Mes proches (Nestor complète avec votre mémoire)" : "Mon équipe";
   $("lStyle").textContent = P ? "Ma façon d'écrire mes textos et mails perso" : "Ma façon d'écrire mes mails";
   $("sContacts").value = CFG.contacts; $("sPick").style.display = PICK ? "" : "none"; $("sStyle").value = CFG.style; $("sSil").value = String(CFG.silence); { const R = RIT(); $("rOn").checked = R.on; $("rM").value = R.matin; $("rS").value = R.soir; $("rW").value = R.semaine; $("sFoc").value = String(CFG.focusMin || 25); } $("sVis").value = CFG.visual === "rond" ? "rond" : "const"; $("sAg").checked = CFG.agenda !== false;
-  const n = (CFG.learn || []).length; $("sLearn").textContent = n ? `Jarvis a retenu ${n} correction${n > 1 ? "s" : ""} de ta part.` : "Quand tu corriges un classement, Jarvis le retient pour la suite.";
+  const n = (CFG.learn || []).length; $("sLearn").textContent = n ? `Nestor a retenu ${n} correction${n > 1 ? "s" : ""} de votre part.` : "Quand vous corrigez un classement, Nestor le retient pour la suite.";
   $("vMode").value = CFG.vMode === "voxtral" ? "voxtral" : "google"; $("vKey").value = CFG.mkey || ""; $("vCap").value = String(CFG.vCap || 2); $("vMax").value = String(CFG.vMax || 120);
   $("vSay").value = ["auto", "1", "0"].includes(CFG.vSay) ? CFG.vSay : "auto"; $("vAuto").checked = !!CFG.vAuto;
   paintVox(); if (CFG.mkey) voxSync().then(paintVox);
@@ -3284,7 +3246,7 @@ function startListenSR(opts){
     if (CFG.silence > 0 && all) silT = setTimeout(() => { if (listening) validate(); }, CFG.silence * 1000);
   };
   rec.onend = () => { if (listening && micAwake()) { try { rec.start(); } catch (e) {} } else if (listening) { listening = false; idle(); } };
-  rec.onerror = e => { if (e.error === "not-allowed") { listening = false; idle(); toast("autorise le micro"); } };
+  rec.onerror = e => { if (e.error === "not-allowed") { listening = false; idle(); toast("autorisez le micro"); } };
   listening = true; ringState("on"); hint(listenHint(opts)); screenOn(true);
   $("acts").classList.add("show"); $("alt").style.display = "none";
   try { rec.start(); } catch (e) {}
@@ -3324,7 +3286,7 @@ async function startRec(opts){
   let stream;
   const gen = opts && opts._gen;
   try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: true, channelCount: 1 } }); }
-  catch (e) { idle(); toast("autorise le micro pour Jarvis"); return; }
+  catch (e) { idle(); toast("autorisez le micro pour Nestor"); return; }
   if (!micAwake() || gen !== MIC_GEN) { stream.getTracks().forEach(t => t.stop()); return; }   // tu as quitté Jarvis pendant que le micro s'ouvrait
   const V = VOICE = { stream, chunks: [], pcm: [], pcmLen: 0, t0: Date.now(), spoke: false, loud: 0, lastLoud: Date.now(), floor: null, max: 0, opts };
   const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) || "";
@@ -3464,8 +3426,8 @@ function paintVox(){
   const on = $("vMode").value === "voxtral"; $("vBox").style.display = on ? "" : "none";
   if (!on) return;
   const u = voxUse(), min = u.sec / 60, cap = u.cap || +CFG.vCap || 2;
-  $("vUse").innerHTML = (CFG.mkey ? `Ce mois-ci : ${min < 1 ? Math.round(u.sec) + " s" : Math.round(min) + " min"} dictées · ≈ ${eur(u.usd)} sur ${eur(cap)} de plafond.${voxCapped() ? " <b>Plafond atteint : Jarvis est repassé sur Google jusqu'au 1er du mois.</b>" : ""}${voxPaused() ? ` <b>En pause jusqu'à ${hm(new Date(voxPaused().until))} : Mistral a refusé (${esc(voxPaused().why)}).</b> Message de Mistral : « ${esc(voxPaused().raw || "aucun")} ». Sauvegarder les réglages relance Voxtral.` : ""}<br>` : "") +
-    `Tarif : 0,0035 $ la minute (≈ 0,35 centime). 10 min de dictée par jour ≈ 1 € par mois. Jarvis compte 1 $ = 1 € pour garder de la marge, n'envoie rien si tu n'as rien dit, et repasse tout seul sur Google quand le plafond approche.`;
+  $("vUse").innerHTML = (CFG.mkey ? `Ce mois-ci : ${min < 1 ? Math.round(u.sec) + " s" : Math.round(min) + " min"} dictées · ≈ ${eur(u.usd)} sur ${eur(cap)} de plafond.${voxCapped() ? " <b>Plafond atteint : Nestor est repassé sur Google jusqu'au 1er du mois.</b>" : ""}${voxPaused() ? ` <b>En pause jusqu'à ${hm(new Date(voxPaused().until))} : Mistral a refusé (${esc(voxPaused().why)}).</b> Message de Mistral : « ${esc(voxPaused().raw || "aucun")} ». Sauvegarder les réglages relance Voxtral.` : ""}<br>` : "") +
+    `Tarif : 0,0035 $ la minute (≈ 0,35 centime). 10 min de dictée par jour ≈ 1 € par mois. Nestor compte 1 $ = 1 € pour garder de la marge, n'envoie rien si vous n'avez rien dit, et repasse tout seul sur Google quand le plafond approche.`;
 }
 function startType(){
   typing = true; ringState("on"); hint(""); $("alt").style.display = "none";
@@ -3543,7 +3505,7 @@ async function nativeSchedule(list){
 }
 async function enablePush(){
   if (NATIVE) {
-    if (!(await lnSetup())) return toast("autorise les notifications pour Jarvis", "réglages", () => tn("openAppSettings"), 8000);
+    if (!(await lnSetup())) return toast("autorisez les notifications pour Nestor", "réglages", () => tn("openAppSettings"), 8000);
     LS.set("tempo_push", true); paintPush(); syncReminders(true);
     try { await LN.schedule({ notifications: [{ id: 99, title: jvNom(), body: "Les rappels fonctionnent. Je sonnerai au bon moment.", schedule: { at: new Date(Date.now() + 4000), allowWhileIdle: true }, channelId: "rappels", smallIcon: "ic_stat_tempo" }] }); } catch (e) {}
     toast("rappels activés ✓ — une notification de test arrive", "", null, 6000);
@@ -3551,7 +3513,7 @@ async function enablePush(){
   }
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return toast("notifications impossibles ici");
   const perm = await Notification.requestPermission();
-  if (perm !== "granted") return toast("autorise les notifications pour Jarvis dans Android", "", null, 7000);
+  if (perm !== "granted") return toast("autorisez les notifications pour Nestor dans Android", "", null, 7000);
   try {
     const reg = await navigator.serviceWorker.ready;
     const { key } = await pFn({ action: "key" });
@@ -3595,24 +3557,24 @@ async function syncReminders(healed){
       const tag = (sp === "perso" ? "Perso · " : "") + (i.ch ? i.ch : CATS_PRO[i.cat] || "");
       if (i.cat === "rdv") {
         const pre = i.book ? 60 : 30;
-        list.push({ at: new Date(at.getTime() - pre * 60000).toISOString(), title: (i.book ? "Dans 1 h · " : "Dans 30 min · ") + i.title, body: (i.place ? i.place + " · " : tag ? tag + " · " : "") + "touche pour ta fiche avant d'y aller", url: `./?fiche=${i.id}&sp=${sp}`, tag: i.id + "-" + pre });
+        list.push({ at: new Date(at.getTime() - pre * 60000).toISOString(), title: (i.book ? "Dans 1 h · " : "Dans 30 min · ") + i.title, body: (i.place ? i.place + " · " : tag ? tag + " · " : "") + "touchez pour votre fiche avant d'y aller", url: `./?fiche=${i.id}&sp=${sp}`, tag: i.id + "-" + pre });
         if (i.book) list.push({ at: dt(ymd(addDays(-1, new Date(i.due + "T12:00"))), "20:00").toISOString(), title: "Demain " + i.time.replace(":", "h") + " · " + i.title, body: i.place || tag || "réservation", url: `./?fiche=${i.id}&sp=${sp}`, tag: i.id + "-veille" });
       }
-      list.push({ at: at.toISOString(), title: i.title, body: i.wz && i.place ? "touche pour lancer Waze" : tag || "c'est l'heure", url: i.wz && i.place ? "./?waze=" + encodeURIComponent(i.place) : `./?task=${i.id}&sp=${sp}`, tag: i.id });
+      list.push({ at: at.toISOString(), title: i.title, body: i.wz && i.place ? "touchez pour lancer Waze" : tag || "c'est l'heure", url: i.wz && i.place ? "./?waze=" + encodeURIComponent(i.place) : `./?task=${i.id}&sp=${sp}`, tag: i.id });
     }
   }
   const R = RIT(), rs = LS.get("tempo_rit", {}), BR = typeof jvBriefOn === "function" && jvBriefOn();
   try { if (BR) await jvBriefPrep(); } catch (e) {}
   if (R.on || BR) for (let k = 0; k < 8; k++) {
     const d = ymd(addDays(k)), dow = addDays(k).getDay(), bm = BR ? jvBriefNotif(d, "matin") : null, bs = BR ? jvBriefNotif(d, "soir") : null;
-    if (!(k === 0 && rs.matin === d)) list.push({ at: dt(d, R.matin).toISOString(), title: bm ? bm.title : "Ton point du matin", body: bm ? bm.body : "1 minute pour choisir tes 3 priorités", url: R.on ? "./?ritual=matin" : "./", tag: "rit-matin" });
-    if (dow === 0 && R.on) { if (!(k === 0 && rs.semaine === d)) list.push({ at: dt(d, R.semaine).toISOString(), title: "Ton bilan de la semaine", body: "Regarde le chemin parcouru", url: "./?ritual=semaine", tag: "rit-semaine" }); }
+    if (!(k === 0 && rs.matin === d)) list.push({ at: dt(d, R.matin).toISOString(), title: bm ? bm.title : "Votre point du matin", body: bm ? bm.body : "1 minute pour choisir vos 3 priorités", url: R.on ? "./?ritual=matin" : "./", tag: "rit-matin" });
+    if (dow === 0 && R.on) { if (!(k === 0 && rs.semaine === d)) list.push({ at: dt(d, R.semaine).toISOString(), title: "Votre bilan de la semaine", body: "Le chemin parcouru, en un coup d'œil", url: "./?ritual=semaine", tag: "rit-semaine" }); }
     if ((dow !== 0 && R.on) || bs) { if (!(k === 0 && rs.soir === d)) list.push({ at: dt(d, R.soir).toISOString(), title: bs ? bs.title : "On ferme la journée ?", body: bs ? bs.body : "1 minute : ce qui est fait, ce qui glisse à demain", url: R.on && dow !== 0 ? "./?ritual=soir" : "./", tag: "rit-soir" }); }
   }
   try { if (typeof jvRappelsEnPlus === "function") list.push(...jvRappelsEnPlus()); } catch (e) {}
   /* colis : 2 jours après l'arrivée, la veille de la date limite et le dernier jour (une seule fois par jour) */
   for (const c of colisOpen()) {
-    const body = [c.code ? "code " + fmtCode(c.code) : "", c.place].filter(Boolean).join(" · ") || "touche pour voir le colis", url = "./?colis=" + c.id, days = new Set();
+    const body = [c.code ? "code " + fmtCode(c.code) : "", c.place].filter(Boolean).join(" · ") || "touchez pour voir le colis", url = "./?colis=" + c.id, days = new Set();
     const slots = [[ymd(addDays(2, new Date(c.firstAt))), "18:00", "b"]];
     if (c.until) slots.unshift([ymd(addDays(-1, new Date(c.until + "T12:00"))), "18:00", "a"], [c.until, "09:00", "z"]);
     for (const [d, t, k] of slots) {
@@ -3711,13 +3673,13 @@ ${cand.slice(0, 40).map(({ i, sp }) => `- id=${i.id} [${sp}] u${i.u} ${i.title}$
   }
   const byId = Object.fromEntries(allOpen().map(x => [x.i.id, x]));
   RITUAL.plan = (plan.plan || []).filter(p => byId[p.id]).slice(0, 3).map(p => Object.assign({}, p, byId[p.id]));
-  const evHtml = evs.filter(e => !e.tempo).length ? evs.filter(e => !e.tempo).map(e => `<div class="it" style="padding:8px 0"><span class="dot" style="opacity:.5"></span><div class="tx"><div class="tt" style="font-size:15px">${esc(e.title)}</div><div class="sub">${e.allDay ? "toute la journée" : hm(e.s) + " – " + hm(e.e)}</div></div></div>`).join("") : `<p class="small">${gOn() ? "rien dans ton agenda aujourd'hui." : "connecte Google Agenda pour voir ta journée ici."}</p>`;
+  const evHtml = evs.filter(e => !e.tempo).length ? evs.filter(e => !e.tempo).map(e => `<div class="it" style="padding:8px 0"><span class="dot" style="opacity:.5"></span><div class="tx"><div class="tt" style="font-size:15px">${esc(e.title)}</div><div class="sub">${e.allDay ? "toute la journée" : hm(e.s) + " – " + hm(e.e)}</div></div></div>`).join("") : `<p class="small">${gOn() ? "rien dans votre agenda aujourd'hui." : "connectez Google Agenda pour voir votre journée ici."}</p>`;
   $("ritBody").innerHTML = `
     <div class="ritH">${hello}</div>
     <p class="ritMsg">${esc(plan.msg || "")}</p>
-    <div class="lab">Tes 3 priorités</div>
-    ${RITUAL.plan.length ? RITUAL.plan.map((p, n) => `<div class="it u${p.i.u}" data-rp="${n}"><span class="ritN">${n + 1}</span><div class="tx"><div class="tt">${esc(p.i.title)}</div><div class="sub">${p.time ? p.time.replace(":", "h") : "dès que possible"}${p.why ? " · " + esc(p.why) : ""}${p.sp === "perso" ? " · perso" : ""}</div></div><button class="ritF" data-rf="${n}">focus</button></div>`).join("") : `<p class="small">aucune tâche en attente. tu peux dicter ce qui te passe par la tête.</p>`}
-    <div class="lab">Ton agenda aujourd'hui</div>${evHtml}
+    <div class="lab">Vos 3 priorités</div>
+    ${RITUAL.plan.length ? RITUAL.plan.map((p, n) => `<div class="it u${p.i.u}" data-rp="${n}"><span class="ritN">${n + 1}</span><div class="tx"><div class="tt">${esc(p.i.title)}</div><div class="sub">${p.time ? p.time.replace(":", "h") : "dès que possible"}${p.why ? " · " + esc(p.why) : ""}${p.sp === "perso" ? " · perso" : ""}</div></div><button class="ritF" data-rf="${n}">focus</button></div>`).join("") : `<p class="small">aucune tâche en attente. vous pouvez dicter ce qui vous passe par la tête.</p>`}
+    <div class="lab">Votre agenda aujourd'hui</div>${evHtml}
     <div class="foot"><div class="l"><button id="ritLater">plus tard</button></div><button class="ok" id="ritGo">${RITUAL.plan.length ? "c'est parti" : "OK"}</button></div>`;
 }
 async function ritSoir(){
@@ -3750,12 +3712,12 @@ async function ritSemaine(){
   if (CFG.key && total) { try { msg = await claudeText(`Tu fais le bilan de la semaine de ${myName()} en 2 phrases courtes (35 mots max) : ce qui avance bien, puis un seul conseil concret pour la semaine prochaine (par ex. sur les tâches repoussées ou l'équilibre pro/perso). Vouvoiement, à la manière de Jarvis, le majordome de Tony Stark (« monsieur » au plus une fois, jamais son prénom, pas d'exclamation), direct, bienveillant, sans emoji.`, `Réglées : ${total} (pro ${sp2.pro}, perso ${sp2.perso}). Par chantier/thème : ${top.map(([k, v]) => k + " " + v).join(", ")}. Repoussées plusieurs fois : ${stuck.map(i => i.title).join(" ; ") || "aucune"}.`, 160); } catch (e) {} }
   const lbl = Array.from({ length: 7 }, (_, k) => WD[addDays(k - 6).getDay()].slice(0, 1).toUpperCase());
   $("ritBody").innerHTML = `
-    <div class="ritH">Ta semaine</div>
+    <div class="ritH">Votre semaine</div>
     <p class="ritMsg">${esc(msg)}</p>
     <div class="bars">${days.map((v, k) => `<div class="bar"><i style="height:${Math.round(8 + 80 * v / mx)}px;opacity:${v ? 1 : .25}"></i><b>${v || ""}</b><span>${lbl[k]}</span></div>`).join("")}</div>
     <div class="two" style="margin-top:20px"><div><div class="lab">Pro</div><div class="ritBig">${sp2.pro}</div></div><div><div class="lab">Perso</div><div class="ritBig">${sp2.perso}</div></div></div>
-    ${STARS.length ? `<p class="small" style="margin-top:14px">ta constellation : ${STARS.length} étoile${STARS.length > 1 ? "s" : ""} dorée${STARS.length > 1 ? "s" : ""} allumée${STARS.length > 1 ? "s" : ""} depuis lundi. elle repart de zéro lundi matin.</p>` : ""}
-    ${top.length ? `<div class="lab">Là où tu as avancé</div><p style="font-size:15px;line-height:1.7">${top.map(([k, v]) => `${esc(k)} · ${v}`).join("<br>")}</p>` : ""}
+    ${STARS.length ? `<p class="small" style="margin-top:14px">votre constellation : ${STARS.length} étoile${STARS.length > 1 ? "s" : ""} dorée${STARS.length > 1 ? "s" : ""} allumée${STARS.length > 1 ? "s" : ""} depuis lundi. elle repart de zéro lundi matin.</p>` : ""}
+    ${top.length ? `<div class="lab">Là où vous avez avancé</div><p style="font-size:15px;line-height:1.7">${top.map(([k, v]) => `${esc(k)} · ${v}`).join("<br>")}</p>` : ""}
     ${stuck.length ? `<div class="lab">Repoussées plusieurs fois</div>` + stuck.slice(0, 5).map(i => `<div class="it u${i.u}"><span class="dot"></span><div class="tx"><div class="tt">${esc(i.title)}</div><div class="sub">reportée ${i.ppN} fois</div></div></div>`).join("") : ""}
     <div class="foot"><div class="l"></div><button class="ok" id="ritGo">nouvelle semaine</button></div>`;
 }
@@ -3807,8 +3769,8 @@ async function startFocus(id, sp, minutes){
   $("focus").classList.add("show"); vib(15);
   try { wake = await navigator.wakeLock.request("screen"); } catch (e) {}
   clearInterval(focT); focT = setInterval(focTick, 250); focTick();
-  const fallback = { appel: "Cherche le numéro et pose ton pouce sur « appeler ».", mail: "Ouvre le brouillon et écris juste la première phrase.", message: "Ouvre la conversation et tape le premier mot.", rdv: "Note sur quoi tu dois être prêt, en une ligne.", materiel: "Liste les 3 références dont tu as besoin.", facture: "Ouvre l'appli de ta banque, rien de plus." };
-  let step = fallback[it.cat] || "Prends 2 minutes : écris la toute première action, la plus petite possible.";
+  const fallback = { appel: "Chercher le numéro et poser le pouce sur « appeler ».", mail: "Ouvrir le brouillon et écrire juste la première phrase.", message: "Ouvrir la conversation et taper le premier mot.", rdv: "Noter sur quoi être prêt, en une ligne.", materiel: "Lister les 3 références nécessaires.", facture: "Ouvrir l'appli de la banque, rien de plus." };
+  let step = fallback[it.cat] || "Prendre 2 minutes : écrire la toute première action, la plus petite possible.";
   if (CFG.key) { try { step = await claudeText(`Donne à ${myName()} UN tout premier pas, concret et physique, faisable en 2 minutes maximum, pour démarrer cette tâche sans réfléchir. Une seule phrase, 15 mots max, à l'impératif et au vouvoiement (« Ouvrez… », « Notez… »), sans emoji ni exclamation.`, `Tâche : ${it.title}${it.ch ? " (" + it.ch + ")" : ""}${it.note ? " — " + it.note : ""}`, 80); } catch (e) {} }
   if (FOC && FOC.id === id) $("fStep").textContent = step;
 }
@@ -3938,7 +3900,7 @@ function paintReport(){
   const X = REPORT, sec = (t, h) => h ? `<h3 class="rpH">${t}</h3>${h}` : "";
   const row = (d, t, s) => `<div class="rpR"><span class="rpD">${d}</span><div><div>${esc(t)}</div>${s ? `<div class="rpS">${esc(s)}</div>` : ""}</div></div>`;
   $("repBody").innerHTML = `
-    <div class="rpTop">Jarvis · état d'activité</div>
+    <div class="rpTop">Nestor · état d'activité</div>
     <h1 class="rpT">${esc(X.R.what.charAt(0).toUpperCase() + X.R.what.slice(1))}</h1>
     <div class="rpP">${X.per}${SPACE === "pro" && CFG.meSign ? " · " + esc(CFG.meSign) : ""}</div>
     ${X.summary ? `<p class="rpSum">${esc(X.summary)}</p>` : (CFG.key ? `<p class="rpSum" style="color:var(--mut)">synthèse en cours…</p>` : "")}
@@ -4089,60 +4051,17 @@ function onVisible(){
 document.addEventListener("visibilitychange", () => { if (document.hidden) onHidden(); else onVisible(); });
 
 /* ===== APPLI ANDROID : liens copilote://, partage, notifications touchées, bouton retour, mises à jour ===== */
-const T_FN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/tempo-transfer";
-const toB64 = u8 => { let x = ""; for (let i = 0; i < u8.length; i += 32768) x += String.fromCharCode.apply(null, u8.subarray(i, i + 32768)); return btoa(x); };
-const fromB64 = b => Uint8Array.from(atob(b), c => c.charCodeAt(0));
-const fromB64u = b => fromB64(b.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - b.length % 4) % 4));
-async function tFn(body){
-  const r = await fetch(T_FN, { method: "POST", headers: { "content-type": "application/json", Authorization: "Bearer " + G_KEY, apikey: G_KEY }, body: JSON.stringify(body) });
-  let j = {}; try { j = await r.json(); } catch (e) {} return j;
-}
-/* Chrome → appli : tout Jarvis (tâches, réglages, clés) chiffré ici, la clé ne passe que par le lien vers l'appli */
-async function transferOut(){
-  try {
-    const data = {};
-    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^(zap_|tempo_)/.test(k)) data[k] = localStorage.getItem(k); }
-    const key = crypto.getRandomValues(new Uint8Array(32)), iv = crypto.getRandomValues(new Uint8Array(12));
-    const ck = await crypto.subtle.importKey("raw", key, "AES-GCM", false, ["encrypt"]);
-    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, ck, new TextEncoder().encode(JSON.stringify(data))));
-    const r = await tFn({ action: "put", blob: toB64(ct), iv: toB64(iv) });
-    if (!r.id) { toast("transfert impossible · réessaie"); return; }
-    LS.set("tempo_moved", Date.now()); paintApp();
-    const link = `intent://transfert?id=${r.id}&k=${b64u(key)}#Intent;scheme=copilote;package=fr.rc4st.copilote;S.browser_fallback_url=${encodeURIComponent(APK_URL)};end`;
-    location.href = link;
-    setTimeout(() => { if (document.visibilityState === "visible") toast("l'appli ne s'est pas ouverte ?", "ouvrir l'appli", () => { location.href = link; }, 15000); }, 2500);
-  } catch (e) { toast("transfert impossible · réessaie"); }
-}
-async function transferIn(id, k){
-  if (!id || !k) return;
-  try {
-    const r = await tFn({ action: "get", id });
-    if (!r.blob) { toast("transfert expiré ou déjà utilisé · relance-le depuis Chrome", "", null, 8000); return; }
-    const key = await crypto.subtle.importKey("raw", fromB64u(k), "AES-GCM", false, ["decrypt"]);
-    const data = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromB64(r.iv) }, key, fromB64(r.blob))));
-    const apply = () => {
-      Object.entries(data).forEach(([kk, v]) => { if (!/^tempo_(push|pushheal|pushrenew|moved|isig|iq|launch)$/.test(kk) && typeof v === "string") localStorage.setItem(kk, v); });
-      localStorage.setItem("tempo_arrived", JSON.stringify(Date.now()));
-      location.reload();
-    };
-    if (S.items.length) toast("remplacer les données de l'appli par celles de Chrome ?", "remplacer", apply, 15000); else apply();
-  } catch (e) { toast("transfert illisible · relance-le depuis Chrome"); }
-}
 async function paintApp(){
   if (NATIVE) {
     const r = (await tn("info")) || {};
-    $("appState").textContent = `Appli ${r.versionName || ""} · Jarvis v${TEMPO_BUILD}${r.web ? " (mis à jour)" : ""}. Les nouveautés de l'écran arrivent toutes seules ; quand l'appli elle-même change, Jarvis te propose de l'installer.` + (S.items.length ? "" : " Tes tâches sont dans Chrome ? Ouvre Jarvis dans Chrome > ··· > réglages > « transférer mes données ».");
-    $("appGet").style.display = "none"; $("appMove").style.display = "none"; $("appUpd").style.display = ""; $("appUpd").textContent = "chercher une mise à jour";
+    $("appState").textContent = `Appli ${r.versionName || ""} · Nestor v${TEMPO_BUILD}${r.web ? " (mis à jour)" : ""}. Les nouveautés de l'écran arrivent toutes seules ; quand l'appli elle-même change, Nestor vous propose de l'installer.`;
+    $("appGet").style.display = "none"; $("appUpd").style.display = ""; $("appUpd").textContent = "chercher une mise à jour";
     return;
   }
-  const moved = LS.get("tempo_moved", 0);
-  $("appState").textContent = moved
-    ? `Données envoyées à l'appli le ${new Date(moved).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}. Si tout y est, coupe les rappels ici pour ne pas les recevoir en double.`
-    : "Jarvis existe en vraie appli Android : widget, réveils, appels manqués et messages lus directement, rappels même sans réseau. 1) installer l'appli, 2) transférer tes données (tâches, réglages, clés) en un appui.";
-  $("appGet").style.display = ""; $("appMove").style.display = ""; $("appUpd").style.display = moved ? "" : "none"; $("appUpd").textContent = "couper les rappels ici";
+  $("appState").textContent = "Nestor existe en vraie appli Android : widget, réveils, appels manqués et messages lus directement, rappels même sans réseau. Une fois l'appli installée, coupez ici les rappels de Chrome pour ne pas les recevoir en double.";
+  $("appGet").style.display = ""; $("appUpd").style.display = ""; $("appUpd").textContent = "couper les rappels ici";
 }
-$("appGet").onclick = () => { location.href = APK_URL; toast("téléchargement de Jarvis… ouvre-le depuis la notification", "", null, 8000); };
-$("appMove").onclick = transferOut;
+$("appGet").onclick = () => { location.href = APK_URL; toast("téléchargement de Nestor… ouvrez-le depuis la notification", "", null, 8000); };
 $("appUpd").onclick = async () => {
   if (NATIVE) { webUpdate(true); return; }
   LS.set("tempo_push", false); paintPush(); try { await pFn({ action: "sync", reminders: [] }); } catch (e) {}
@@ -4156,20 +4075,19 @@ async function webUpdate(manual){
   if (!v) { if (manual) toast("pas de réseau"); return; }
   /* d'abord l'intérieur (si l'appli installée le supporte), puis on propose la nouvelle appli au démarrage suivant */
   if (v.build > TEMPO_BUILD && (info.native || 0) >= (v.minNative || 0)) {
-    const go = () => { if (listening || typing || document.querySelector(".sheet.show") || $("ring").classList.contains("think")) { setTimeout(go, 20000); return; } toast("mise à jour de Jarvis…"); tn("updateWeb", { base: PWA_URL, files: ["index.html"], version: String(v.build) }); };
+    const go = () => { if (listening || typing || document.querySelector(".sheet.show") || $("ring").classList.contains("think")) { setTimeout(go, 20000); return; } toast("mise à jour de Nestor…"); tn("updateWeb", { base: PWA_URL, files: ["index.html"], version: String(v.build) }); };
     go(); return;
   }
   if (v.apk && (info.native || 0) < v.apk && (manual || LS.get("tempo_apkask", "") !== today())) {
     LS.set("tempo_apkask", today()); toast("nouvelle version de l'appli", "installer", () => tn("openUrl", { url: APK_URL }), 12000); return;
   }
-  if (manual) toast("Jarvis est à jour ✓");
+  if (manual) toast("Nestor est à jour ✓");
 }
 function openInternal(url){ try { const u = new URL(url || "./", location.href); history.replaceState(null, "", location.pathname + u.search); handleShare(); } catch (e) {} }
 function appUrl(url){
   let u; try { u = new URL(url); } catch (e) { return; }
   const what = (u.host || u.pathname.replace(/^\/+/, "")).toLowerCase();
   if (what === "ecoute") { if (FOC) return; hide(); if (!listening && !typing) setTimeout(() => startListen({ auto: true, noSpeech: 8000 }), 250); }
-  else if (what === "transfert") transferIn(u.searchParams.get("id"), u.searchParams.get("k"));
   else if (what === "gauth") { if ((u.searchParams.get("state") || "").startsWith("nsa_")) jvNetFinir(u.searchParams); else gFinish(u.searchParams); }
   else if (what === "msauth") msFinish(u.searchParams);
   else if (what === "ouvrir") openInternal(u.searchParams.get("u") || "./");
@@ -4188,9 +4106,7 @@ if (NATIVE) {
   TN.addListener("shared", d => { if (d && d.text) capture(d.text, "partage"); });
   TN.addListener("assistant", d => { try { if (typeof jvAssistant === "function") jvAssistant(d || {}); } catch (e) {} });   // lot 21 : appui long sur l'écouteur, assistant du téléphone
   if (LN) LN.addListener("localNotificationActionPerformed", a => openInternal(a && a.notification && a.notification.extra && a.notification.extra.url));
-  const arrived = LS.get("tempo_arrived", 0) > Date.now() - 60000;
-  if (arrived) { LS.set("tempo_arrived", 0); setTimeout(() => toast("tes données de Chrome sont arrivées ✓", "", null, 5000), 900); }
-  setTimeout(webUpdate, arrived ? 7000 : 1500);
+  setTimeout(webUpdate, 1500);
   /* et à chaque retour dans l'appli (au plus une fois tous les 10 min) : plus besoin de la fermer pour se mettre à jour */
   let updLast = Date.now();
   document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - updLast > 10 * 60000) { updLast = Date.now(); setTimeout(webUpdate, 1500); } });
@@ -4600,7 +4516,7 @@ async function cvContexte(){
   const now = new Date();
   const d = now.toLocaleString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const pro = !!CFG.jvPro;
-  const L = [`Nous sommes le ${d} (heure de Paris, date ${ymd(now)}). Espace ouvert dans l'appli : ${typeof SPACE !== "undefined" ? SPACE : "pro"}. Mode pro de Jarvis : ${pro ? "activé" : "désactivé (perso seulement)"}.`];
+  const L = [`Nous sommes le ${d} (heure de Paris, date ${ymd(now)}). Espace ouvert dans l'appli : ${typeof SPACE !== "undefined" ? SPACE : "pro"}. Mode pro de Nestor : ${pro ? "activé" : "désactivé (perso seulement)"}.`];
   try { const ici = await jvIci(); if (ici) L.push(ici); } catch (e) {}
   try {
     const td = ymd(now), tm = ymd(addDays(1)), out = [];
@@ -4720,20 +4636,6 @@ function cvCorps(from, niv){
 }
 const cvNiv = x => x === false ? 0 : typeof x === "number" ? x : JV_CACHE;
 const cvNivSuivant = (niv, j) => /output_config|effort/i.test(JSON.stringify(j || "")) ? 0 : niv - 1;   // l'effort refusé : sans rien ; seule la mise en cache refusée : un cran en dessous
-async function cvCall(extras){
-  const niv = cvNiv(extras);
-  const from = JV.from != null && JV.from < JV.msgs.length ? JV.from : cvFenetre(), c = cvCorps(from, niv);
-  const body = { model: CV_MODEL, max_tokens: 4000, system: c.system, tools: jvOutils(), messages: c.messages };
-  if (niv >= 1) body.output_config = { effort: CFG.cvEffort || "medium" };
-  if (niv >= 2) body.cache_control = { type: "ephemeral" };
-  const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
-    headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
-    body: JSON.stringify(body) });
-  let j = null; try { j = await r.json(); } catch (e) {}
-  if (!r.ok && niv > 0 && r.status === 400 && /cache_control|output_config|effort|ttl/i.test(JSON.stringify(j || ""))) { JV_CACHE = cvNivSuivant(niv, j); return cvCall(JV_CACHE); }
-  if (!r.ok) throw { status: r.status, j };
-  return j;
-}
 /* ---------- lot 20 : la réponse au fil de l'eau ----------
    Claude envoie sa réponse morceau par morceau : le texte s'affiche dès le premier mot, et la voix part dès la première phrase.
    Le message reconstitué est le même qu'avant (texte, outils, réflexion signée), le reste de la conversation ne change pas. */
@@ -4962,7 +4864,7 @@ async function cvSend(text, opt){
     // on ne garde dans l'historique que sa question et la réponse finale (les étapes intermédiaires servent une fois)
     JV.msgs.splice(base + 1);
     const txt = texts.join("\n\n").trim();
-    JV.msgs.push({ role: "assistant", content: txt || "(je te propose quelque chose ci-dessous)" });
+    JV.msgs.push({ role: "assistant", content: txt || "(je vous propose quelque chose ci-dessous)" });
     if (txt) { if (vivant) { vivant.t = txt; delete vivant.live; vivant.usd = usd; } else JV.view.push({ r: "a", t: txt, usd }); }
     else if (vivant) JV.view.splice(JV.view.indexOf(vivant), 1);
     if (voix || bul) dire(dec.fin());
@@ -4990,7 +4892,7 @@ async function cvSend(text, opt){
     if (voix) jvVoixDebut();
     JV.msgs.splice(base);   // la question non répondue ne reste pas dans l'historique envoyé
     const s = e && e.status, m = e && e.j && e.j.error && e.j.error.message || "";
-    const why = !s ? "pas de réseau" : s === 401 ? "clé Claude refusée" : s === 429 ? "Claude est saturé, réessaie dans un instant" : s === 529 ? "Claude est surchargé, réessaie dans un instant" : `erreur ${s}${m ? " : " + m.slice(0, 120) : ""}`;
+    const why = !s ? "pas de réseau" : s === 401 ? "clé Claude refusée" : s === 429 ? "Claude est saturé, réessayez dans un instant" : s === 529 ? "Claude est surchargé, réessayez dans un instant" : `erreur ${s}${m ? " : " + m.slice(0, 120) : ""}`;
     if (jvCreditVide(m)) { JV.view.push({ r: "e", t: "J'ai bien peur que le crédit Claude soit épuisé, monsieur. Rechargez votre compte dans la console Claude (Plans & Billing), puis réessayez.", retry: text }); jvCreditAlerte(); }
     else JV.view.push({ r: "e", t: `Je n'ai pas pu répondre (${why}).`, retry: text });
   }
@@ -5011,7 +4913,7 @@ async function cvDecide(i, ok){
   if (ok && p.k === "courses") { const its = jvAddCourses(p); p.tids = its.map(x => x.id); JV.notes.push(`liste de courses créée (${its.length} articles${p.t ? ", " + p.t : ""})`); }
   if (ok && p.k === "ici") {
     const l = jvLieu(p.lieu);
-    if (!l) { toast("ce lieu n'est pas encore dans tes lieux habituels"); return; }
+    if (!l) { toast("ce lieu n'est pas encore dans vos lieux habituels"); return; }
     p.tid = jvAddTask({ t: p.t, sp: p.sp, lieuId: l.id, lieu: l.g.nom }).id; JV.notes.push(`rappel de lieu ajouté : « ${p.t} » à ${l.g.nom}`);
   }
   if (ok && p.k === "vtc") { jvVtc(ok, p.t); JV.notes.push(`VTC ouvert (${ok}) vers « ${p.t} »`); }
@@ -5154,7 +5056,7 @@ async function toolMessages(x){
     const lab = m.kind === "sms" ? "SMS" : m.kind === "whatsapp" ? "WhatsApp" : m.kind === "appel" ? "Appel manqué" : (m.app || "Notification");
     out.push(`${jvQuandMsg(m.at)} · ${lab} · ${m.who || m.num || "?"}${m.body && m.kind !== "appel" ? " : " + m.body.slice(0, 300) : ""}`);
   });
-  return { periode: `${h} dernières heures`, messages: out.slice(0, 40), remarque: out.length ? undefined : "rien reçu sur cette période (ou l'accès aux notifications de Jarvis est coupé)" };
+  return { periode: `${h} dernières heures`, messages: out.slice(0, 40), remarque: out.length ? undefined : "rien reçu sur cette période (ou l'accès aux notifications de Nestor est coupé)" };
 }
 async function jvGmail(path){
   if (!gMailOk()) return { erreur: "Gmail n'est pas autorisé : réglages > Colis > autoriser Gmail" };
@@ -5395,16 +5297,16 @@ function jvChauffeFences(){
   const h = jvMaisonLieu(); if (!h || !jvNetOn()) return [];
   const hook = mode => ({ url: JV_NFN, key: G_KEY, body: { action: "mode", mode, cle: JV_NET.cle } });
   return [
-    { id: "chauffe-part", lat: h.g.lat, lon: h.g.lon, r: 500, exit: true, hook: hook("away"), title: "Chauffage en mode absent", body: "Tu t'éloignes de la maison. Touche ici pour remettre ton planning.", url: "./?chauffe=planning" },
-    { id: "chauffe-retour", lat: h.g.lat, lon: h.g.lon, r: 4000, hook: hook("schedule"), title: "Chauffage relancé", body: "Tu rentres : la maison se remet à chauffer selon ton planning.", url: "./" },
-    { id: "chauffe-arrive", lat: h.g.lat, lon: h.g.lon, r: 500, hook: hook("schedule"), title: "Chauffage relancé", body: "Te voilà : la maison reprend son planning.", url: "./" }
+    { id: "chauffe-part", lat: h.g.lat, lon: h.g.lon, r: 500, exit: true, hook: hook("away"), title: "Chauffage en mode absent", body: "Vous vous éloignez de la maison. Touchez ici pour remettre votre planning.", url: "./?chauffe=planning" },
+    { id: "chauffe-retour", lat: h.g.lat, lon: h.g.lon, r: 4000, hook: hook("schedule"), title: "Chauffage relancé", body: "Vous rentrez : la maison se remet à chauffer selon votre planning.", url: "./" },
+    { id: "chauffe-arrive", lat: h.g.lat, lon: h.g.lon, r: 500, hook: hook("schedule"), title: "Chauffage relancé", body: "Vous voilà : la maison reprend son planning.", url: "./" }
   ];
 }
 /* la notification « touche pour annuler » */
 async function jvChauffeLien(m){
   const mode = m === "absent" ? "away" : "schedule";
   const r = await jvNetMode(mode);
-  toast(r.ok ? (mode === "schedule" ? "chauffage remis sur ton planning ✓" : "chauffage en mode absent ✓") : "Netatmo n'a pas répondu, réessaie", "", null, 5000);
+  toast(r.ok ? (mode === "schedule" ? "chauffage remis sur votre planning ✓" : "chauffage en mode absent ✓") : "Netatmo n'a pas répondu, réessayez", "", null, 5000);
 }
 function jvAddTask(p){
   const sp = p.sp === "pro" ? "pro" : "perso";
@@ -5520,11 +5422,11 @@ async function jvGeoSync(){
     if (nat < 6 || !(CFG.jvAlertes || chauffe)) return;
     const st = await tn("locState"); if (!st || !st.fine || !st.bg) return;
     const now = Date.now(), fences = [], L = jvLieux().filter(l => CFG.jvPro || l.d !== "pro");
-    for (const b of LS.get("copilote_bus_watch", []) || []) if (b.dep > now) fences.push({ id: b.id, lat: b.lat, lon: b.lon, r: 200, until: b.dep + 3e5, dep: b.dep, title: `Ton bus ${b.ligne ? b.ligne + " " : ""}passe à ${b.heure.replace(":", "h")}`, body: `${b.arret} · dans {min} min`, url: "./" });
+    for (const b of LS.get("copilote_bus_watch", []) || []) if (b.dep > now) fences.push({ id: b.id, lat: b.lat, lon: b.lon, r: 200, until: b.dep + 3e5, dep: b.dep, title: `Votre bus ${b.ligne ? b.ligne + " " : ""}passe à ${b.heure.replace(":", "h")}`, body: `${b.arret} · dans {min} min`, url: "./" });
     try {
       for (const c of colisOpen()) {
         const rel = L.find(l => l.g.type === "relais" && c.place && (busKey(c.place).includes(busKey(l.g.nom)) || busKey(l.g.label).includes(busKey(c.place).split(" ")[0] || "§")));
-        if (rel) fences.push({ id: "colis-" + c.id, lat: rel.g.lat, lon: rel.g.lon, r: 200, until: c.until ? new Date(c.until + "T23:59").getTime() : now + 14 * 864e5, title: "Ton colis t'attend ici", body: [colisName(c), c.code ? "code " + c.code : ""].filter(Boolean).join(" · "), url: "./?colis=" + c.id });
+        if (rel) fences.push({ id: "colis-" + c.id, lat: rel.g.lat, lon: rel.g.lon, r: 200, until: c.until ? new Date(c.until + "T23:59").getTime() : now + 14 * 864e5, title: "Votre colis vous attend ici", body: [colisName(c), c.code ? "code " + c.code : ""].filter(Boolean).join(" · "), url: "./?colis=" + c.id });
       }
     } catch (e) {}
     for (const sp of (CFG.jvPro ? ["pro", "perso"] : ["perso"])) {
@@ -5532,7 +5434,7 @@ async function jvGeoSync(){
       const shop = {};
       for (const i of spaceState(sp).items || []) if (!i.done && i.lieuId) { const m = i.cat === "courses" ? shop : byL; (m[i.lieuId] = m[i.lieuId] || []).push(i.title); }
       for (const id in byL) { const l = MEM.items.get(id); if (l && l.g) fences.push({ id: "lieu-" + id, lat: l.g.lat, lon: l.g.lon, r: 250, until: 0, title: "À faire ici · " + l.g.nom, body: byL[id].slice(0, 3).join(" · "), url: "./" }); }
-      for (const id in shop) { const l = MEM.items.get(id); if (l && l.g) fences.push({ id: "courses-" + id, lat: l.g.lat, lon: l.g.lon, r: 250, until: 0, title: `Ta liste de courses · ${shop[id].length} article${shop[id].length > 1 ? "s" : ""}`, body: shop[id].slice(0, 12).join(", "), url: "./" }); }
+      for (const id in shop) { const l = MEM.items.get(id); if (l && l.g) fences.push({ id: "courses-" + id, lat: l.g.lat, lon: l.g.lon, r: 250, until: 0, title: `Votre liste de courses · ${shop[id].length} article${shop[id].length > 1 ? "s" : ""}`, body: shop[id].slice(0, 12).join(", "), url: "./" }); }
     }
     if (!CFG.jvAlertes) fences.length = 0;
     if (chauffe) fences.unshift(...jvChauffeFences());
@@ -5545,7 +5447,7 @@ async function jvChauffeEtatTxt(){
   if ((await jvNative()) < 13) return "";
   const j = await tn("geoJournal"); if (!j) return "";
   const z = j.zones || [], res = LS.get("copilote_geo_res", null);
-  if (!z.includes("chauffe-part")) return res && !res.ok ? `présence : Android refuse les zones (${res.why || "?"})` : "présence : zones pas encore posées, rouvre l'appli";
+  if (!z.includes("chauffe-part")) return res && !res.ok ? `présence : Android refuse les zones (${res.why || "?"})` : "présence : zones pas encore posées, rouvrez l'appli";
   const E = (j.journal || []).filter(e => /^chauffe-/.test(e.id) || e.id === "-"), d = E[E.length - 1];
   if (!d) return "présence automatique ✓ · aucun passage vu pour l'instant";
   const quand = ymd(new Date(d.t)) === ymd(new Date()) ? jvHM(d.t) : jvJourTxt(ymd(new Date(d.t))) + " " + jvHM(d.t);
@@ -5556,7 +5458,7 @@ async function jvChauffeEtatTxt(){
 async function jvAlertesState(){
   const n = await jvNative(); if (n < 6) return { ok: false, txt: NATIVE ? "il faut la nouvelle version de l'appli (réglages → mettre à jour)" : "seulement dans l'appli Android" };
   const st = (await tn("locState")) || {};
-  return { ok: !!(st.fine && st.bg), fine: !!st.fine, bg: !!st.bg, txt: !st.fine ? "position non autorisée" : !st.bg ? "position autorisée seulement quand l'appli est ouverte : choisis « Toujours autoriser »" : "position autorisée, même appli fermée ✓" };
+  return { ok: !!(st.fine && st.bg), fine: !!st.fine, bg: !!st.bg, txt: !st.fine ? "position non autorisée" : !st.bg ? "position autorisée seulement quand l'appli est ouverte : choisissez « Toujours autoriser »" : "position autorisée, même appli fermée ✓" };
 }
 
 /* ---------- sorties sans voiture : règle fixée par lui, appliquée sans rien lui demander ----------
@@ -5586,7 +5488,6 @@ function jvSortieMode(it, sp0){
   const l = jvLieuDans(it);
   return l ? { mode: "voiture", l, sig: `voiture|${it.due}|${it.time}|${l.id}` } : null;
 }
-const jvSortieVeut = it => !!jvSortieMode(it);
 const jvRoute = (a, b) => { const km = jvKm(a, b) * 1.3, vit = km < 8 ? 25 : km < 30 ? 45 : 75; return { km: Math.round(km), min: Math.round(km / vit * 60 + 5) }; };
 /* son arrêt habituel : le lieu « arrêt de bus » de sa mémoire, sinon un souvenir qui cite un arrêt Stan */
 function jvMonArret(D){
@@ -5663,7 +5564,7 @@ function jvSortieApplique(it, m, x, muet){
   const sig = m.sig, info = msg => setTimeout(() => toast(msg, "", null, 6000), 4300);
   if (m.mode === "voiture") {
     const home = jvLieux().find(l => l.g.type === "maison"), n = new Date(), orig = x && x.orig;
-    if (!home && !orig) { it.jvBus = { sig, err: "maison" }; save(); info("rendez-vous noté · ajoute ta maison dans Mes lieux (onglet mémoire de Jarvis) et je calcule l'heure de départ"); return; }
+    if (!home && !orig) { it.jvBus = { sig, err: "maison" }; save(); info("rendez-vous noté · ajoutez votre maison dans Mes lieux (onglet mémoire de Nestor) et je calcule l'heure de départ"); return; }
     const r = jvRoute(orig || home.g, m.l.g), part = tMin(it.time) - r.min - JV_MARGE, rap = Math.max(0, part - 5), heure = jvHeure(rap).slice(0, 5);
     const nom = m.l.g.nom, placed = !it.place;
     if (placed) it.place = nom;
@@ -5679,7 +5580,7 @@ function jvSortieApplique(it, m, x, muet){
   if (!x || x.err) {
     const e = (x && x.err) || "calcul impossible";
     it.jvBus = { sig, err: e }; save();
-    info(e === "arret" ? "sortie sans voiture notée · dis une fois ton arrêt de bus habituel à Jarvis et je m'occupe des bus"
+    info(e === "arret" ? "sortie sans voiture notée · dites une fois votre arrêt de bus habituel à Nestor et je m'occupe des bus"
       : e === "trop tard" ? "sortie sans voiture notée · plus de bus pour y être à l'heure"
       : e === "aucun" ? `sortie sans voiture notée · aucun bus depuis ${x.dep} pour y être à l'heure` : "sortie notée · " + e);
     return;
@@ -5866,7 +5767,7 @@ Réponds UNIQUEMENT en JSON : {"echeances":[{"n":numéro du message,"titre":"cou
     const it = jvAddTask({ t: String(e.titre).slice(0, 120), date: e.date, sp: "perso", note: `Trouvé dans ${kind === "mail" ? "un mail" : "un SMS"} de ${x.de}${x.objet ? " : « " + x.objet + " »" : ""}`, extra: { ech: true, amount: +e.montant || null, cat: +e.montant ? "facture" : "tache" } });
     ouverts.push(it); ids.push(it.id);
   }
-  if (ids.length) setTimeout(() => toast(`${ids.length} échéance${ids.length > 1 ? "s" : ""} ajoutée${ids.length > 1 ? "s" : ""} depuis tes ${kind === "mail" ? "mails" : "SMS"}`, "annuler", () => jvRetireIds("perso", ids), 9000), 600);
+  if (ids.length) setTimeout(() => toast(`${ids.length} échéance${ids.length > 1 ? "s" : ""} ajoutée${ids.length > 1 ? "s" : ""} depuis vos ${kind === "mail" ? "mails" : "SMS"}`, "annuler", () => jvRetireIds("perso", ids), 9000), 600);
   return ids.length;
 }
 function jvRetireIds(sp, ids){
@@ -5896,7 +5797,7 @@ async function jvEchMails(manual){
     }
     const n = src.length ? await jvEchExtraire(src, "mail") : 0;
     if (n >= 0) LS.set("copilote_echseen", [...seen].slice(-400));
-    if (manual && !n) toast("aucune nouvelle échéance dans tes mails");
+    if (manual && !n) toast("aucune nouvelle échéance dans vos mails");
   } catch (e) {} finally { jvEchBusy = false; }
 }
 /* SMS des services (numéros courts, expéditeurs inconnus) : seulement ceux qui parlent d'échéance */
@@ -6212,7 +6113,7 @@ function jvBetaBrief(d, quand){
   const w = new Date(d + "T12:00").getDay(), out = [];
   if (jvBetaMatchOn() && ((quand === "soir" && w === 4) || (quand === "matin" && w === 5))) {
     const st = LS.get("copilote_beta_match", null), ch = LS.get("copilote_beta_choix", null), v = jvVendredi(d);
-    if (ch && ch.sem === v) out.push("Cote & Match · ton pari : " + ch.pari);
+    if (ch && ch.sem === v) out.push("Cote & Match · votre pari : " + ch.pari);
     else if (st && st.sem === v && st.txt) out.push("Cote & Match" + (quand === "matin" ? " · annonce avant midi" : "") + " :", ...st.txt.split("\n").filter(Boolean).slice(0, 4));
   }
   if (jvBetaCineOn() && ((quand === "soir" && w === 5) || (quand === "matin" && w === 6))) {
@@ -6226,7 +6127,7 @@ function jvCoteRelance(){
   if (!jvBetaMatchOn()) return null;
   const tod = ymd(new Date()), v = jvVendredi(tod), ch = LS.get("copilote_beta_choix", null), st = LS.get("copilote_beta_match", null);
   if (v < tod || (ch && ch.sem === v)) return null;
-  return { at: new Date(v + "T11:00:00").toISOString(), title: "Cote & Match · annonce avant midi", body: st && st.sem === v && st.txt ? st.txt.split("\n")[0] : "Ton pari de la semaine n'est pas encore choisi", url: "./", tag: "cm-" + v };
+  return { at: new Date(v + "T11:00:00").toISOString(), title: "Cote & Match · annonce avant midi", body: st && st.sem === v && st.txt ? st.txt.split("\n")[0] : "Votre pari de la semaine n'est pas encore choisi", url: "./", tag: "cm-" + v };
 }
 /* ce que Nestor sait dans la conversation, aux bons moments */
 function jvBetaContexte(){
@@ -6405,9 +6306,9 @@ function jvSanteCourt(d){
   if (pas) L.push(`${pas.n.toLocaleString("fr-FR")} pas hier`);
   if (w) L.push(`dernière pesée ${jvKg(w.kg)} kg (${jvJourTxt(w.jour)})`);
   const aide = [];
-  if (!N.length) aide.push("aucune nuit trouvée : dans Garmin Connect, active Health Connect (Paramètres > Partenaires connectés)");
-  if (!W.length) aide.push("aucune pesée : active Health Connect dans l'appli Withings");
-  if (Object.values((d && d.manque) || {}).includes("refus")) aide.push("des accès manquent : touche « autorisations »");
+  if (!N.length) aide.push("aucune nuit trouvée : dans Garmin Connect, activez Health Connect (Paramètres > Partenaires connectés)");
+  if (!W.length) aide.push("aucune pesée : activez Health Connect dans l'appli Withings");
+  if (Object.values((d && d.manque) || {}).includes("refus")) aide.push("des accès manquent : touchez « autorisations »");
   return (L.length ? "Relié ✓ · " + L.join(" · ") : "Relié ✓") + (aide.length ? ". " + aide.join(". ") + "." : "");
 }
 function jvBriefNotif(d, quand){
@@ -6467,9 +6368,9 @@ function paintLieux(){
   const box = $("cvLieux"); if (!box) return;
   const L = jvLieux().sort((a, b) => (a.g.type === "maison" ? -1 : 0) - (b.g.type === "maison" ? -1 : 0) || a.g.nom.localeCompare(b.g.nom));
   box.innerHTML = L.length ? L.map(l => `<div class="it" style="padding:9px 0"><span class="dot" style="opacity:.6"></span><div class="tx" style="flex:1"><div class="tt" style="font-size:15.5px">${esc(l.g.nom)}</div><div class="sub">${esc(JV_TYPES[l.g.type] || "lieu")} · ${esc(l.g.label || "")}</div><div class="sub" style="display:flex;gap:18px;margin-top:6px"><button data-wz="${l.id}">Waze</button><button data-del="${l.id}">oublier</button></div></div></div>`).join("")
-    : `<p class="small">Aucun lieu pour l'instant. Ajoute ta maison, ton arrêt, le golf, ton médecin… ou dis-les simplement à Jarvis.</p>`;
+    : `<p class="small">Aucun lieu pour l'instant. Ajoutez votre maison, votre arrêt, le golf, votre médecin… ou dites-les simplement à Nestor.</p>`;
   box.querySelectorAll("[data-wz]").forEach(b => b.onclick = () => { const l = MEM.items.get(b.dataset.wz); if (l) jvWaze(l.g.nom); });
-  box.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (b.dataset.sure) { memForget([b.dataset.del]).then(() => { paintLieux(); jvGeoSync(); }); } else { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; b.style.color = "var(--u3)"; } });
+  box.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (b.dataset.sure) { memForget([b.dataset.del]).then(() => { paintLieux(); jvGeoSync(); }); } else { b.dataset.sure = "1"; b.textContent = "sûr ? touchez encore"; b.style.color = "var(--u3)"; } });
   $("cvProChk").checked = !!CFG.jvPro;
   $("cvBriefChk").checked = CFG.jvBrief !== false;
   $("cvBnChk").checked = CFG.jvBriefAuto !== false; $("cvMeteoChk").checked = !!CFG.jvMeteo;
@@ -6526,8 +6427,8 @@ function jvCommandeVoix(text){
   const n = cvNorm(String(text).replace(/[’`]/g, "'")).replace(/[^a-z' ]+/g, " ").replace(/\s+/g, " ").trim().replace(new RegExp("^(?:" + [jvNom(), "jarvis", "nestor", "vega"].map(x => cvNorm(x)).join("|") + ")\\s+"), "");
   const off = /^(?:(?:passe|mets toi|reste) )?(?:en )?mode (?:discret|silencieux)(?: s'il te plait)?$|^(?:active|mets) (?:le )?mode (?:discret|silencieux)$|^silence(?: s'il te plait)?$/;
   const on = /^(?:tu peux (?:re)?parler|reparle|mode (?:normal|vocal)|(?:fin|sors) du mode (?:discret|silencieux)|(?:desactive|coupe) le mode (?:discret|silencieux))(?: s'il te plait)?$/;
-  if (off.test(n)) { CFG.jvDiscret = true; saveCfg(); try { hush(); } catch (e) {} toast("mode discret : je ne parle plus · dis « tu peux parler » pour que je reprenne", "", null, 5000); return true; }
-  if (on.test(n)) { CFG.jvDiscret = false; saveCfg(); toast("je peux de nouveau te répondre à voix haute", "", null, 4000); return true; }
+  if (off.test(n)) { CFG.jvDiscret = true; saveCfg(); try { hush(); } catch (e) {} toast("mode discret : je ne parle plus · dites « tu peux parler » pour que je reprenne", "", null, 5000); return true; }
+  if (on.test(n)) { CFG.jvDiscret = false; saveCfg(); toast("je peux de nouveau vous répondre à voix haute", "", null, 4000); return true; }
   return false;
 }
 /* ---------- correctif du 25/11 : une longue dictée n'est jamais découpée à l'aveugle ----------
@@ -6543,7 +6444,7 @@ function jvARanger(text, src, err, muet){
   S.items.unshift(it); save(); if (!muet) idle(); render([it.id]); if (!muet) vib([12, 50, 12]);
   const L = LS.get(JV_RANGER_LS, null) || []; L.push({ id: it.id, sp: SPACE, text, src: src || "voix", at: now, essai: now }); LS.set(JV_RANGER_LS, L);
   try { jvFriction("à ranger", text); } catch (e) {}
-  if (!muet) { const pourquoi = aiRaison(err); if (jvCreditVide(err && err.message)) toast("Crédit Claude épuisé : ta dictée reste entière, je la range dès qu'il est rechargé", "recharger", () => { try { if (NATIVE) tn("openUrl", { url: JV_CONSOLE }); else window.open(JV_CONSOLE, "_blank"); } catch (e) {} }, 12000); else toast(`Claude : ${pourquoi}. Ta dictée reste entière, je la range dès qu'il répond.`, "", null, 9000); }
+  if (!muet) { const pourquoi = aiRaison(err); if (jvCreditVide(err && err.message)) toast("Crédit Claude épuisé : votre dictée reste entière, je la range dès qu'il est rechargé", "recharger", () => { try { if (NATIVE) tn("openUrl", { url: JV_CONSOLE }); else window.open(JV_CONSOLE, "_blank"); } catch (e) {} }, 12000); else toast(`Claude : ${pourquoi}. Votre dictée reste entière, je la range dès qu'il répond.`, "", null, 9000); }
 }
 function jvRangeFin(id){
   for (const sp of ["pro", "perso"]) { const st = spaceState(sp); if ((st.items || []).some(i => i.id === id)) { st.items = st.items.filter(i => i.id !== id); putSpace(sp, st); } }
@@ -6717,8 +6618,8 @@ async function jvAuCercle(reste){
     flashOk(); vib(18); B.dire(o.dit); B.fin([]); parle(o.dit);
     return;
   }
-  if (!CFG.key) { idle(); toast("il me faut ta clé Claude pour te répondre (réglages)", "", null, 6000); return; }
-  if (JV.busy) { idle(); toast("je réponds déjà à autre chose, réessaie dans un instant", "", null, 5000); return; }
+  if (!CFG.key) { idle(); toast("il me faut votre clé Claude pour vous répondre (réglages)", "", null, 6000); return; }
+  if (JV.busy) { idle(); toast("je réponds déjà à autre chose, réessayez dans un instant", "", null, 5000); return; }
   const n0 = JV.view.length;
   // lot 23 : la réponse s'écrit dans la bulle, au rythme de la voix ; la conversation ne s'ouvre que s'il la touche
   const B = jvBulle(reste);
@@ -7175,7 +7076,7 @@ const cvUndoBtn = (v, i) => v.auto && (v.tid || (v.tids && v.tids.length)) ? `<b
 function cvPaint(){
   if (!cvVisible()) return;
   const L = $("cvList");
-  if (!JV.view.length) L.innerHTML = (JV.prev && Date.now() - JV.prev.at < CV_GARDE && (JV.prev.view || []).length ? `<button class="cv-new" id="cvReprendre" style="align-self:flex-start;margin:0 0 12px">reprendre la conversation précédente</button>` : "") + `<p class="small" style="margin:0">Parle-moi de ce que tu veux : une idée à creuser, une décision, ta journée… Je m'appuie sur ta mémoire et je te dis franchement ce que j'en pense. Touche le rond pour dicter.</p>`;
+  if (!JV.view.length) L.innerHTML = (JV.prev && Date.now() - JV.prev.at < CV_GARDE && (JV.prev.view || []).length ? `<button class="cv-new" id="cvReprendre" style="align-self:flex-start;margin:0 0 12px">reprendre la conversation précédente</button>` : "") + `<p class="small" style="margin:0">Parlez-moi de ce que vous voulez : une idée à creuser, une décision, votre journée… Je m'appuie sur votre mémoire et je vous dis franchement ce que j'en pense. Touchez le rond pour dicter.</p>`;
   else L.innerHTML = JV.view.map((v, i) => {
     if (v.r === "u") return `<div class="cv-m u">${esc(v.t)}</div>`;
     if (v.r === "a") return `<div class="cv-m a">${cvHtml(v.t)}</div>`;
@@ -7183,7 +7084,7 @@ function cvPaint(){
     if (v.k === "rappel") {
       const quand = new Date(v.date + "T12:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + " à " + v.heure.replace(":", "h");
       const wz = v.lieu ? `<button class="y" data-waze="${esc(v.lieu)}">Waze</button>` : "";
-      const act = v.st === "ok" ? `<div class="act">${wz}<span>${v.rdv && gOn() ? "ajouté, et dans l'agenda" : "ajouté, il sonnera"} ✓</span>${cvUndoBtn(v, i)}</div>` : v.st === "non" ? `<div class="act">${v.auto ? "annulé" : "laissé de côté"}</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
+      const act = v.st === "ok" ? `<div class="act">${wz}<span>${v.rdv && gOn() ? "ajouté, et dans l'agenda" : "ajouté, il sonnera"} ✓</span>${cvUndoBtn(v, i)}</div>` : v.st === "non" ? `<div class="act">${v.auto ? "annulé" : "laissé de côté"}</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajouter</button></div>`;
       return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">${v.rdv ? "Rendez-vous" : "Rappel"} · ${v.sp} · ${quand}</div><div>${esc(v.t)}</div>${v.lieu ? `<div class="sub">${esc(v.lieu)}</div>` : ""}${act}</div>`;
     }
     if (v.k === "modif") {
@@ -7191,7 +7092,7 @@ function cvPaint(){
       return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">${v.act === "supprimer" ? "Supprimé" : v.act === "deplacer" ? "Déplacé" : "Renommé"} · ${v.sp}</div><div>${esc(v.t)}</div>${v.bus && v.bus.length ? `<div class="sub">rappel retiré : ${esc(v.bus.join(", "))}</div>` : ""}${act}</div>`;
     }
     if (v.k === "lieu") {
-      const act = v.st === "ok" ? `<div class="act">ajouté ✓${v.label ? " · " + esc(v.label) : ""}</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
+      const act = v.st === "ok" ? `<div class="act">ajouté ✓${v.label ? " · " + esc(v.label) : ""}</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajouter</button></div>`;
       return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">Lieu habituel · ${JV_TYPES[v.type]} · ${v.sp}</div><div>${esc(v.t)}</div><div class="sub">${esc(v.adresse)}</div>${act}</div>`;
     }
     if (v.k === "courses") {
@@ -7200,15 +7101,15 @@ function cvPaint(){
       return `<div class="cv-p"><div class="sub" style="margin:0 0 6px">Courses${v.t ? " · " + esc(v.t) : ""} · ${v.art.length} article${v.art.length > 1 ? "s" : ""}</div>${g.map(([r, l]) => `<div style="margin-top:4px"><span class="sub" style="margin:0">${esc(r)} : </span>${esc(l.join(", "))}</div>`).join("")}${act}</div>`;
     }
     if (v.k === "ici") {
-      const act = v.st === "ok" ? `<div class="act"><span>ajouté, je te préviens sur place ✓</span>${cvUndoBtn(v, i)}</div>` : v.st === "non" ? `<div class="act">${v.auto ? "annulé" : "laissé de côté"}</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajoute</button></div>`;
+      const act = v.st === "ok" ? `<div class="act"><span>ajouté, je vous préviens sur place ✓</span>${cvUndoBtn(v, i)}</div>` : v.st === "non" ? `<div class="act">${v.auto ? "annulé" : "laissé de côté"}</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">oui, ajouter</button></div>`;
       return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">En passant · ${esc(v.lieu)}</div><div>${esc(v.t)}</div>${act}</div>`;
     }
     if (v.k === "vtc") {
       const act = v.st && v.st !== "non" ? `<div class="act">${esc(v.st)} ouvert ✓</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-vtc="${i}" data-app="Uber">Uber</button><button class="y" data-vtc="${i}" data-app="Bolt">Bolt</button></div>`;
       return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">En secours · VTC${v.quand ? " · " + esc(v.quand) : ""}</div><div>${esc(v.t)}</div>${act}</div>`;
     }
-    const head = v.k === "retenir" ? `Je retiens${v.pin ? " (épinglé)" : ""} · ${v.d}` : "J'efface de ta mémoire";
-    const act = v.st === "ok" ? `<div class="act">${v.k === "retenir" ? "retenu ✓" : "effacé ✓"}</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">${v.k === "retenir" ? "oui, retiens" : "oui, efface"}</button></div>`;
+    const head = v.k === "retenir" ? `Je retiens${v.pin ? " (épinglé)" : ""} · ${v.d}` : "J'efface de votre mémoire";
+    const act = v.st === "ok" ? `<div class="act">${v.k === "retenir" ? "retenu ✓" : "effacé ✓"}</div>` : v.st === "non" ? `<div class="act">laissé de côté</div>` : `<div class="act"><button data-no="${i}">non</button><button class="y" data-ok="${i}">${v.k === "retenir" ? "oui, retenir" : "oui, effacer"}</button></div>`;
     return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">${head}</div><div>${esc(v.t)}</div>${v.why ? `<div class="sub">${esc(v.why)}</div>` : ""}${act}</div>`;
   }).join("") + `<div style="display:flex;justify-content:center;gap:22px">${JV.view.length ? `<button class="cv-new" id="cvNew">nouvelle conversation</button>` : ""}<button class="cv-new" id="cvBrief">brief du jour</button></div>`;
   const m = cvMonth();
@@ -7229,8 +7130,8 @@ function paintMem(){
   const all = [...MEM.items.values()].sort((a, b) => (b.p - a.p) || ((Date.parse(b.q) || 0) - (Date.parse(a.q) || 0)));
   const list = q ? memSearch(q, 50) : all;
   $("cvMemList").innerHTML = list.length ? list.map(i => `<div class="it" style="padding:10px 0"><span class="dot" style="opacity:${i.p ? 1 : .45}"></span><div class="tx" style="flex:1"><div class="tt" style="font-size:15.5px">${esc(i.t)}</div><div class="sub">${(i.q || "").slice(0, 10)} · ${i.d}${i.p ? " · épinglé" : ""}${i.s === "conversation" ? " · vu en conversation" : i.s === "import" ? " · importé" : ""}</div><div class="sub" style="display:flex;gap:18px;margin-top:6px"><button data-pin="${i.id}">${i.p ? "désépingler" : "épingler"}</button><button data-del="${i.id}">oublier</button></div></div></div>`).join("")
-    : `<p class="small">${q ? "rien trouvé." : "Ta mémoire est vide. Ajoute ce que tu veux ci-dessous, ou parle avec Jarvis : il te proposera quoi retenir."}</p>`;
-  $("cvMemList").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const it = MEM.items.get(b.dataset.del); if (!it) return; if (b.dataset.sure) { memForget([it.id]).then(paintMem); } else { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; b.style.color = "var(--u3)"; } });
+    : `<p class="small">${q ? "rien trouvé." : "Votre mémoire est vide. Ajoutez ce que vous voulez ci-dessous, ou parlez avec Nestor : il vous proposera quoi retenir."}</p>`;
+  $("cvMemList").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const it = MEM.items.get(b.dataset.del); if (!it) return; if (b.dataset.sure) { memForget([it.id]).then(paintMem); } else { b.dataset.sure = "1"; b.textContent = "sûr ? touchez encore"; b.style.color = "var(--u3)"; } });
   $("cvMemList").querySelectorAll("[data-pin]").forEach(b => b.onclick = () => memPin(b.dataset.pin).then(paintMem));
   $("cvCapIn").value = cvCap();
 }
@@ -7251,7 +7152,7 @@ function paintImp(){
     b.disabled = true; b.textContent = "je chiffre…";
     const n = await memRememberMany(sel, "import", k => { b.textContent = `je chiffre… ${k}/${sel.length}`; });
     JIMP = []; $("cvImpTxt").value = ""; paintImp(); paintMem();
-    toast(`${n} souvenir${n > 1 ? "s" : ""} retenu${n > 1 ? "s" : ""}, chiffré${n > 1 ? "s" : ""} sur ton téléphone`);
+    toast(`${n} souvenir${n > 1 ? "s" : ""} retenu${n > 1 ? "s" : ""}, chiffré${n > 1 ? "s" : ""} sur votre téléphone`);
   };
 }
 function cvTab(t){
@@ -7265,19 +7166,19 @@ function cvTab(t){
 /* ---------- phrase secrète ---------- */
 async function cvLockUI(){
   const box = $("cvLock"); box.style.display = ""; $("cvChat").style.display = "none"; $("cvMem").style.display = "none";
-  box.innerHTML = `<p class="small" style="margin-top:24px">J'ouvre ta mémoire…</p>`;
+  box.innerHTML = `<p class="small" style="margin-top:24px">J'ouvre votre mémoire…</p>`;
   let st = null; try { st = await memApi({ action: "etat" }); } catch (e) {}
-  if (!st || !st.ok) { box.innerHTML = `<p style="margin-top:24px;line-height:1.5">Pas de réseau : je ne peux pas ouvrir ta mémoire pour l'instant.</p><div class="foot"><span></span><button class="ok" id="cvRetry">réessayer</button></div>`; $("cvRetry").onclick = cvLockUI; return; }
+  if (!st || !st.ok) { box.innerHTML = `<p style="margin-top:24px;line-height:1.5">Pas de réseau : je ne peux pas ouvrir votre mémoire pour l'instant.</p><div class="foot"><span></span><button class="ok" id="cvRetry">réessayer</button></div>`; $("cvRetry").onclick = cvLockUI; return; }
   const first = !st.init;
   box.innerHTML = first
-    ? `<p style="margin-top:20px;font-size:18px;line-height:1.45">Choisis ta phrase secrète.</p>
-       <p class="small">Elle chiffre ta mémoire sur ce téléphone : sans elle, personne ne peut la lire, ni le serveur, ni Claude. Elle ne te sera redemandée que sur un nouvel appareil. <b>Si tu la perds, ta mémoire est perdue</b> : garde-la dans ton gestionnaire de mots de passe. Plusieurs mots, au moins 14 caractères.</p>
+    ? `<p style="margin-top:20px;font-size:18px;line-height:1.45">Choisissez votre phrase secrète.</p>
+       <p class="small">Elle chiffre votre mémoire sur ce téléphone : sans elle, personne ne peut la lire, ni le serveur, ni Claude. Elle ne vous sera redemandée que sur un nouvel appareil. <b>Si vous la perdez, votre mémoire est perdue</b> : gardez-la dans votre gestionnaire de mots de passe. Plusieurs mots, au moins 14 caractères.</p>
        <input type="password" id="cvP1" placeholder="phrase secrète" autocomplete="new-password">
        <input type="password" id="cvP2" placeholder="encore une fois" autocomplete="new-password">
        <p class="small" id="cvPMsg"></p>
        <div class="foot"><span></span><button class="ok" id="cvPGo">créer ma mémoire</button></div>`
-    : `<p style="margin-top:20px;font-size:18px;line-height:1.45">Ta phrase secrète</p>
-       <p class="small">Pour ouvrir ta mémoire sur cet appareil. Elle reste ici, elle ne part nulle part.</p>
+    : `<p style="margin-top:20px;font-size:18px;line-height:1.45">Votre phrase secrète</p>
+       <p class="small">Pour ouvrir votre mémoire sur cet appareil. Elle reste ici, elle ne part nulle part.</p>
        <input type="password" id="cvP1" placeholder="phrase secrète" autocomplete="current-password">
        <p class="small" id="cvPMsg"></p>
        <div class="foot"><span></span><button class="ok" id="cvPGo">ouvrir</button></div>`;
@@ -7293,13 +7194,13 @@ async function cvLockUI(){
       const sel = first ? b64e(crypto.getRandomValues(new Uint8Array(16))) : st.sel;
       const k = await memDerive(p1, sel);
       const j = await memApi(first ? { action: "init", jeton: k.tok, sel } : { action: "ouvrir", jeton: k.tok });
-      if (!j.ok) { $("cvPGo").disabled = false; return msg(j.error === "phrase" ? "Ce n'est pas la bonne phrase." : j.error === "rate" ? "Trop d'essais : réessaie dans une heure." : j.error === "deja" ? "Une mémoire existe déjà : ferme et rouvre pour entrer ta phrase." : "Le serveur refuse (" + (j.error || "?") + ")."); }
+      if (!j.ok) { $("cvPGo").disabled = false; return msg(j.error === "phrase" ? "Ce n'est pas la bonne phrase." : j.error === "rate" ? "Trop d'essais : réessayez dans une heure." : j.error === "deja" ? "Une mémoire existe déjà : fermez et rouvrez pour entrer votre phrase." : "Le serveur refuse (" + (j.error || "?") + ")."); }
       await kvSet("cle", { key: k.key, tok: k.tok });
       MEM.key = k.key; MEM.tok = k.tok;
       await memLoad();
       box.style.display = "none"; box.innerHTML = "";
       cvTab("parler"); memSync();
-    } catch (e) { $("cvPGo").disabled = false; msg("Pas de réseau, réessaie."); }
+    } catch (e) { $("cvPGo").disabled = false; msg("Pas de réseau, réessayez."); }
   };
 }
 
@@ -7466,12 +7367,12 @@ function paintBeta(){
   if (document.activeElement !== $("cvBetaCinema")) $("cvBetaCinema").value = CFG.jvBetaCinema || "";
   const sm = LS.get("copilote_beta_match", null), sc = LS.get("copilote_beta_cine", null), tod = ymd(new Date()), L = [];
   if (CFG.jvBetaMatch !== false) L.push(sm && sm.sem === jvVendredi(tod) && sm.txt ? "Cote & Match : sélection prête (" + jvJourTxt(ymd(new Date(sm.at))) + ")" : "Cote & Match : prochaine sélection jeudi après-midi");
-  if (CFG.jvBetaCine !== false) L.push(!String(CFG.jvBetaCinema || "").trim() ? "Ciné : indique ton cinéma" : sc && sc.sem === jvMercredi(tod) && sc.txt ? "Ciné : sorties de la semaine prêtes" : "Ciné : sorties de la semaine dès vendredi");
+  if (CFG.jvBetaCine !== false) L.push(!String(CFG.jvBetaCinema || "").trim() ? "Ciné : indiquez votre cinéma" : sc && sc.sem === jvMercredi(tod) && sc.txt ? "Ciné : sorties de la semaine prêtes" : "Ciné : sorties de la semaine dès vendredi");
   const essai = (k, nom) => { const e = LS.get("copilote_beta_essai_" + k, null); return e && !e.ok ? `${nom} : dernier essai ${jvJourTxt(ymd(new Date(e.at)))} ${jvHM(e.at)}, sans résultat (${e.err})` : ""; };
   if (CFG.jvBetaMatch !== false) { const x = essai("match", "Cote & Match"); if (x) L.push(x); }
   if (CFG.jvBetaCine !== false) { const x = essai("cine", "Ciné"); if (x) L.push(x); }
   const we = jvWebEtatLu();
-  L.unshift(we.pret ? `Recherche web Perplexity : prête (${we.mois || 0} recherche${(we.mois || 0) > 1 ? "s" : ""} ce mois)` : MEM.tok ? "Recherche web Perplexity : en attente de la clé (secrets Supabase)" : "Recherche web : ouvre la mémoire pour la brancher");
+  L.unshift(we.pret ? `Recherche web Perplexity : prête (${we.mois || 0} recherche${(we.mois || 0) > 1 ? "s" : ""} ce mois)` : MEM.tok ? "Recherche web Perplexity : en attente de la clé (secrets Supabase)" : "Recherche web : ouvrez la mémoire pour la brancher");
   $("cvBetaSt").textContent = L.join(" · ");
   if (!we.at || Date.now() - we.at > 10 * 60e3) jvWebEtat(true).then(n => { if (n && n.at !== we.at) paintBeta(); }).catch(() => {});
 }
@@ -7487,30 +7388,30 @@ async function paintSante(){
   $("cvSanteBriefChk").checked = on && CFG.jvSanteBrief !== false; $("cvSanteBriefChk").disabled = !on;
   $("cvSanteOff").style.display = on ? "" : "none"; $("cvSanteGerer").style.display = on ? "" : "none";
   go.style.display = NATIVE ? "" : "none"; go.textContent = on ? "actualiser" : "relier ma montre et ma balance";
-  if (!NATIVE) { st.textContent = "Seulement dans l'appli Android : ta montre et ta balance y passent par Health Connect."; return; }
-  if (!on) { st.textContent = "Ta montre Garmin et ta balance Withings, lues dans Health Connect, sur le téléphone. Le brief n'en parle que si quelque chose sort de tes habitudes ; le bilan, c'est quand tu le demandes."; return; }
-  if ((await jvNative()) < JV_SANTE_NATIF) { st.textContent = "Installe la nouvelle version de l'appli (réglages) pour que je lise ta montre."; return; }
+  if (!NATIVE) { st.textContent = "Seulement dans l'appli Android : votre montre et votre balance y passent par Health Connect."; return; }
+  if (!on) { st.textContent = "Votre montre Garmin et votre balance Withings, lues dans Health Connect, sur le téléphone. Le brief n'en parle que si quelque chose sort de vos habitudes ; le bilan, c'est quand vous le demandez."; return; }
+  if ((await jvNative()) < JV_SANTE_NATIF) { st.textContent = "Installez la nouvelle version de l'appli (réglages) pour que je lise votre montre."; return; }
   if (JV_SANTE_MEM) { st.textContent = jvSanteCourt(JV_SANTE_MEM.d); return; }
   st.textContent = "je regarde…";
   const d = await jvSanteLire(35); st.textContent = d ? jvSanteCourt(d) : "Health Connect ne répond pas pour l'instant.";
 }
 async function jvSanteRelier(){
   if (!NATIVE) return;
-  if ((await jvNative()) < JV_SANTE_NATIF) { toast("installe d'abord la nouvelle version de l'appli (réglages)", "", null, 6000); return; }
+  if ((await jvNative()) < JV_SANTE_NATIF) { toast("installez d'abord la nouvelle version de l'appli (réglages)", "", null, 6000); return; }
   const e = await tn("santeEtat");
   if (!e || !e.dispo) { toast("Health Connect introuvable sur ce téléphone (il faut Android 14 ou plus)", "", null, 7000); return; }
   let p = e.perms || [];
   if (p.length < 7) { const r = await tn("santeDemander"); if (r && r.perms) p = r.perms; }
-  if (!p.length) { toast("aucun accès accordé : touche « autorisations » pour choisir dans Health Connect", "", null, 8000); $("cvSanteGerer").style.display = ""; return; }
+  if (!p.length) { toast("aucun accès accordé : touchez « autorisations » pour choisir dans Health Connect", "", null, 8000); $("cvSanteGerer").style.display = ""; return; }
   CFG.jvSante = true; saveCfg(); JV_SANTE_MEM = null;
   const d = await jvSanteLire(35, true);
-  toast(d && (d.nuits.length || (d.poids || []).length) ? "montre et balance reliées ✓" : "relié ✓ · rien à lire pour l'instant : active Health Connect dans Garmin Connect et dans Withings", "", null, 8000);
+  toast(d && (d.nuits.length || (d.poids || []).length) ? "montre et balance reliées ✓" : "relié ✓ · rien à lire pour l'instant : activez Health Connect dans Garmin Connect et dans Withings", "", null, 8000);
   paintSante(); jvSantePrep(true).catch(() => {});
 }
 $("cvSanteGo").onclick = () => { if (jvSanteOn()) { JV_SANTE_MEM = null; paintSante(); jvSantePrep(true).catch(() => {}); } else jvSanteRelier(); };
 $("cvSanteGerer").onclick = () => { JV_SANTE_MEM = null; tn("santeGerer"); };
 $("cvSanteOff").onclick = () => {
-  const b = $("cvSanteOff"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; b.style.color = "var(--u3)"; return; }
+  const b = $("cvSanteOff"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touchez encore"; b.style.color = "var(--u3)"; return; }
   delete b.dataset.sure; b.textContent = "couper"; b.style.color = "";
   CFG.jvSante = false; saveCfg(); JV_SANTE_MEM = null; LS.set("copilote_sante_brief", null); LS.set("copilote_sante_vu", {});
   try { schedulePushSync(); } catch (e) {}
@@ -7544,24 +7445,24 @@ document.addEventListener("visibilitychange", () => {
 });
 /* lot 16 : connexion Netatmo (comme Google : Chrome dans l'appli, retour par copilote://gauth) et réglages */
 async function jvNetConnecter(){
-  if (!MEM.tok) { toast("ouvre d'abord ta mémoire, puis recommence", "", null, 6000); return; }
+  if (!MEM.tok) { toast("ouvrez d'abord votre mémoire, puis recommencez", "", null, 6000); return; }
   const e = await nFn({ action: "etat" });
-  if (e.error === "jeton") { toast("connexion refusée : rouvre ta mémoire puis recommence", "", null, 6000); return; }
-  if (!e.pret) { toast(e.error === "reseau" ? "serveur injoignable, réessaie" : "Netatmo pas encore prêt : range les deux clés dans Supabase", "", null, 8000); return; }
+  if (e.error === "jeton") { toast("connexion refusée : rouvrez votre mémoire puis recommencez", "", null, 6000); return; }
+  if (!e.pret) { toast(e.error === "reseau" ? "serveur injoignable, réessayez" : "Netatmo pas encore prêt : range les deux clés dans Supabase", "", null, 8000); return; }
   const st = (NATIVE ? "nsa_" : "ns_") + b64u(crypto.getRandomValues(new Uint8Array(12)));
   LS.set("copilote_nstate", st);
   const l = await nFn({ action: "lien", state: st, redirect_uri: gRedirect() });
-  if (!l.url) { toast("Netatmo injoignable, réessaie"); return; }
-  if (NATIVE) { await tn("openUrl", { url: l.url }); toast("connecte-toi à Netatmo dans Chrome, Nestor reprend la main ensuite", "", null, 8000); }
+  if (!l.url) { toast("Netatmo injoignable, réessayez"); return; }
+  if (NATIVE) { await tn("openUrl", { url: l.url }); toast("connectez-vous à Netatmo dans Chrome, Nestor reprend la main ensuite", "", null, 8000); }
   else location.href = l.url;
 }
 async function jvNetFinir(p){
   const st = p.get("state") || "";
   if (p.get("error")) { toast("connexion Netatmo annulée"); return true; }
-  if (!st || st !== LS.get("copilote_nstate", "")) { toast("connexion Netatmo invalide, recommence"); return true; }
+  if (!st || st !== LS.get("copilote_nstate", "")) { toast("connexion Netatmo invalide, recommencez"); return true; }
   for (let k = 0; k < 20 && !MEM.tok; k++) await new Promise(r => setTimeout(r, 500));   // la mémoire s'ouvre au démarrage
   const r = await nFn({ action: "code", code: p.get("code") || "", redirect_uri: gRedirect() });
-  if (!r.cle) { toast("Netatmo n'a pas donné l'accès (" + (r.detail || r.error || "?") + "), recommence", "", null, 8000); return true; }
+  if (!r.cle) { toast("Netatmo n'a pas donné l'accès (" + (r.detail || r.error || "?") + "), recommencez", "", null, 8000); return true; }
   LS.set("copilote_nstate", "");
   JV_NET = { cle: r.cle, m: r.maison || null, mt: Date.now() }; jvNetSave();
   if (CFG.jvChauffe === undefined) { CFG.jvChauffe = true; saveCfg(); }
@@ -7576,19 +7477,19 @@ async function paintNet(){
   $("cvNetGo").textContent = on ? (JV_NET.perdu ? "reconnecter Netatmo" : "actualiser") : "connecter Netatmo";
   $("cvNetOff").style.display = on ? "" : "none";
   $("cvChauffeChk").checked = on && auto; $("cvChauffeChk").disabled = !on;
-  let t = !on ? "Relie ton thermostat Netatmo : Nestor le règle à la voix, et selon ta présence."
-    : JV_NET.perdu ? "La connexion Netatmo a expiré : touche « reconnecter Netatmo »."
+  let t = !on ? "Reliez votre thermostat Netatmo : Nestor le règle à la voix, et selon votre présence."
+    : JV_NET.perdu ? "La connexion Netatmo a expiré : touchez « reconnecter Netatmo »."
     : m ? `${m.nom || "Maison"} · ${JV_NET_DIT[m.mode] || m.mode || "?"}${m.pieces.length ? " · " + m.pieces.map(p => `${p.nom} ${p.mesure != null ? String(p.mesure).replace(".", ",") + "°" : "?"}`).join(", ") : ""}` : "Netatmo connecté ✓";
   if (on && auto && !JV_NET.perdu) {
-    if (!jvMaisonLieu()) t += " · ajoute ta maison dans Mes lieux pour le chauffage selon ta présence.";
-    else if (NATIVE && (await jvNative()) < 10) t += " · pour la présence, installe la nouvelle version de l'appli (réglages).";
+    if (!jvMaisonLieu()) t += " · ajoutez votre maison dans Mes lieux pour le chauffage selon votre présence.";
+    else if (NATIVE && (await jvNative()) < 10) t += " · pour la présence, installez la nouvelle version de l'appli (réglages).";
     else { const a = await jvAlertesState(); if (!a.ok) t += " · présence : " + a.txt; else { const g = await jvChauffeEtatTxt(); if (g) t += " · " + g; } }
   }
   st.textContent = t;
 }
 $("cvNetGo").onclick = async () => { if (jvNetOn() && !JV_NET.perdu) { $("cvNetSt").textContent = "je regarde…"; await jvNetMaison(true); paintNet(); return; } jvNetConnecter(); };
 $("cvNetOff").onclick = async () => {
-  const b = $("cvNetOff"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; b.style.color = "var(--u3)"; return; }
+  const b = $("cvNetOff"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touchez encore"; b.style.color = "var(--u3)"; return; }
   delete b.dataset.sure; b.textContent = "déconnecter"; b.style.color = "";
   await nFn({ action: "deconnecter" }); JV_NET = {}; jvNetSave(); jvGeoSync(); paintNet(); toast("Netatmo déconnecté");
 };
@@ -7643,7 +7544,7 @@ $("cvIn").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKe
 $("cvMic").onclick = () => {
   if (listening) { cvStatus("je transcris…"); validate(); return; }
   if (JV.busy) return;
-  $("cvMic").classList.add("on"); cvStatus("je t'écoute… touche le rond pour envoyer");
+  $("cvMic").classList.add("on"); cvStatus("je vous écoute… touchez le rond pour envoyer");
   startListen({ conv: true });
 };
 $("cvQ").oninput = paintMem;
@@ -7665,7 +7566,7 @@ $("cvLieuGo").onclick = async () => {
     else ok = !!(await jvAddLieu(nom, adr, type, "perso"));
   } catch (e) {}
   b.disabled = false; b.textContent = "ajouter";
-  if (ok) { $("cvLieuNom").value = ""; $("cvLieuAdr").value = ""; paintLieux(); toast("lieu ajouté"); } else toast(adr ? "adresse introuvable : précise la rue et la ville" : "position indisponible : autorise la position ou tape l'adresse");
+  if (ok) { $("cvLieuNom").value = ""; $("cvLieuAdr").value = ""; paintLieux(); toast("lieu ajouté"); } else toast(adr ? "adresse introuvable : précise la rue et la ville" : "position indisponible : autorisez la position ou tapez l'adresse");
 };
 $("cvBriefChk").onchange = () => { CFG.jvBrief = $("cvBriefChk").checked; saveCfg(); };
 $("cvProChk").onchange = () => { CFG.jvPro = $("cvProChk").checked; saveCfg(); jvGeoSync(); };
@@ -7736,7 +7637,7 @@ $("cvDiscretChk").onchange = () => { CFG.jvDiscret = $("cvDiscretChk").checked; 
 $("cvDiscretAutoChk").onchange = () => { CFG.jvDiscretAuto = $("cvDiscretAutoChk").checked; saveCfg(); };
 
 /* ---------- lot 8 : son nom à l'écran, sa voix ---------- */
-let JV_NOM_AFF = "Jarvis", jvNomT = null;
+let JV_NOM_AFF = "Nestor";
 const jvEscRx = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function jvNomDom(){
   const n = jvNom(), T = jvTitre();
@@ -7744,7 +7645,7 @@ function jvNomDom(){
   document.querySelectorAll("[data-jvtitre]").forEach(e => { if (e.textContent !== T) e.textContent = T; });
   if (document.title !== T) document.title = T;
   /* on ne remplace que les anciens noms : réécrire un texte identique relancerait l'observateur sans fin */
-  const old = [...new Set(["Jarvis", JV_NOM_AFF])].filter(x => x && x !== n);
+  const old = [...new Set(["Jarvis", "Nestor", JV_NOM_AFF])].filter(x => x && x !== n);
   JV_NOM_AFF = n;
   if (!old.length) return;
   const src = `(?<![\\p{L}])(?:${old.map(jvEscRx).join("|")})(?![\\p{L}])`, has = new RegExp(src, "u"), rx = new RegExp(src, "gu");
@@ -7754,14 +7655,28 @@ function jvNomDom(){
   document.querySelectorAll("[placeholder]").forEach(e => { if (has.test(e.placeholder)) e.placeholder = e.placeholder.replace(rx, n); });
   document.querySelectorAll("[aria-label]").forEach(e => { const a = e.getAttribute("aria-label"); if (has.test(a)) e.setAttribute("aria-label", a.replace(rx, n)); });
 }
-try { new MutationObserver(() => { if (jvNom() === "Jarvis" && !document.querySelector("[data-jvtitre]")) return; clearTimeout(jvNomT); jvNomT = setTimeout(jvNomDom, 40); }).observe(document.body, { childList: true, subtree: true, characterData: true }); } catch (e) {}
+/* ce qui change ensuite (bandeaux, listes, bulles) : on ne relit que les nœuds ajoutés ou modifiés, pas toute la page */
+function jvNomNoeuds(recs){
+  const n = jvNom(), old = [...new Set(["Jarvis", "Nestor", JV_NOM_AFF])].filter(x => x && x !== n);
+  if (!old.length) return;
+  const rx = new RegExp(`(?<![\\p{L}])(?:${old.map(jvEscRx).join("|")})(?![\\p{L}])`, "gu");
+  const fix = t => { const p = t.parentNode && t.parentNode.nodeName; if (p === "SCRIPT" || p === "STYLE" || p === "TEXTAREA") return; rx.lastIndex = 0; const v = t.nodeValue.replace(rx, n); if (v !== t.nodeValue) t.nodeValue = v; };
+  for (const m of recs) {
+    const L = m.type === "characterData" ? [m.target] : [...m.addedNodes];
+    for (const x of L) {
+      if (x.nodeType === 3) fix(x);
+      else if (x.nodeType === 1) { const w = document.createTreeWalker(x, NodeFilter.SHOW_TEXT); let t; while ((t = w.nextNode())) fix(t); }
+    }
+  }
+}
+try { new MutationObserver(recs => { try { jvNomNoeuds(recs); } catch (e) {} }).observe(document.body, { childList: true, subtree: true, characterData: true }); } catch (e) {}
 setTimeout(jvNomDom, 300);
 /* message d'erreur court et compréhensible (le texte brut de Google est long et en anglais) */
 function jvVoixErreur(r){
   if (!r || !r.error || r.error === "reseau") return "";
   if (r.error === "config") return "voix Google : pas encore branchée (secret GOOGLE_TTS_SA dans Supabase)";
   const d = String(r.detail || "");
-  if (/has not been used|is disabled|SERVICE_DISABLED/i.test(d)) return "voix Google : active « Cloud Text-to-Speech API » dans Google Cloud, puis attends 5 minutes";
+  if (/has not been used|is disabled|SERVICE_DISABLED/i.test(d)) return "voix Google : activez « Cloud Text-to-Speech API » dans Google Cloud, puis attendez 5 minutes";
   if (/permission|PERMISSION_DENIED|403/i.test(d) || r.status === 403) return "voix Google : le compte de service n'a pas le bon rôle (aiplatform.user)";
   if (/billing/i.test(d)) return "voix Google : la facturation n'est pas activée sur le projet";
   if (r.error === "plafond") return "voix Google : plafond du mois atteint";
@@ -7791,7 +7706,7 @@ async function jvVoixListe(){
     + (L.length ? `<optgroup label="Voix du téléphone">` + L.map((v, k) => `<option value="${esc(v.id)}">voix ${k + 1} (${esc(court(v.id))})${v.net ? " · en ligne" : ""}${v.off ? " · à télécharger" : ""}</option>`).join("") + `</optgroup>` : "");
   sel.value = CFG.jvVoix || "";
   const u = LS.get("copilote_vmois", null), um = u && u.m === curMonth() ? u.u : null;
-  st.textContent = gInfo || (jvVoixGoogle() && um ? `voix Google ce mois : ${(um.hd || 0).toLocaleString("fr-FR")} caractères${um.style ? " + " + um.style.toLocaleString("fr-FR") + " en style Jarvis" : ""}` : (GV.length || L.length) && !CFG.jvVoix ? "écoute-les une par une et garde la voix d'homme qui te plaît" : "");
+  st.textContent = gInfo || (jvVoixGoogle() && um ? `voix Google ce mois : ${(um.hd || 0).toLocaleString("fr-FR")} caractères${um.style ? " + " + um.style.toLocaleString("fr-FR") + " en style Jarvis" : ""}` : (GV.length || L.length) && !CFG.jvVoix ? "écoutez-les une par une et gardez la voix d'homme qui vous plaît" : "");
 }
 function jvVoixSave(){ CFG.jvVoix = $("cvVoix").value; CFG.jvPitch = +$("cvPitch").value || 1; CFG.jvRate = +$("cvRate").value || 1.05; CFG.jvStyle = $("cvStyleChk").checked; CFG.jvStyleTxt = $("cvStyleTxt").value.trim() || JV_STYLE_DEF; saveCfg(); $("cvStyleBox").style.display = jvVoixGoogle() ? "" : "none"; }
 function paintVoix(){
@@ -7800,7 +7715,7 @@ function paintVoix(){
   $("cvStyleChk").checked = !!CFG.jvStyle; $("cvStyleTxt").value = CFG.jvStyleTxt || JV_STYLE_DEF; $("cvStyleBox").style.display = jvVoixGoogle() ? "" : "none";
   jvVoixListe();
 }
-$("cvNom").onchange = () => { CFG.jvNom = $("cvNom").value.trim() || "Jarvis"; saveCfg(); jvNomDom(); toast(`désormais, je m'appelle ${jvNom()}`); };
+$("cvNom").onchange = () => { CFG.jvNom = $("cvNom").value.trim() || "Nestor"; saveCfg(); jvNomDom(); toast(`désormais, je m'appelle ${jvNom()}`); };
 ["cvVoix", "cvPitch", "cvRate", "cvStyleChk", "cvStyleTxt"].forEach(id => $(id).onchange = jvVoixSave);
 $("cvParleChk").onchange = () => { CFG.jvParle = $("cvParleChk").checked; saveCfg(); };
 $("cvVoixTest").onclick = () => { jvVoixSave(); try { hush(); } catch (e) {} jvDire(`Bonsoir monsieur. Ici ${jvNom()}. Votre bus passe à 18 heures 45 : je vous laisse le temps de retrouver vos clés.`); };
@@ -7817,7 +7732,7 @@ $("cvImpFile").onclick = () => $("cvImpIn").click();
 $("cvImpIn").onchange = async e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; try { $("cvImpTxt").value = await f.text(); impRead(); } catch (err) { toast("fichier illisible"); } };
 $("cvImpGo").onclick = impRead;
 $("cvCapIn").onchange = () => { CFG.cvCap = Math.min(200, Math.max(1, Math.round(+$("cvCapIn").value) || 20)); saveCfg(); paintMem(); };
-$("cvLockBtn").onclick = async () => { const b = $("cvLockBtn"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touche encore"; return; } await memLock(); cvLockUI(); };
+$("cvLockBtn").onclick = async () => { const b = $("cvLockBtn"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touchez encore"; return; } await memLock(); cvLockUI(); };
 setTimeout(() => { memUnlock().then(ok => { if (ok) { memSync(); jvGeoSync(); } }).catch(() => {}).finally(() => setTimeout(jvJournalier, 3000)); }, 2500);
 setInterval(jvJournalier, 30 * 60000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(() => { try { jvRelancesAuto(); } catch (e) {} }, 2500); });
