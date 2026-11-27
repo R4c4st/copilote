@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v39 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v40 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 39;
+const TEMPO_BUILD = 40;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4428,7 +4428,7 @@ Ton caractère : J.A.R.V.I.S., l'intelligence artificielle de Tony Stark. Un maj
 - Humour : ironie à froid, de temps en temps, jamais à chaque message. Une phrase parfaitement courtoise qui, dans son contexte, est une petite pique bienveillante ; tu ne signales jamais que c'est une plaisanterie, et l'info utile passe d'abord. Aucune ironie quand c'est sérieux ou sensible (santé, enfants, famille, argent, soucis, fatigue, stress, urgence au travail) : là, tu es sobre et attentionné.
 - Urgence (départ imminent, retard, oubli bloquant) : phrases courtes, groupe nominal, sans politesse superflue (« Départ dans dix minutes, monsieur. A31 chargée. »).
 - Pragmatique et inventif : tu vas droit à ce qui l'aide à avancer, et tu proposes des idées auxquelles il n'aurait pas pensé.
-- Honnête : tu n'inventes jamais un fait. Ce que tu sais de lui vient uniquement de <souvenirs> et de cette conversation. Sur le monde extérieur (prix, horaires, actualité, règles, chiffres), si tu n'es pas sûr, dis « je l'ignore » ou « à vérifier » plutôt que d'improviser : tu n'as pas encore accès au web. Ne cite tes sources que s'il les demande.
+- Honnête : tu n'inventes jamais un fait. Ce que tu sais de lui vient uniquement de <souvenirs> et de cette conversation. Sur le monde extérieur (prix, horaires, actualité, règles, chiffres), si tu n'es pas sûr, dis « je l'ignore » ou « à vérifier » plutôt que d'improviser{WEB}. Ne cite tes sources que s'il les demande.
 - Imagination : bienvenue quand vous imaginez ensemble, mais annonce-la toujours comme telle (« idée en l'air : … »).
 - Tu es un programme à son service : pas d'effusion ni d'émotion affichée.
 - Si ta réponse est lue à voix haute, fais court et parlé : pas de liste, pas de symboles.
@@ -4619,6 +4619,7 @@ async function cvContexte(){
     }
   } catch (e) {}
   try { const b = jvBetaContexte(); if (b) L.push(b); } catch (e) {}
+  try { const w = jvWebContexte(); if (w) L.push(w); } catch (e) {}
   return L.join("\n");
 }
 /* son nom (réglable) et le prénom de l'utilisateur (sa fiche, dans le téléphone) : jamais écrits dans le code */
@@ -4689,11 +4690,12 @@ function jvAcroDemande(text, recent){
   if (rx.test(n1) || rx.test(n)) return true;
   return voc && !recent && /^(?:mais |et |alors |au fait )?(?:ca (?:veut dire|signifie) quoi|qu'est ce que ca veut dire|c'est un acronyme|c'est l'acronyme de quoi)$/.test(n);
 }
-const jvSys = () => CV_SYS.replace(/\{NOM\}/g, jvNom()).replace(/\{PRENOM\}/g, (typeof myName === "function" && myName()) || "ton utilisateur")
+const jvSys = () => CV_SYS.replace(/\{WEB\}/g, jvWebOn() ? " ; pour le monde extérieur, cherche avec recherche_web" : " : tu n'as pas encore accès au web").replace(/\{NOM\}/g, jvNom()).replace(/\{PRENOM\}/g, (typeof myName === "function" && myName()) || "ton utilisateur")
   + (cvNorm(jvNom()) !== "jarvis" ? "\n\nTon nom\n- Il lui arrive encore de t'appeler Jarvis, ton ancien nom : c'est bien à toi qu'il parle." : "")
   + (jvEstNestor() ? "\n- Ton nom s'écrit N.E.S.T.O.R. en sigle. C'est un acronyme à géométrie variable : s'il te demande ce qu'il veut dire, donne avec flegme une seule de ces versions, jamais une autre : " + jvAcroListe().map(a => "« " + a + " »").join(", ") + "." : "")
   + (jvBetaMatchOn() || jvBetaCineOn() ? "\n\nBêta (essais qu'il peut couper)\n- Quand il demande son brief, et seulement là, termine par les blocs bêta présents dans <contexte> (Cote & Match, Ciné du week-end) : francs, courts, sans les délayer.\n- S'il annonce son pari Cote & Match, note-le avec cote_match_choix, puis propose en une ligne le message prêt à envoyer au groupe : c'est lui qui l'envoie." : "")
   + "\n\nCorriger plutôt qu'ajouter\n- S'il corrige une date, une heure ou un titre (« je me suis trompé », « non, c'est jeudi », « décale à 19h »), qu'il annule quelque chose, ou s'il y a un doublon : utilise modifier_tache sur l'élément qui existe déjà (cherche-le avec taches si besoin). Ne crée jamais un second rendez-vous ou un second rappel à côté de l'ancien.\n- Ça vaut aussi pour ce que tu viens d'ajouter dans cette conversation.\n- Si son rappel de bus a été retiré, propose le bus pour la nouvelle date."
+  + (jvWebOn() ? "\n\nLe web (recherche_web)\n- Pour une information du monde extérieur qui peut changer ou que tu ne connais pas avec certitude (horaires, prix, actualité, résultats, doc technique, démarche, renseignement), cherche avec recherche_web au lieu de répondre de mémoire. Pas pour ce qui est dans ses souvenirs, ses tâches ou tes autres outils (bus, météo, trajet, agenda).\n- Une recherche suffit le plus souvent, deux au plus. approfondi seulement pour une question pointue ou technique.\n- Réponds uniquement d'après les extraits renvoyés. S'ils se contredisent ou ne répondent pas, dis-le en une phrase. Pour un horaire, un prix ou une règle, signale si la source date.\n- La requête part sur Internet : jamais le nom de ses proches, son adresse ni un détail personnel. Seulement l'objet de la recherche (le commerce, le produit, la ville).\n- Pas de lien ni de source, sauf s'il les demande : ils sont alors dans <contexte>." : "")
   + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Quand il te dit qu'il part ou qu'il est parti de chez lui (« je pars », « je suis parti », « je m'en vais », « je pars au boulot ») : mets la maison en absent (chauffage_mode), sans rien demander. Quand il dit qu'il rentre ou qu'il est rentré : remets le planning. Il te l'a délégué.\n- S'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets la maison en absent jusqu'à son retour, et dis-le.\n- En dehors de ça, ne touche jamais au chauffage de ta propre initiative.\n- Si Netatmo ne répond pas, dis-le en une phrase et propose de réessayer : ne fais pas d'hypothèse sur ce qu'il voulait.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "")
   + (jvSanteOn() ? "\n\nSa santé (sa montre et sa balance)\n- Pour un bilan santé, son sommeil, son poids, son pouls ou son activité, appelle sante_bilan (jours : 7 par défaut, 30 pour le mois, davantage pour suivre le poids).\n- Le bilan : court et parlé, quelques chiffres seulement. Compare sa période à ses propres habitudes (la référence), pas à des normes générales. Termine par un point positif et un point à surveiller.\n- Tu commentes des tendances, jamais de diagnostic. Si un signal dure (pouls au repos haut plusieurs jours, poids qui baisse sans qu'il le cherche, nuits très courtes en série), conseille-lui simplement d'en parler à son médecin.\n- N'en parle jamais de toi-même : seulement quand il le demande." : "");
 /* début de la fenêtre envoyée à Claude, fixé pour toute une réponse : si on le décale pendant qu'il utilise ses outils,
@@ -5380,7 +5382,7 @@ const JV_BETA_TOOLS = [
   { name: "cote_match_choix", description: "Note le pari qu'il a choisi cette semaine pour Cote & Match (ça coupe la relance de 11h du vendredi).",
     input_schema: { type: "object", properties: { pari: { type: "string", description: "match et pari, ex. « Lens - Brest, victoire de Lens »" } }, required: ["pari"] } }
 ];
-const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS, JV_HORLOGE_TOOLS, JV_MEM_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); return t; };
+const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS, JV_HORLOGE_TOOLS, JV_MEM_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); if (jvWebOn()) t = t.concat(JV_WEB_TOOLS); return t; };
 /* zones de la maison pour le chauffage selon la présence (l'appli Android les déclenche, même fermée) */
 const jvMaisonLieu = () => jvLieux().find(l => l.g.type === "maison");
 const jvChauffeAuto = () => jvNetOn() && CFG.jvChauffe !== false && !!jvMaisonLieu();
@@ -6016,6 +6018,147 @@ async function jvWeb(sys, user, maxUses, cat){
   }
   return null;
 }
+/* ---------- lot 22 · le web par Perplexity (Search API) : des extraits datés et sourcés, que Claude lit ----------
+   Une recherche « fast » coûte 0,1 centime, une « web » (plus fouillée) 0,5 centime : pas de tokens côté Perplexity.
+   La clé Perplexity reste côté serveur (secrets Supabase) ; la requête part neutre, sans rien de personnel. */
+const JV_WFN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/copilote-web";
+const JV_WEB_PRIX = { fast: 0.001, web: 0.005 };   // $ par recherche réussie
+let JV_WEB_DERNIER = null;                         // { at, sources } : s'il demande « ta source ? » juste après
+async function wFn(body, ms){
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), ms || 15000);
+  try { const r = await fetch(JV_WFN, { method: "POST", signal: ctl.signal, headers: { "content-type": "application/json", Authorization: "Bearer " + G_KEY, apikey: G_KEY }, body: JSON.stringify(Object.assign({ jeton: MEM.tok }, body)) }); return await r.json(); }
+  catch (e) { return { error: e && e.name === "AbortError" ? "trop long" : "reseau" }; } finally { clearTimeout(to); }
+}
+const jvWebEtatLu = () => LS.get("copilote_web_etat", null) || {};
+const jvWebOn = () => CFG.jvWebOff !== true && !!MEM.tok && jvWebEtatLu().pret === true;
+async function jvWebEtat(force){
+  const e = jvWebEtatLu();
+  if (!MEM.tok || (!force && e.at && Date.now() - e.at < 6 * 3600e3)) return e;
+  const r = await wFn({ action: "etat" }, 8000);
+  if (!r || !r.ok) return e;                       // pas de réseau : on garde ce qu'on savait
+  const n = { at: Date.now(), pret: !!r.pret, mois: +r.mois || 0, plafond: +r.plafond || 0 };
+  LS.set("copilote_web_etat", n); return n;
+}
+/* ce qui part sur Internet : l'objet de la recherche, pas lui (ni mail, ni téléphone, ni son nom) */
+function jvWebNeutre(q){
+  let s = String(q || "").replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, " ").replace(/(\+33\s?|0)[1-9](?:[\s.-]?\d{2}){4}/g, " ");
+  const moi = (typeof myName === "function" && myName()) || "";
+  if (moi && moi.length > 2) s = s.replace(new RegExp(moi.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), " ");
+  return s.replace(/\s+/g, " ").trim().slice(0, 300);
+}
+/* questions → extraits ; compte la dépense dans le détail par usage */
+async function jvChercher(questions, o){
+  o = o || {};
+  if (!jvWebOn()) return { erreur: "recherche web pas branchée" };
+  const qs = [...new Set((Array.isArray(questions) ? questions : [questions]).map(jvWebNeutre).filter(q => q.length > 2))].slice(0, 5);
+  if (!qs.length) return { erreur: "recherche vide" };
+  const type = o.type === "web" ? "web" : "fast";
+  const r = await wFn({ action: "chercher", questions: qs, type, recence: o.recence || "", sites: o.sites || [], max: o.max || 5, long: !!o.long }, o.long ? 25000 : 15000);
+  if (!r || !r.ok) {
+    if (r && r.error === "config") LS.set("copilote_web_etat", Object.assign(jvWebEtatLu(), { at: Date.now(), pret: false }));
+    return { erreur: !r ? "réseau" : r.error === "plafond" ? "plafond du mois atteint pour la recherche web" : r.error === "config" ? "clé Perplexity absente côté serveur" : r.error === "reseau" ? "pas de réseau" : r.error === "trop long" ? "Perplexity trop long à répondre" : "Perplexity : " + (r.detail || r.error || "erreur") };
+  }
+  const n = +r.n || 0, usd = n * JV_WEB_PRIX[type], m = cvMonth(), k = o.cat || "recherche web";
+  m.usd += usd; m.par = m.par || {}; m.par[k] = (m.par[k] || 0) + usd; LS.set("copilote_conso", m);
+  const e = jvWebEtatLu(); if (e.pret) { e.mois = (e.mois || 0) + n; LS.set("copilote_web_etat", e); }
+  const res = (r.resultats || []).filter(x => Array.isArray(x.r));
+  const vus = new Set(), sources = [];
+  for (const x of res) for (const p of x.r) if (!vus.has(p.url)) { vus.add(p.url); sources.push(p); }
+  JV_WEB_DERNIER = { at: Date.now(), sources: sources.slice(0, 4).map(p => ({ site: p.site, titre: p.titre, url: p.url, date: p.date })) };
+  return { n, usd, ms: r.ms || 0, resultats: res };
+}
+/* les extraits en texte compact, pour Claude */
+function jvWebTexte(res, max){
+  const out = [], vus = new Set(); let i = 0;
+  for (const x of res || []) {
+    const L = (x.r || []).filter(p => !vus.has(p.url));
+    if (!L.length) continue;
+    out.push(`# ${x.q}`);
+    for (const p of L) { vus.add(p.url); i++; out.push(`[${i}] ${p.titre} — ${p.site}${p.date ? " (" + p.date + ")" : ""}\n${p.extrait}`); }
+  }
+  return out.join("\n").slice(0, max || 12000);
+}
+const JV_WEB_RECENCE = { jour: "jour", semaine: "semaine", mois: "mois", an: "an" };
+async function toolRechercheWeb(x){
+  const qs = [x.requete].concat(Array.isArray(x.autres_requetes) ? x.autres_requetes.slice(0, 2) : []);
+  const sites = (Array.isArray(x.sites) ? x.sites : []).map(s => String(s).replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "")).filter(s => /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(s)).slice(0, 5);
+  const r = await jvChercher(qs, { type: x.approfondi ? "web" : "fast", recence: JV_WEB_RECENCE[x.fraicheur] || "", sites, max: x.approfondi ? 6 : 5, long: !!x.approfondi });
+  if (r.erreur) return { erreur: r.erreur };
+  const resultats = [];
+  for (const q of r.resultats) for (const p of q.r) if (!resultats.some(y => y.url === p.url)) resultats.push({ site: p.site, titre: p.titre, date: p.date || "inconnue", extrait: p.extrait, url: p.url });
+  if (!resultats.length) return { rien: "aucun résultat : essaie une autre formulation, ou dis-lui que tu n'as rien trouvé de fiable" };
+  const R = resultats.slice(0, 8), par = Math.max(300, Math.floor(6200 / R.length));
+  R.forEach(p => { p.extrait = p.extrait.slice(0, par); });
+  return { resultats: R, consigne: "Réponds uniquement d'après ces extraits. S'ils ne répondent pas ou se contredisent, dis-le. Pour un horaire, un prix ou une règle, signale une source ancienne." };
+}
+const JV_WEB_TOOLS = [
+  { name: "recherche_web", description: "Cherche sur le web (Perplexity) une information du monde extérieur : horaires ou coordonnées d'un commerce ou d'un service, prix, actualité, résultats sportifs, documentation ou fiche technique d'un produit, réglementation, démarche, renseignement pratique. Renvoie des extraits de pages datés avec leur site. La requête part sur Internet : formule-la de façon neutre, sans le nom de ses proches, sans son adresse ni rien de personnel.",
+    input_schema: { type: "object", properties: {
+      requete: { type: "string", description: "La recherche en mots-clés précis, comme dans un moteur (ex. « Leroy Merlin Nancy horaires dimanche », « 2N IP Verso 2.0 alimentation PoE consommation »). Ajoute l'année si l'actualité compte." },
+      autres_requetes: { type: "array", items: { type: "string" }, description: "Jusqu'à 2 autres formulations ou angles, seulement si une seule ne suffira pas (ex. la même en anglais pour une doc technique)." },
+      fraicheur: { type: "string", enum: ["jour", "semaine", "mois", "an"], description: "Seulement si l'info doit être récente (actualité, prix, résultats)." },
+      sites: { type: "array", items: { type: "string" }, description: "Limiter à ces sites (ex. 2n.com), seulement s'il le demande ou pour une doc constructeur." },
+      approfondi: { type: "boolean", description: "true pour une question pointue ou technique où la qualité prime sur la vitesse." } },
+      required: ["requete"] } }
+];
+JV_LOCAL.recherche_web = toolRechercheWeb;
+JV_ATTENTE.recherche_web = "je cherche sur le web…";
+/* ce que la conversation sait de sa dernière recherche (15 min), s'il demande la source */
+function jvWebContexte(){
+  const d = JV_WEB_DERNIER;
+  if (!d || Date.now() - d.at > 15 * 60e3 || !d.sources.length) return "";
+  return "Sources de ta dernière recherche web (à donner s'il les demande) :\n" + d.sources.map(p => `${p.site} · ${p.titre}${p.date ? " (" + p.date + ")" : ""} · ${p.url}`).join("\n");
+}
+/* Perplexity cherche, Sonnet rédige une seule fois (sans outil) ; sinon, la recherche web de Claude, comme avant */
+async function jvRedige(sys, user, cat, max){
+  if (!CFG.key) { JV_WEB_ERR = "pas de clé Claude"; return null; }
+  let r, j;
+  try {
+    r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      body: JSON.stringify({ model: CV_MODEL, max_tokens: max || 1500, system: sys, messages: [{ role: "user", content: user }] }) });
+    j = await r.json().catch(() => ({}));
+  } catch (e) { JV_WEB_ERR = "réseau"; return null; }
+  if (!r.ok) { JV_WEB_ERR = "erreur " + r.status + (j && j.error && j.error.message ? " · " + String(j.error.message).slice(0, 80) : ""); return null; }
+  cvCount(j.usage, cat);
+  const out = (j.content || []).filter(b => b.type === "text").map(b => b.text).join("").trim();
+  if (!out) JV_WEB_ERR = "réponse vide";
+  return out || null;
+}
+async function jvWebPuisClaude(sys, user, questions, cat, maxUses, recence){
+  let pp = "";
+  if (jvWebOn()) {
+    const r = await jvChercher(questions, { type: "web", recence: recence || "semaine", max: 6, long: true, cat });
+    if (r.erreur) pp = r.erreur;
+    else if (!r.resultats.some(x => x.r.length)) pp = "Perplexity n'a rien trouvé";
+    else {
+      if (cvMonth().usd >= cvCap()) { JV_WEB_ERR = "plafond du mois atteint"; return null; }
+      const txt = await jvRedige(sys + "\n\nTu n'as pas d'accès direct au web : voici, dans <web>, des extraits de pages trouvés pour toi (titre, site, date, extrait). Appuie-toi uniquement sur eux. Une information absente des extraits est inconnue : dis-le au lieu de la deviner.",
+        user + "\n\n<web>\n" + jvWebTexte(r.resultats, 16000) + "\n</web>", cat);
+      if (txt) return txt;
+      pp = "rédaction : " + (JV_WEB_ERR || "échec");
+    }
+  }
+  const txt = await jvWeb(sys, user, maxUses, cat);
+  if (!txt && pp) JV_WEB_ERR = (JV_WEB_ERR ? JV_WEB_ERR + " · " : "") + "Perplexity : " + pp;
+  return txt;
+}
+const jvDateLongue = d => { const x = new Date(d + "T12:00"); return `${x.getDate()} ${JV_MOIS[x.getMonth()]} ${x.getFullYear()}`; };
+function jvMatchQuestions(sem, lundi, club){
+  const v = jvDateLongue(sem), l = jvDateLongue(lundi), mo = JV_MOIS[new Date(sem + "T12:00").getMonth()] + " " + sem.slice(0, 4);
+  const Q = [`programme Ligue 1 Ligue 2 matchs du ${v} au ${l}`,
+    `programme Premier League Liga Bundesliga week-end ${v}`,
+    `cotes Parions Sport FDJ Ligue 1 Premier League week-end ${v}`,
+    `pronostics foot blessés suspendus Ligue 1 Premier League Liga Bundesliga ${mo}`];
+  if (club) Q.push(`${club} prochain match ${mo} forme blessés`);
+  else Q.push(`pronostic Ligue 2 week-end ${v} cotes`);
+  return Q;
+}
+function jvCineQuestions(sem, cine){
+  const v = jvDateLongue(sem);
+  return [`sorties cinéma France mercredi ${v} films`,
+    `films sortis le ${v} critiques presse spectateurs`,
+    `${cine} programme séances semaine du ${v}`];
+}
 async function jvMatchPrep(force){
   if (!jvBetaMatchOn() || JV_BETA_BUSY.match) return;
   const now = new Date(), tod = ymd(now), w = now.getDay(), h = now.getHours();
@@ -6035,7 +6178,7 @@ Réponds uniquement par ces lignes, en texte brut, sans emoji ni titre :
 Plan B : <même format>
 Piège : <le pari tentant à éviter> · <pourquoi>   (omets la ligne s'il n'y en a pas)${club ? `
 ${club} : <son match de la semaine et ton avis honnête en une phrase, même si ce n'est pas ce qu'il veut entendre>   (omets la ligne s'il ne joue pas du vendredi au lundi)` : ""}`;
-    const txt = await jvWeb(sys, `Prépare la sélection Cote & Match de cette semaine. Nous sommes le ${jvJourTxt(tod)} (${tod}).`, 10, "Cote & Match");
+    const txt = await jvWebPuisClaude(sys, `Prépare la sélection Cote & Match de cette semaine. Nous sommes le ${jvJourTxt(tod)} (${tod}).`, jvMatchQuestions(sem, lundi, club), "Cote & Match", 10, "semaine");
     LS.set("copilote_beta_essai_match", { at: Date.now(), ok: !!txt, err: txt ? "" : JV_WEB_ERR || "rien trouvé" });
     if (txt) { LS.set("copilote_beta_match", { sem, at: Date.now(), txt: jvBetaNet(txt) }); try { syncReminders(); } catch (e) {} }
   } finally { JV_BETA_BUSY.match = false; }
@@ -6054,7 +6197,7 @@ Seulement les films sortis en salle en France le mercredi ${sem} (les sorties de
 Pour chaque film, une ligne : <titre> · <genre>, <durée> · <avis franc en une phrase, appuyé sur la presse et les spectateurs : vaut le déplacement, ou attends la télé> · <séances du vendredi soir et du samedi si tu les trouves>.
 De 2 à 6 films, les plus intéressants d'abord. Sois honnête, n'invente rien. Si tu ne trouves pas les séances, ajoute une dernière ligne : « Séances : voir le site du cinéma ».
 Réponds uniquement par ces lignes, en texte brut, sans emoji ni titre.`;
-    const txt = await jvWeb(sys, `Les sorties ciné de cette semaine au ${cine}. Nous sommes le ${jvJourTxt(tod)} (${tod}).`, 8, "Ciné");
+    const txt = await jvWebPuisClaude(sys, `Les sorties ciné de cette semaine au ${cine}. Nous sommes le ${jvJourTxt(tod)} (${tod}).`, jvCineQuestions(sem, cine), "Ciné", 8, "semaine");
     LS.set("copilote_beta_essai_cine", { at: Date.now(), ok: !!txt, err: txt ? "" : JV_WEB_ERR || "rien trouvé" });
     if (txt) { LS.set("copilote_beta_cine", { sem, at: Date.now(), txt: jvBetaNet(txt) }); try { syncReminders(); } catch (e) {} }
   } finally { JV_BETA_BUSY.cine = false; }
@@ -6288,6 +6431,7 @@ function jvBriefNotif(d, quand){
 }
 /* tâches de fond : au démarrage puis toutes les 30 min (anniversaires une fois par jour, mails toutes les 6 h) */
 async function jvJournalier(){
+  try { await jvWebEtat(); } catch (e) {}
   try { if (MEM.key) { await jvAnnivAgenda(); jvAnnivTaches(); } } catch (e) {}
   try { await jvEchMails(false); } catch (e) {}
   try { jvRelancesAuto(); } catch (e) {}
@@ -6895,7 +7039,10 @@ function paintBeta(){
   const essai = (k, nom) => { const e = LS.get("copilote_beta_essai_" + k, null); return e && !e.ok ? `${nom} : dernier essai ${jvJourTxt(ymd(new Date(e.at)))} ${jvHM(e.at)}, sans résultat (${e.err})` : ""; };
   if (CFG.jvBetaMatch !== false) { const x = essai("match", "Cote & Match"); if (x) L.push(x); }
   if (CFG.jvBetaCine !== false) { const x = essai("cine", "Ciné"); if (x) L.push(x); }
+  const we = jvWebEtatLu();
+  L.unshift(we.pret ? `Recherche web Perplexity : prête (${we.mois || 0} recherche${(we.mois || 0) > 1 ? "s" : ""} ce mois)` : MEM.tok ? "Recherche web Perplexity : en attente de la clé (secrets Supabase)" : "Recherche web : ouvre la mémoire pour la brancher");
   $("cvBetaSt").textContent = L.join(" · ");
+  if (!we.at || Date.now() - we.at > 10 * 60e3) jvWebEtat(true).then(n => { if (n && n.at !== we.at) paintBeta(); }).catch(() => {});
 }
 $("cvBetaMatchChk").onchange = () => { CFG.jvBetaMatch = $("cvBetaMatchChk").checked; saveCfg(); try { syncReminders(); } catch (e) {} paintBeta(); };
 $("cvBetaCineChk").onchange = () => { CFG.jvBetaCine = $("cvBetaCineChk").checked; saveCfg(); try { syncReminders(); } catch (e) {} paintBeta(); };
