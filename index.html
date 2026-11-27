@@ -426,7 +426,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v52 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v53 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -682,7 +682,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 52;
+const TEMPO_BUILD = 53;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1444,17 +1444,20 @@ function tiroirAjuste(){
   const limite = t.classList.contains("vide") ? (window.innerHeight || 800) - 8 : t.getBoundingClientRect().top - 10;   // le haut du tiroir fermé, barre de navigation comprise
   const lignes = () => a.querySelectorAll(".grp > .sw, .grp > .it");
   const bas = () => { const r = lignes(); return r.length ? r[r.length - 1].getBoundingClientRect().bottom : 0; };
+  // tant que ça déborde : d'abord la constellation cède un peu de place (jusqu’à un bon tiers), sinon on retire la dernière ligne
+  const h0 = st ? st.offsetHeight : 0, cede = () => {
+    if (!st || bas() <= limite) return bas() <= limite;
+    const h = Math.floor(h0 - (bas() - limite) - 8); if (h < h0 * .64) return false;
+    const f = h / h0; st.style.height = h + "px"; st.style.paddingTop = Math.round(56 * f) + "px"; if (ring) ring.style.scale = Math.max(.74, f).toFixed(3);
+    if (bas() <= limite) return true;
+    st.style.height = ""; st.style.paddingTop = ""; if (ring) ring.style.scale = ""; return false;
+  };
   let n = 0;
-  while (n++ < 4) {
-    const rows = lignes(); if (rows.length <= 1 || bas() <= limite) break;
-    const last = rows[rows.length - 1], sec = last.closest(".grp"); last.remove(); if (sec && !sec.querySelector(".it")) sec.remove();
+  while (n++ < 6 && lignes().length && !cede()) {
+    const rows = lignes(), last = rows[rows.length - 1], sec = last.closest(".grp");
+    last.remove(); if (sec && !sec.querySelector(".it")) sec.remove();
   }
-  // il ne reste qu'une ligne et elle passe sous le tiroir : la constellation se fait un peu plus petite
-  if (st && lignes().length && bas() > limite) {
-    const h0 = st.offsetHeight, h = Math.max(Math.round(h0 * .72), Math.floor(h0 - (bas() - limite) - 8)), f = h / h0;
-    st.style.height = h + "px"; st.style.paddingTop = Math.round(56 * f) + "px"; if (ring) ring.style.scale = Math.max(.74, f).toFixed(3);
-    if (bas() > limite) { a.innerHTML = ""; st.style.height = ""; st.style.paddingTop = ""; if (ring) ring.style.scale = ""; }   // vraiment pas la place : rien plutôt qu'une ligne cachée
-  }
+  if (!cede()) a.innerHTML = "";   // vraiment pas la place : rien plutôt qu'une ligne cachée sous le tiroir
 }
 function tiroirOuvre(groupe){
   if ($("tiroir").classList.contains("vide")) return;
@@ -1549,28 +1552,37 @@ function streak(){
 /* ===== le point ===== */
 const halfDay = () => today() + (new Date().getHours() < 12 ? "am" : "pm");
 const openSig = () => halfDay() + "|" + S.items.filter(i => !i.done && !isMemo(i)).map(i => i.id + i.u + (i.due || "") + (i.time || "")).join(",");
+/* la phrase du jour : une ligne qui résume, sans recopier les tâches (elles s'affichent juste en dessous) */
+const NB_F = ["aucune", "une", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix"];
 function localPoint(){
   const open = S.items.filter(i => !i.done && !isMemo(i) && !isList(i));
   if (!open.length) return "";
-  const order = SLOTS.map(s => s[0]);
-  const sorted = open.slice().sort((a, b) => order.indexOf(bucket(a)) - order.indexOf(bucket(b)) || b.u - a.u || (a.time || "").localeCompare(b.time || ""));
-  const lab = Object.fromEntries(SLOTS);
-  const first = sorted[0], next = sorted.find(i => i !== first && bucket(i) !== bucket(first)) || sorted[1];
-  return `D'abord : ${first.title.charAt(0).toLowerCase() + first.title.slice(1)}${bucket(first) !== "now" ? " (" + lab[bucket(first)] + ")" : ""}.` + (next ? ` Ensuite : ${next.title.charAt(0).toLowerCase() + next.title.slice(1)}${bucket(next) !== bucket(first) ? " (" + lab[bucket(next)] + ")" : ""}.` : "");
+  const jour = open.filter(i => APERCU.includes(bucket(i))), n = jour.length, retard = jour.filter(i => i.due && i.due < today()).length;
+  const nb = k => k <= 10 ? NB_F[k] : String(k), dem = open.filter(i => bucket(i) === "demain").length;
+  if (!n) return dem ? `Rien aujourd'hui, ${nb(dem)} chose${dem > 1 ? "s" : ""} demain.` : "Journée dégagée, monsieur.";
+  const N = nb(n).charAt(0).toUpperCase() + nb(n).slice(1);
+  if (retard === n) return `${N} chose${n > 1 ? "s" : ""} en retard.`;
+  let t = n === 1 ? "Une seule chose aujourd'hui" : `${N} choses aujourd'hui`;
+  if (retard) t += `, ${nb(retard)} en retard`;
+  else if (jour.every(i => i.time && i.due === today() && i.time > nowHM())) {   // que des rendez-vous à venir : l'heure du premier
+    const h = jour.map(i => i.time).sort()[0].replace(":", "h");
+    t += n === 1 ? `, à ${h}` : `, dès ${h}`;
+  }
+  return t + ".";
 }
 function paintPoint(){
-  const ok = S.brief && S.brief.sig === openSig() && S.brief.text;
+  const ok = S.brief && S.brief.v === 2 && S.brief.sig === openSig() && S.brief.text;
   $("point").textContent = ok ? S.brief.text : localPoint();
 }
 let briefT = null, briefBusy = false;
 function scheduleBrief(){
   if (!CFG.key || briefBusy) return;
-  if (S.brief && S.brief.sig === openSig()) return;
+  if (S.brief && S.brief.v === 2 && S.brief.sig === openSig()) return;
   if (!S.items.some(i => !i.done && !isMemo(i))) return;
   clearTimeout(briefT); briefT = setTimeout(makeBrief, 1800);
 }
 async function makeBrief(){
-  const sig = openSig(); if (S.brief && S.brief.sig === sig) return;
+  const sig = openSig(); if (S.brief && S.brief.v === 2 && S.brief.sig === sig) return;
   briefBusy = true; $("point").classList.add("load");
   const lab = Object.fromEntries(SLOTS), d = new Date();
   const list = S.items.filter(i => !i.done && !isMemo(i)).map(i => `- [${lab[bucket(i)]}] urgence ${i.u} : ${i.title}${i.ch ? " (" + i.ch + ")" : ""}${i.time ? " à " + i.time : ""}${i.mail ? " — mail prêt" : ""}`).join("\n");
@@ -1578,11 +1590,11 @@ async function makeBrief(){
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
-      body: JSON.stringify({ model: "claude-haiku-5-5", max_tokens: 200,
-        system: `Tu fais le point pour ${myName()}, en un coup d'œil.\n\nQUI IL EST\n${CFG.profile}\n\nIl est ${WD[d.getDay()]} ${nowHM()}. En 2 phrases très courtes (35 mots maximum au total), dis-lui par quoi commencer maintenant et ce qui l'attend ensuite (cet après-midi, demain). Regroupe ce qui va ensemble (même chantier, même personne). Vouvoiement, à la manière de Jarvis, le majordome de Tony Stark (« monsieur » au plus une fois, jamais son prénom, pas d'exclamation), ton direct et calme, pas de liste, pas d'emoji, pas de formule d'introduction. Texte brut uniquement.`,
+      body: JSON.stringify({ model: "claude-haiku-5-5", max_tokens: 80,
+        system: `Tu fais le point pour ${myName()}, en un coup d'œil.\n\nQUI IL EST\n${CFG.profile}\n\nIl est ${WD[d.getDay()]} ${nowHM()}. En UNE seule phrase de 12 mots maximum, résume sa journée : combien de choses, ce qui presse ou ce qui est en retard. Ne recopie jamais l'intitulé d'une tâche : elles s'affichent juste en dessous. Exemple de ton : « Trois choses aujourd'hui, dont une en retard. » Vouvoiement, à la manière de Jarvis, le majordome de Tony Stark (« monsieur » au plus une fois, jamais son prénom, pas d'exclamation), ton direct et calme, pas de liste, pas d'emoji, pas de formule d'introduction. Texte brut uniquement.`,
         messages: [{ role: "user", content: list }] })
     });
-    if (r.ok) { const jb = await r.json(); try { if (typeof jvCountHaiku === "function") jvCountHaiku(jb.usage); } catch (e) {} const t = (jb.content || []).map(c => c.text || "").join("").trim(); if (t) { S.brief = { sig, text: t }; save(); } }
+    if (r.ok) { const jb = await r.json(); try { if (typeof jvCountHaiku === "function") jvCountHaiku(jb.usage); } catch (e) {} const t = (jb.content || []).map(c => c.text || "").join("").trim(); if (t) { S.brief = { v: 2, sig, text: t }; save(); } }
   } catch (e) {}
   briefBusy = false; $("point").classList.remove("load"); paintPoint();
 }
