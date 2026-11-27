@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v38 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v39 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 38;
+const TEMPO_BUILD = 39;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1049,7 +1049,7 @@ async function aiParseSur(text, kind, ctx){
 function aiRaison(e){
   const m = String((e && e.message) || "");
   if (/^API (401|403)\b/.test(m)) return "ta clé est refusée";
-  if (/credit|balance|billing/i.test(m)) return "ton crédit est épuisé";
+  if (/credit|balance|billing/i.test(m)) { try { if (typeof jvCreditAlerte === "function") jvCreditAlerte(); } catch (x) {} return "crédit Claude épuisé"; }
   if (/^API 429\b/.test(m)) return "trop de demandes d'un coup";
   if (/^API (5\d\d)\b/.test(m)) return "surchargé pour l'instant";
   if (/coupé/.test(m)) return "réponse trop longue";
@@ -4984,7 +4984,8 @@ async function cvSend(text, opt){
     JV.msgs.splice(base);   // la question non répondue ne reste pas dans l'historique envoyé
     const s = e && e.status, m = e && e.j && e.j.error && e.j.error.message || "";
     const why = !s ? "pas de réseau" : s === 401 ? "clé Claude refusée" : s === 429 ? "Claude est saturé, réessaie dans un instant" : s === 529 ? "Claude est surchargé, réessaie dans un instant" : `erreur ${s}${m ? " : " + m.slice(0, 120) : ""}`;
-    JV.view.push({ r: "e", t: `Je n'ai pas pu répondre (${why}).`, retry: text });
+    if (jvCreditVide(m)) { JV.view.push({ r: "e", t: "J'ai bien peur que le crédit Claude soit épuisé, monsieur. Rechargez votre compte dans la console Claude (Plans & Billing), puis réessayez.", retry: text }); jvCreditAlerte(); }
+    else JV.view.push({ r: "e", t: `Je n'ai pas pu répondre (${why}).`, retry: text });
   }
   JV.busy = false; cvStatus(""); await cvSave(); cvPaint();
 }
@@ -6393,7 +6394,7 @@ function jvARanger(text, src, err, muet){
   S.items.unshift(it); save(); if (!muet) idle(); render([it.id]); if (!muet) vib([12, 50, 12]);
   const L = LS.get(JV_RANGER_LS, null) || []; L.push({ id: it.id, sp: SPACE, text, src: src || "voix", at: now, essai: now }); LS.set(JV_RANGER_LS, L);
   try { jvFriction("à ranger", text); } catch (e) {}
-  if (!muet) toast(`Claude : ${aiRaison(err)}. Ta dictée reste entière, je la range dès qu'il répond.`, "", null, 9000);
+  if (!muet) { const pourquoi = aiRaison(err); if (jvCreditVide(err && err.message)) toast("Crédit Claude épuisé : ta dictée reste entière, je la range dès qu'il est rechargé", "recharger", () => { try { if (NATIVE) tn("openUrl", { url: JV_CONSOLE }); else window.open(JV_CONSOLE, "_blank"); } catch (e) {} }, 12000); else toast(`Claude : ${pourquoi}. Ta dictée reste entière, je la range dès qu'il répond.`, "", null, 9000); }
 }
 function jvRangeFin(id){
   for (const sp of ["pro", "perso"]) { const st = spaceState(sp); if ((st.items || []).some(i => i.id === id)) { st.items = st.items.filter(i => i.id !== id); putSpace(sp, st); } }
@@ -6871,6 +6872,15 @@ async function toolSouvenirs(x){
   return { trouves: L.map(i => `[${cvShort(i.id)}] ${i.t}`), nb: L.length };
 }
 JV_LOCAL.chercher_souvenirs = toolSouvenirs; JV_ATTENTE.chercher_souvenirs = "je cherche dans vos souvenirs…";
+
+/* ---------- crédit Claude épuisé : le dire clairement, avec le chemin pour recharger (une fois par heure au plus) ---------- */
+const JV_CONSOLE = "https://platform.claude.com/settings/billing";
+const jvCreditVide = m => /credit balance is too low|purchase credits|cr[ée]dit est [ée]puis[ée]/i.test(String(m || ""));
+function jvCreditAlerte(){
+  const t = LS.get("copilote_credit_alerte", 0); if (Date.now() - t < 3600e3) return;
+  LS.set("copilote_credit_alerte", Date.now());
+  toast("Crédit Claude épuisé : rechargez-le pour que je reprenne (vos dictées sont gardées)", "recharger", () => { try { if (NATIVE) tn("openUrl", { url: JV_CONSOLE }); else window.open(JV_CONSOLE, "_blank"); } catch (e) {} }, 12000);
+}
 
 /* ---------- ouverture, micro, branchements ---------- */
 /* lot 17 : réglages de la section Bêta, et « reprendre la conversation précédente » */
