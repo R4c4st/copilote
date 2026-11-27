@@ -16,7 +16,7 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0}
 html,body{background:var(--bg);color:var(--fg);font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-weight:300;overscroll-behavior:none;-webkit-font-smoothing:antialiased}
-body{padding:var(--sat) 0 calc(60px + var(--sab));min-height:100vh}
+body{padding:var(--sat) 0 0;min-height:100vh}   /* le bas de l'accueil est réservé au tiroir (.apercu) */
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
 input,select,textarea{font:inherit;font-weight:300;color:var(--fg);background:transparent;border:0;border-bottom:1px solid var(--faint);border-radius:0;padding:10px 0;width:100%;outline:none}
 textarea{resize:none}
@@ -32,9 +32,9 @@ body{background:radial-gradient(700px 460px at 50% 26%,rgba(var(--glow),.10),tra
 .spc button.on{background:var(--fg);color:var(--bg)}
 .point{padding:14px 26px 0;font-size:17px;line-height:1.45;min-height:24px;transition:opacity .4s}
 .point.load{opacity:.45}
-.glance{display:flex;gap:22px;overflow-x:auto;padding:16px 26px 0;scrollbar-width:none}
+.glance{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 8px;padding:16px 20px 0}
 .glance::-webkit-scrollbar{display:none}
-.gl{flex:none;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);text-align:left}
+.gl{flex:1 0 auto;min-width:40px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);text-align:center;white-space:nowrap}
 .gl b{display:block;font-size:24px;font-weight:200;color:var(--fg);letter-spacing:0;text-transform:none;margin-bottom:2px;position:relative}
 .gl.hot b::after{content:"";position:absolute;top:6px;margin-left:5px;width:6px;height:6px;border-radius:50%;background:var(--u3);box-shadow:0 0 8px var(--u3)}
 /* ring */
@@ -98,6 +98,24 @@ body.const .ring.on{transform:none}
 
 /* list */
 .list{padding:8px 26px 30px}
+/* accueil fixe : les prochaines choses sous la constellation, tout le reste dans le tiroir */
+.apercu{padding:0 26px calc(86px + var(--sab))}
+.apercu .grp{margin-top:20px}
+.apercu .grp:first-child{margin-top:6px}
+.tiroir-fond{position:fixed;inset:0;z-index:21;background:rgba(15,34,41,.28);opacity:0;pointer-events:none;transition:opacity .35s}
+body.tiroir-ouvert .tiroir-fond{opacity:1;pointer-events:auto}
+body.tiroir-ouvert{overflow:hidden}
+.tiroir{position:fixed;left:0;right:0;bottom:0;z-index:22;height:calc(100vh - var(--sat) - 64px);display:flex;flex-direction:column;background:rgba(255,255,255,.86);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-radius:26px 26px 0 0;border-top:1px solid #fff;box-shadow:0 -10px 30px rgba(var(--glow),.14);transform:translateY(calc(100% - 82px - var(--sab)));transition:transform .42s cubic-bezier(.2,.8,.2,1),background .3s}
+body.tiroir-ouvert .tiroir{transform:none;background:var(--sheet)}
+.tiroir.vide{display:none}
+.t-poignee{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 20px 8px;touch-action:none;cursor:grab}
+.t-barre{width:40px;height:4px;border-radius:4px;background:#c3d3d8}
+.t-txt{font-size:14px;font-weight:500;color:var(--fg);min-height:30px;padding:0 16px}
+.t-res{font-size:11px;letter-spacing:.3px;color:#56717a;padding-bottom:calc(var(--sab) + 6px)}
+body.tiroir-ouvert .t-res{display:none}
+.t-corps{flex:1;overflow-y:auto;overscroll-behavior:contain;padding-bottom:var(--sab)}
+.t-corps .list{padding-top:0}
+.t-corps .list>.grp:first-child,.t-corps .list>section:first-child{margin-top:8px}
 .grp{margin-top:34px}
 .grp h3{font-weight:400;font-size:12px;letter-spacing:2.2px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
 .grp.now h3{color:var(--u3)}
@@ -262,7 +280,12 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <div class="alt" id="alt"><button id="bConv">Nestor</button><button id="bType">écrire</button><button id="bPaste">coller</button><button id="bMail" style="display:none">mails</button></div>
 </div>
 
-<div class="list" id="list"></div>
+<div class="apercu" id="apercu"></div>
+<div class="tiroir-fond" id="tirFond"></div>
+<div class="tiroir" id="tiroir" role="region" aria-label="Toutes les tâches">
+  <div class="t-poignee" id="tirPoignee"><span class="t-barre" aria-hidden="true"></span><button class="t-txt" id="tirTxt">tout voir</button><span class="t-res" id="tirRes"></span></div>
+  <div class="t-corps" id="tirCorps"><div class="list" id="list"></div></div>
+</div>
 
 <div class="mask" id="mask"></div>
 
@@ -398,7 +421,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v48 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v49 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +677,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 48;
+const TEMPO_BUILD = 49;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1372,12 +1395,77 @@ function render(fresh){
   if (doneT.length) h += `<button class="donebar" id="doneBar" style="width:100%">${doneT.length} réglé${doneT.length > 1 ? "s" : ""} aujourd'hui${streak() > 1 ? " · " + streak() + " jours d'affilée" : ""}</button><div class="donelist${showDone ? " show" : ""}">${doneT.map(i => itHTML(i)).join("")}</div>`;
   if (SPACE === "perso") h = colisSection() + h;
   $("list").innerHTML = h;
-  const GL = { now: "maintenant", matin: "matin", aprem: "aprem", soir: "soir", today: "aujourd'hui", demain: "demain", semaine: "semaine", tard: "plus tard" };
-  $("glance").innerHTML = SLOTS.map(([k]) => { const a = open.filter(i => bucket(i) === k); return a.length ? `<button class="gl${a.some(i => i.u === 3) ? " hot" : ""}" data-g="${k}"><b>${a.length}</b>${GL[k]}</button>` : ""; }).join("") + (shop.length ? `<button class="gl" data-g="courses"><b>${shop.length}</b>courses</button>` : "") + (colisOpen().length ? `<button class="gl${colisOpen().some(colisHot) ? " hot" : ""}" data-g="colis"><b>${colisOpen().length}</b>colis</button>` : "") + (memoN ? `<button class="gl" data-g="memos"><b>${toPay ? eur(toPay).replace(",00", "") : memoN}</b>${toPay ? (SPACE === "pro" ? "à rembourser" : "dépensés") : "mémos"}</button>` : "");
+  const GL = { now: "now", matin: "matin", aprem: "aprem", soir: "soir", today: "auj", demain: "dem", semaine: "sem", tard: "+ tard" };
+  $("glance").innerHTML = SLOTS.map(([k]) => { const a = open.filter(i => bucket(i) === k); return a.length ? `<button class="gl${a.some(i => i.u === 3) ? " hot" : ""}" data-g="${k}"><b>${a.length}</b>${GL[k]}</button>` : ""; }).join("") + (shop.length ? `<button class="gl" data-g="courses"><b>${shop.length}</b>courses</button>` : "") + (colisOpen().length ? `<button class="gl${colisOpen().some(colisHot) ? " hot" : ""}" data-g="colis"><b>${colisOpen().length}</b>colis</button>` : "") + (memoN ? `<button class="gl" data-g="memos"><b>${toPay ? eur(toPay).replace(",00", "") : memoN}</b>${toPay ? "frais" : "mem"}</button>` : "");
+  try { tiroirMaj(open, fresh); } catch (e) {}
   paintPoint(); scheduleBrief(); refreshStars(); if (NATIVE) widgetSync();
   if (fresh.length) requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll(".it[style]").forEach((e, n) => setTimeout(() => e.removeAttribute("style"), n * 70))));
   if (!listening && !typing) idleHint();
 }
+/* ===== accueil fixe : les prochaines choses sous la constellation, tout le reste dans le tiroir ===== */
+const APERCU = ["now", "matin", "aprem", "soir", "today"], APERCU_MAX = 3;
+const TIR_COURT = { now: "now", matin: "matin", aprem: "aprem", soir: "soir", today: "auj", demain: "dem", semaine: "sem", tard: "+ tard" };
+function tiroirMaj(open, fresh){
+  fresh = fresh || [];
+  // les prochaines choses : jusqu'à 3, dans l'ordre de la liste (maintenant, matin, après-midi, soir, aujourd'hui)
+  const vus = [], parts = [];
+  for (const [k, lab] of SLOTS) {
+    if (!APERCU.includes(k) || vus.length >= APERCU_MAX) continue;
+    const sec = $("g-" + k); if (!sec) continue;
+    const ids = [...sec.querySelectorAll(".it[data-id]")].map(e => e.dataset.id).slice(0, APERCU_MAX - vus.length);
+    const L = ids.map(id => S.items.find(i => i.id === id)).filter(Boolean); if (!L.length) continue;
+    L.forEach(i => vus.push(i.id));
+    parts.push(`<section class="grp ${k}"><h3>${lab}</h3>${L.map(i => itHTML(i, fresh.includes(i.id))).join("")}</section>`);
+  }
+  $("apercu").innerHTML = parts.join("");
+  // le tiroir : combien il reste, par moment
+  const reste = open.filter(i => !vus.includes(i.id)), par = {};
+  reste.forEach(i => { const b = bucket(i); par[b] = (par[b] || 0) + 1; });
+  const autre = !!document.querySelector("#list #g-courses, #list .colis, #list .cl, #doneBar");
+  $("tiroir").classList.toggle("vide", !reste.length && !autre);
+  $("tirTxt").textContent = reste.length ? `tout voir · ${reste.length} de plus` : "tout voir";
+  $("tirRes").textContent = SLOTS.filter(([k]) => par[k]).map(([k]) => `${TIR_COURT[k]} ${par[k]}`).join(" · ");
+  requestAnimationFrame(tiroirAjuste);
+}
+/* sur un petit écran, l'aperçu rétrécit pour que le tiroir reste visible sans rien couper */
+function tiroirAjuste(){
+  const a = $("apercu"), t = $("tiroir"); if (!a || document.body.classList.contains("tiroir-ouvert")) return;
+  const limite = (window.innerHeight || 800) - (t.classList.contains("vide") ? 8 : 92);   // le tiroir dépasse de 82 px
+  let n = 0;
+  while (n++ < 4) {
+    const rows = a.querySelectorAll(".grp > .sw, .grp > .it"); if (rows.length <= 1) break;
+    const last = rows[rows.length - 1]; if (last.getBoundingClientRect().bottom <= limite) break;
+    const sec = last.closest(".grp"); last.remove(); if (sec && !sec.querySelector(".it")) sec.remove();
+  }
+}
+function tiroirOuvre(groupe){
+  if ($("tiroir").classList.contains("vide")) return;
+  document.body.classList.add("tiroir-ouvert"); $("tiroir").style.transform = "";
+  const c = $("tirCorps");
+  if (groupe) { const s = $("g-" + groupe); if (s) setTimeout(() => c.scrollTo({ top: s.offsetTop - 8, behavior: "smooth" }), 60); }
+  else c.scrollTop = 0;
+}
+function tiroirFerme(){ document.body.classList.remove("tiroir-ouvert"); $("tiroir").style.transform = ""; setTimeout(tiroirAjuste, 450); }
+$("tirTxt").onclick = () => { if (Date.now() - (TIR.fin || 0) < 350) return; document.body.classList.contains("tiroir-ouvert") ? tiroirFerme() : tiroirOuvre(); };
+$("tirFond").onclick = tiroirFerme;
+/* la poignée suit le doigt : vers le haut il s'ouvre, vers le bas il se referme */
+const TIR = { y0: null, fin: 0 };
+$("tirPoignee").addEventListener("pointerdown", e => { TIR.y0 = e.clientY; TIR.dy = 0; TIR.ouvert = document.body.classList.contains("tiroir-ouvert"); $("tiroir").style.transition = "none"; try { $("tirPoignee").setPointerCapture(e.pointerId); } catch (er) {} });
+$("tirPoignee").addEventListener("pointermove", e => {
+  if (TIR.y0 == null) return;
+  TIR.dy = e.clientY - TIR.y0; const t = $("tiroir"), H = t.offsetHeight, ferme = H - 82;
+  const base = TIR.ouvert ? 0 : ferme, y = Math.max(0, Math.min(ferme, base + TIR.dy));
+  if (Math.abs(TIR.dy) > 6) t.style.transform = `translateY(${y}px)`;
+});
+const tirLache = () => {
+  if (TIR.y0 == null) return;
+  const t = $("tiroir"), dy = TIR.dy || 0; TIR.y0 = null; t.style.transition = "";
+  if (Math.abs(dy) < 8) { t.style.transform = ""; return; }   // un simple appui : le bouton s'en occupe
+  TIR.fin = Date.now();
+  if (TIR.ouvert ? dy > 70 : dy < -50) TIR.ouvert ? tiroirFerme() : tiroirOuvre(); else t.style.transform = "";
+};
+$("tirPoignee").addEventListener("pointerup", tirLache); $("tirPoignee").addEventListener("pointercancel", tirLache);
+let tirRz = null; window.addEventListener("resize", () => { clearTimeout(tirRz); tirRz = setTimeout(() => { try { if (!typing && !listening && !document.body.classList.contains("tiroir-ouvert")) render(); } catch (e) {} }, 300); });
 /* appli : le widget = la constellation seule (pas de texte), fond et transparence réglables */
 const WDEF = { bg: 0, img: 100, tone: "clair", col: "blanc", stars: true };
 const wCfg = () => Object.assign({}, WDEF, CFG.widget || {});
@@ -1811,11 +1899,11 @@ $("sMsGo").onclick = () => { CFG.msId = $("sMsId").value.trim(); saveCfg(); msLo
 $("sMsOff").onclick = () => { MS = {}; saveMs(); paintMailBtn(); $("sMsState").textContent = "déconnecté."; };
 
 document.addEventListener("click", e => {
-  const g = e.target.closest(".gl");
+  const g = e.target.closest(".gl[data-g]");   // pas les icônes (leurs formes portent aussi la classe gl)
   if (g && g.dataset.g === "memos") { openMemos(); return; }
   if (g && g.dataset.g === "colis") { openColis(); return; }
   const cl = e.target.closest(".cl[data-cid]"); if (cl) { openColis(cl.dataset.cid); return; }
-  if (g) { if (FAR.includes(g.dataset.g) && !showFar) { showFar = true; render(); } const s = $("g-" + g.dataset.g); if (s) window.scrollTo({ top: s.getBoundingClientRect().top + scrollY - 20, behavior: "smooth" }); return; }
+  if (g) { if (FAR.includes(g.dataset.g) && !showFar) { showFar = true; render(); } tiroirOuvre(g.dataset.g); return; }
   if (e.target.closest("#doneBar")) { showDone = !showDone; render(); return; }
   if (e.target.closest("#farBar")) { showFar = !showFar; render(); return; }
   if (Date.now() - swipedAt < 400) return;
@@ -4100,6 +4188,7 @@ if (NATIVE) {
   CAPP.addListener("backButton", () => {
     if (FOC) return;
     if (document.querySelector(".sheet.show")) { hide(); return; }
+    if (document.body.classList.contains("tiroir-ouvert")) { tiroirFerme(); return; }
     if (listening || typing) { stopListen(); idle(); return; }
     CAPP.minimizeApp();
   });
