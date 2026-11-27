@@ -99,7 +99,7 @@ import org.json.JSONObject;
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 15;
+    static final int NATIVE_BUILD = 16;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -824,6 +824,8 @@ public class TempoNativePlugin extends Plugin {
         notifyListeners("sr", d);
     }
 
+    private long srNiveauT = 0;
+
     private void startSr(PluginCall call) {
         final String lang = call.getString("lang", "fr-FR");
         getActivity().runOnUiThread(() -> {
@@ -842,7 +844,15 @@ public class TempoNativePlugin extends Plugin {
                     public void onBeginningOfSpeech() {}
 
                     @Override
-                    public void onRmsChanged(float rms) {}
+                    public void onRmsChanged(float rms) {
+                        // le niveau de sa voix, pour que l'anneau de Nestor la suive (au plus ~14 fois par seconde)
+                        long t = System.currentTimeMillis();
+                        if (t - srNiveauT < 70) return;
+                        srNiveauT = t;
+                        JSObject d = new JSObject();
+                        d.put("rms", rms);
+                        notifyListeners("srNiveau", d);
+                    }
 
                     @Override
                     public void onBufferReceived(byte[] buf) {}

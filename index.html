@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v42 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v43 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 42;
+const TEMPO_BUILD = 43;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4846,7 +4846,7 @@ async function jvVoixSuite(g){
   if (src) {
     try {
       if (JV_AUDIO) JV_AUDIO.pause();
-      const a = new Audio(src); JV_AUDIO = a; let fini = false;
+      const a = new Audio(src); JV_AUDIO = a; let fini = false; jvHaloSon(a);
       const f = () => { if (!fini) { fini = true; suite(); } }, repli = () => { if (!fini) { fini = true; _jvSpeak(it.t, suite); } };
       try { a.preservesPitch = true; a.playbackRate = jvVitesseG(); } catch (e) {}
       a.onended = f; a.onerror = repli;
@@ -6742,8 +6742,11 @@ body.jv-bulle #jvBulle{opacity:1}
 body.jv-bulle #jvBulle .h-svg{transform:none;opacity:1}
 #jvBulle .h-svg .n{animation:jvRespire 3.6s ease-in-out infinite}
 #jvBulle .h-svg .n:nth-child(3n){animation-delay:.6s}#jvBulle .h-svg .n:nth-child(3n+1){animation-delay:1.2s}
-#jvBulle .h-anneau.ecoute .h-svg{animation:jvEcoute 1.4s ease-in-out infinite}
-#jvBulle .h-anneau.ecoute .h-svg .l{stroke:rgba(var(--glow),.95)}
+#jvBulle .h-svg .bande{stroke:rgba(var(--glow),calc(.10 + var(--mic,0) * .3))}
+#jvBulle .h-svg .l{stroke:rgba(var(--glow),calc(.6 + var(--mic,0) * .4))}
+#jvBulle .h-svg .g{transform-box:fill-box;transform-origin:center}
+#jvBulle .h-radar{position:absolute;inset:0;border-radius:50%;opacity:0;transition:opacity .5s;background:conic-gradient(from 0deg,transparent 0deg 250deg,rgba(var(--glow),0) 262deg,rgba(var(--glow),.6) 352deg,rgba(var(--glow),0) 360deg);-webkit-mask:radial-gradient(closest-side,transparent 79%,#000 84%,#000 93%,transparent 98%);mask:radial-gradient(closest-side,transparent 79%,#000 84%,#000 93%,transparent 98%)}
+#jvBulle .h-anneau.pense .h-radar{opacity:1}
 #jvBulle .h-nom{position:absolute;left:0;right:0;text-align:center;font-size:10px;font-weight:500;letter-spacing:.24em;color:#56717a}
 #jvBulle .h-fen{position:absolute;left:50%;transform:translateX(-50%);overflow:hidden;-webkit-mask-image:linear-gradient(transparent 0,#000 24%,#000 76%,transparent 100%);mask-image:linear-gradient(transparent 0,#000 24%,#000 76%,transparent 100%)}
 #jvBulle .b-txt{position:absolute;left:0;right:0;top:0;text-align:center;font-size:20px;line-height:1.42;letter-spacing:-.01em;font-weight:300;color:#6a858d;will-change:transform}
@@ -6777,29 +6780,86 @@ function jvHaloSvg(){
   const n = 30, c = 170, R = 150, P = [];
   for (let i = 0; i < n; i++) { const a = 2 * Math.PI * i / n - Math.PI / 2, k = 1 + 0.025 * Math.sin(i * 2.3); P.push([c + R * Math.cos(a) * k, c + R * Math.sin(a) * k]); }
   const f = x => x.toFixed(1);
-  let s = `<svg class="h-svg" aria-hidden="true" viewBox="0 0 340 340" width="100%" height="100%" style="overflow:visible"><circle cx="170" cy="170" r="168" fill="none" stroke="rgba(var(--glow),.10)" stroke-width="18"/><g fill="none" stroke="rgba(var(--glow),.18)" stroke-width=".8">`;
+  let s = `<svg class="h-svg" aria-hidden="true" viewBox="0 0 340 340" width="100%" height="100%" style="overflow:visible"><circle class="bande" cx="170" cy="170" r="168" fill="none" stroke-width="18"/><g fill="none" stroke="rgba(var(--glow),.18)" stroke-width=".8">`;
   for (let i = 0; i < n; i += 2) { const q = P[(i + 3) % n]; s += `<line x1="${f(P[i][0])}" y1="${f(P[i][1])}" x2="${f(q[0])}" y2="${f(q[1])}"/>`; }
   s += `</g><g fill="none" stroke="rgba(var(--glow),.6)" stroke-width="1.2">`;
   for (let i = 0; i < n; i++) { const q = P[(i + 1) % n]; s += `<line class="l" x1="${f(P[i][0])}" y1="${f(P[i][1])}" x2="${f(q[0])}" y2="${f(q[1])}"/>`; }
   s += `</g><g>`;
-  P.forEach((p, i) => { const r = i % 3 ? 2.2 : 3.6; s += `<g class="n"><circle cx="${f(p[0])}" cy="${f(p[1])}" r="${f(r * 2.8)}" fill="rgba(var(--glow),.10)"/><circle cx="${f(p[0])}" cy="${f(p[1])}" r="${r}" fill="${i % 3 ? "#8fd6dc" : "rgb(var(--glow))"}"/></g>`; });
+  P.forEach((p, i) => { const r = i % 3 ? 2.2 : 3.6; s += `<g class="n"><circle class="g" cx="${f(p[0])}" cy="${f(p[1])}" r="${f(r * 2.8)}" fill="rgba(var(--glow),.16)"/><circle cx="${f(p[0])}" cy="${f(p[1])}" r="${r}" fill="${i % 3 ? "#8fd6dc" : "rgb(var(--glow))"}"/></g>`; });
   return s + `</g></svg>`;
 }
 const JV_SYM_GRAND = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>`;
 const JV_SYM_MICRO = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>`;
 const JV_BULLE_COCHE = `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`;
+/* l'anneau vivant : il réfléchit (une lueur tourne), il parle (les points suivent sa voix), il écoute (l'anneau suit la vôtre) */
+let JV_AC = null, JV_AN = null, JV_FREQ = null, JV_HALO_MIC = { t: 0, v: 0 }, JV_HALO_RAF = 0;
+function jvHaloSon(a){
+  // on mesure la voix Google seulement halo visible et appli au premier plan : un son passé par l'analyseur
+  // se tairait si le téléphone suspendait l'audio en arrière-plan
+  try {
+    if (!a || !JV_BULLE || document.hidden || document.body.classList.contains("verrou") || (typeof JV_ASSIST !== "undefined" && JV_ASSIST)) return;
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    if (!JV_AC) { JV_AC = new AC(); JV_AN = JV_AC.createAnalyser(); JV_AN.fftSize = 128; JV_AN.smoothingTimeConstant = 0.55; JV_AN.connect(JV_AC.destination); JV_FREQ = new Uint8Array(JV_AN.frequencyBinCount); }
+    if (JV_AC.state !== "running") { JV_AC.resume().catch(() => {}); return; }
+    JV_AC.createMediaElementSource(a).connect(JV_AN); a._jvAn = true;
+  } catch (e) {}
+}
+/* le niveau de son micro (reconnaissance Google du téléphone, appli 0.3.9) ; sinon ses mots reconnus font l'affaire */
+function jvHaloMic(rms){
+  const v = Math.max(0, Math.min(1, ((+rms || 0) - 1) / 8));
+  JV_HALO_MIC = { t: performance.now(), v };
+  if (v > 0.35) { try { kickT = performance.now(); } catch (e) {} }
+}
+function jvHaloAnime(){
+  if (JV_HALO_RAF) return;
+  const N = [...document.querySelectorAll("#jvHalo .n .g")], halo = $("jvHalo"), radar = halo && halo.querySelector(".h-radar"), lv = N.map(() => 0);
+  const t0 = performance.now();
+  const tour = now => {
+    const B = JV_BULLE; if (!B || !halo) { JV_HALO_RAF = 0; return; }
+    const t = now - t0, n = N.length;
+    const audio = !!(JV_AUDIO && !JV_AUDIO.paused && !JV_AUDIO.ended);
+    const parle = audio || !!JV_VQ.joue || (typeof JV_PARLE !== "undefined" && JV_PARLE > 0);
+    const ecoute = typeof listening !== "undefined" && listening;
+    const pense = !ecoute && !B.fini && !B.ph.length;
+    halo.classList.toggle("pense", pense);
+    let mic = 0;
+    if (ecoute) {
+      const r = now - JV_HALO_MIC.t < 260 ? JV_HALO_MIC.v : 0;
+      const k = typeof kickT !== "undefined" ? Math.max(0, 1 - (now - kickT) / 320) : 0;
+      mic = Math.max(r, k * 0.8);
+    }
+    halo.style.setProperty("--mic", (B.mic = (B.mic || 0) * 0.75 + mic * 0.25).toFixed(3));
+    let F = null;
+    if (parle && audio && JV_AUDIO._jvAn && JV_AN) { JV_AN.getByteFrequencyData(JV_FREQ); F = JV_FREQ; }
+    const tete = ((t / 1500) * 360 + 350) % 360;
+    for (let i = 0; i < n; i++) {
+      let v = 0;
+      if (pense) { const d = (tete - i * 360 / n + 720) % 360; v = d < 100 ? 1 - d / 100 : 0; }
+      else if (parle) {
+        if (F) { const k = i <= n / 2 ? i : n - i, b = 1 + Math.round(k * 20 / (n / 2)); v = Math.min(1, (F[b] || 0) / 210); }
+        else v = Math.max(0, 0.3 + 0.35 * Math.sin(t / 95 + i * 1.7) * Math.sin(t / 330 + i * 0.9));   // voix du téléphone : on mime
+      } else if (ecoute) v = B.mic * (0.65 + 0.35 * Math.sin(t / 140 + i * 0.8));
+      lv[i] = lv[i] * 0.6 + v * 0.4;
+      const s = N[i].style; s.transform = `scale(${(1 + lv[i] * 1.9).toFixed(3)})`; s.opacity = (0.35 + lv[i] * 0.65).toFixed(3);
+    }
+    if (radar && pense) radar.style.transform = `rotate(${((t / 1500) * 360) % 360}deg)`;
+    JV_HALO_RAF = requestAnimationFrame(tour);
+  };
+  JV_HALO_RAF = requestAnimationFrame(tour);
+}
 function jvBulleDom(){
   let b = $("jvBulle"); if (b) return b;
   const st = document.createElement("style"); st.id = "jvBulleCss"; st.textContent = JV_BULLE_CSS; document.head.appendChild(st);
   const v = document.createElement("div"); v.id = "jvBulleVoile"; document.body.appendChild(v);
   b = document.createElement("div"); b.id = "jvBulle"; b.setAttribute("role", "dialog");
-  b.innerHTML = `<p class="h-q" id="jvBulleQ"></p><div class="h-anneau" id="jvHalo">${jvHaloSvg()}<span class="h-nom" id="jvBulleNom"></span><div class="h-fen" id="jvHaloFen"><div class="b-txt" id="jvBulleTxt" aria-live="polite"></div></div></div><div class="h-bas" id="jvHaloBas"><div class="b-act" id="jvBulleAct"></div><div class="h-sym"><button id="jvBulleConv" aria-label="ouvrir la conversation en grand">${JV_SYM_GRAND}</button><button id="jvBulleMic" aria-label="répondre à la voix">${JV_SYM_MICRO}</button></div></div>`;
+  b.innerHTML = `<p class="h-q" id="jvBulleQ"></p><div class="h-anneau" id="jvHalo"><div class="h-radar" aria-hidden="true"></div>${jvHaloSvg()}<span class="h-nom" id="jvBulleNom"></span><div class="h-fen" id="jvHaloFen"><div class="b-txt" id="jvBulleTxt" aria-live="polite"></div></div></div><div class="h-bas" id="jvHaloBas"><div class="b-act" id="jvBulleAct"></div><div class="h-sym"><button id="jvBulleConv" aria-label="ouvrir la conversation en grand">${JV_SYM_GRAND}</button><button id="jvBulleMic" aria-label="répondre à la voix">${JV_SYM_MICRO}</button></div></div>`;
   document.body.appendChild(b);
   v.addEventListener("click", () => jvBulleFerme(true));
   $("jvBulleConv").addEventListener("click", e => { e.stopPropagation(); jvBulleFerme(false); openConv(); });
   $("jvBulleMic").addEventListener("click", e => { e.stopPropagation(); jvBulleMicro(); });
   $("jvBulleAct").addEventListener("click", jvBulleClic);
   $("jvHalo").addEventListener("click", () => jvBulleSursis());
+  try { if (typeof TN !== "undefined" && TN && TN.addListener) TN.addListener("srNiveau", e => jvHaloMic(e && e.rms)); } catch (e) {}
   return b;
 }
 /* à la place de la constellation : centré sur elle, le plus grand possible */
@@ -6836,6 +6896,7 @@ function jvBulle(question){
   x.style.transform = `translateY(${Math.round($("jvHaloFen").clientHeight * 0.4)}px)`;
   document.body.classList.add("jv-bulle");
   B.veille = setInterval(() => jvBulleVeille(B), 250);
+  try { jvHaloAnime(); } catch (e) {}
   B.phrase = p => { const t = jvPourVoix(p).trim(); if (!t || JV_BULLE !== B) return; B.ph.push(t); jvBullePeins(B); if (B.muet) jvBulleLecture(B); };
   B.dire = t => { B.muet = true; B.phrase(t); };
   B.fin = nv => jvBulleFin(B, nv || []);
@@ -7566,7 +7627,7 @@ function jvDire(t, then){
   const joue = src => {
     try {
       try { if (JV_AUDIO) JV_AUDIO.pause(); } catch (e) {}
-      const a = new Audio(src); JV_AUDIO = a;
+      const a = new Audio(src); JV_AUDIO = a; try { jvHaloSon(a); } catch (e) {}
       try { a.preservesPitch = true; a.playbackRate = jvVitesseG(); } catch (e) {}
       a.onended = done; a.onerror = repli;
       const p = a.play(); if (p && p.catch) p.catch(repli);
