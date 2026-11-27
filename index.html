@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v44 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v45 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 44;
+const TEMPO_BUILD = 45;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -3148,32 +3148,33 @@ function cvFrame(t){
   requestAnimationFrame(cvFrame);
   if (!isConst() || document.hidden) return;
   cvInit();
-  const R = $("ring"), st = R.classList.contains("think") ? "think" : R.classList.contains("on") ? "on" : R.classList.contains("ok") ? "ok" : "idle";
-  const kick = Math.max(0, 1 - (t - kickT) / 320);
+  const R = $("ring"), st = R.classList.contains("think") ? "think" : R.classList.contains("on") ? "on" : R.classList.contains("ok") ? "ok" : R.classList.contains("parle") ? "parle" : "idle";
+  const kick = Math.max(0, 1 - (t - kickT) / 320), niv = st === "parle" ? +window.JV_NIV || 0 : 0;   // parle : Nestor répond, la constellation suit sa voix
   CX.clearRect(0, 0, CW, CW);
   // lueur centrale
   const gl = CX.createRadialGradient(CC, CC, 0, CC, CC, st === "idle" ? 70 : 95);
-  gl.addColorStop(0, `rgba(${glowRGB},${st === "idle" ? .10 : .20 + kick * .2})`); gl.addColorStop(1, `rgba(${glowRGB},0)`);
+  gl.addColorStop(0, `rgba(${glowRGB},${st === "idle" ? .10 : .20 + kick * .2 + niv * .3})`); gl.addColorStop(1, `rgba(${glowRGB},0)`);
   CX.fillStyle = gl; CX.fillRect(0, 0, CW, CW);
   for (const p of PTS) {
-    p.a += p.sp * (st === "think" ? 7 : st === "on" ? 2.2 : 1);
+    p.a += p.sp * (st === "think" ? 7 : st === "on" ? 2.2 : st === "parle" ? 1.8 : 1);
     let tr, ta = p.a, squash = 1;
     if (st === "idle") tr = p.r + Math.sin(t / 1900 + p.ph) * 12;
     else if (st === "on") tr = 26 + (p.r - 34) * .36 - kick * 16;
+    else if (st === "parle") tr = p.r * .9 + Math.sin(t / 1500 + p.ph) * 8 + niv * 30 * (.55 + .45 * Math.sin(p.ph * 5 + t / 160));
     else if (st === "think") { tr = [34, 62, 90][p.orb]; ta = p.a + (p.orb % 2 ? -1 : 1) * t / (700 + p.orb * 420); squash = [1, .58, .82][p.orb]; }
     else tr = 5 + p.r * .06;
     const rot = st === "think" ? t / 2600 : 0;
     let tx = Math.cos(ta) * tr, ty = Math.sin(ta) * tr * squash;
     const cx = tx * Math.cos(rot) - ty * Math.sin(rot), cy = tx * Math.sin(rot) + ty * Math.cos(rot);
     tx = CC + cx; ty = CC + cy;
-    const k = st === "idle" ? .005 : st === "on" ? .03 : st === "think" ? .055 : .09;
+    const k = st === "idle" ? .005 : st === "on" ? .03 : st === "parle" ? .04 : st === "think" ? .055 : .09;
     const w = st === "idle" ? .16 : .06;
     p.vx = (p.vx + (tx - p.x) * k + Math.sin(t / 900 + p.ph * 3) * w) * .87;
     p.vy = (p.vy + (ty - p.y) * k + Math.cos(t / 1100 + p.ph * 2) * w) * .87;
     p.x += p.vx; p.y += p.vy;
   }
   // fils entre les pensées proches
-  const maxD = st === "think" ? 42 : st === "on" ? 32 : 28, la = st === "think" ? .42 : st === "on" ? .3 + kick * .2 : .13;
+  const maxD = st === "think" ? 42 : st === "on" ? 32 : st === "parle" ? 34 : 28, la = st === "think" ? .42 : st === "on" ? .3 + kick * .2 : st === "parle" ? .2 + niv * .35 : .13;
   CX.lineWidth = .7;
   for (let i = 0; i < PTS.length; i++) for (let j = i + 1; j < PTS.length; j++) {
     const a = PTS[i], b = PTS[j], dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy;
@@ -3181,14 +3182,14 @@ function cvFrame(t){
   }
   // points de lumière
   for (const p of PTS) {
-    const al = Math.min(1, .45 + .4 * Math.sin(t / 650 + p.ph) + (st === "idle" ? 0 : .25) + kick * .4);
-    const rr = p.s * (st === "on" ? 1.1 + kick * .9 : st === "think" ? 1.15 : 1);
+    const al = Math.min(1, .45 + .4 * Math.sin(t / 650 + p.ph) + (st === "idle" ? 0 : .25) + kick * .4 + niv * .35);
+    const rr = p.s * (st === "on" ? 1.1 + kick * .9 : st === "think" ? 1.15 : st === "parle" ? 1 + niv * .9 : 1);
     if (p.s > 1.6) { CX.fillStyle = `rgba(${glowRGB},${al * .18})`; CX.beginPath(); CX.arc(p.x, p.y, rr * 3.2, 0, 6.283); CX.fill(); }
     CX.fillStyle = `rgba(${glowRGB},${al})`; CX.beginPath(); CX.arc(p.x, p.y, rr, 0, 6.283); CX.fill();
   }
   // ta semaine : chaque chose réglée allume une étoile dorée, reliée à la précédente
   if (STARS.length) {
-    const dim = st === "on" || st === "think" ? .3 : 1;
+    const dim = st === "on" || st === "think" || st === "parle" ? .3 : 1;
     CX.lineWidth = .9;
     for (let k = 1; k < STARS.length; k++) {
       const a = STARS[k - 1], b = STARS[k], d = Math.hypot(a.x - b.x, a.y - b.y);
@@ -6747,8 +6748,15 @@ body.jv-bulle #jvBulle .h-svg{transform:none;opacity:1}
 #jvBulle .h-svg .g{transform-box:fill-box;transform-origin:center}
 #jvBulle .h-radar{position:absolute;inset:0;border-radius:50%;opacity:0;transition:opacity .5s;background:conic-gradient(from 0deg,transparent 0deg 250deg,rgba(var(--glow),0) 262deg,rgba(var(--glow),.6) 352deg,rgba(var(--glow),0) 360deg);-webkit-mask:radial-gradient(closest-side,transparent 79%,#000 84%,#000 93%,transparent 98%);mask:radial-gradient(closest-side,transparent 79%,#000 84%,#000 93%,transparent 98%)}
 #jvBulle .h-anneau.pense .h-radar{opacity:1}
-#jvBulle .h-nom{position:absolute;left:0;right:0;text-align:center;font-size:10px;font-weight:500;letter-spacing:.24em;color:#56717a}
-#jvBulle .h-fen{position:absolute;left:50%;transform:translateX(-50%);overflow:hidden;touch-action:none;-webkit-mask-image:linear-gradient(transparent 0,#000 24%,#000 76%,transparent 100%);mask-image:linear-gradient(transparent 0,#000 24%,#000 76%,transparent 100%)}
+#jvBulle .h-cv{position:absolute;inset:0;width:100%;height:100%;display:none}
+#jvBulle .h-anneau.const .h-cv{display:block}
+#jvBulle .h-anneau.const .h-svg,#jvBulle .h-anneau.const .h-radar{display:none}
+#jvBulle .h-fond{position:absolute;left:13%;right:13%;top:16%;bottom:16%;border-radius:50%;background:radial-gradient(closest-side,rgba(247,251,252,.92),rgba(247,251,252,.7) 55%,rgba(247,251,252,0) 100%);transition:opacity .5s}
+#jvBulle .h-anneau.pense .h-fond{opacity:0}
+#jvBulle .h-anneau:not(.const) .h-fond{display:none}
+#jvBulle .h-anneau.fin .h-nom{opacity:0}
+#jvBulle .h-nom{transition:opacity .5s;position:absolute;z-index:1;left:0;right:0;text-align:center;font-size:10px;font-weight:500;letter-spacing:.24em;color:#56717a}
+#jvBulle .h-fen{position:absolute;z-index:1;left:50%;transform:translateX(-50%);overflow:hidden;touch-action:none;-webkit-mask-image:linear-gradient(transparent 0,#000 24%,#000 76%,transparent 100%);mask-image:linear-gradient(transparent 0,#000 24%,#000 76%,transparent 100%)}
 #jvBulle .h-fen.fin{-webkit-mask-image:linear-gradient(transparent 0,#000 7%,#000 93%,transparent 100%);mask-image:linear-gradient(transparent 0,#000 7%,#000 93%,transparent 100%)}
 #jvBulle .b-txt{position:absolute;left:0;right:0;top:0;text-align:center;font-size:20px;line-height:1.42;letter-spacing:-.01em;font-weight:300;color:#6a858d;will-change:transform}
 #jvBulle .b-txt p{margin:0 0 .5em;text-wrap:balance}
@@ -6813,10 +6821,10 @@ function jvHaloMic(rms){
 }
 function jvHaloAnime(){
   if (JV_HALO_RAF) return;
-  const N = [...document.querySelectorAll("#jvHalo .n .g")], halo = $("jvHalo"), radar = halo && halo.querySelector(".h-radar"), lv = N.map(() => 0);
+  const N = [...document.querySelectorAll("#jvHalo .n .g")], halo = $("jvHalo"), radar = halo && halo.querySelector(".h-radar"), lv = N.map(() => 0), cvH = $("jvHaloCv");
   const t0 = performance.now();
   const tour = now => {
-    const B = JV_BULLE; if (!B || !halo) { JV_HALO_RAF = 0; return; }
+    const B = JV_BULLE; if (!B || !halo) { JV_HALO_RAF = 0; window.JV_NIV = 0; try { $("ring").classList.remove("parle"); } catch (e) {} return; }
     const t = now - t0, n = N.length;
     const audio = !!(JV_AUDIO && !JV_AUDIO.paused && !JV_AUDIO.ended);
     const parle = audio || !!JV_VQ.joue || (typeof JV_PARLE !== "undefined" && JV_PARLE > 0);
@@ -6832,6 +6840,24 @@ function jvHaloAnime(){
     halo.style.setProperty("--mic", (B.mic = (B.mic || 0) * 0.75 + mic * 0.25).toFixed(3));
     let F = null;
     if (parle && audio && JV_AUDIO._jvAn && JV_AN) { JV_AN.getByteFrequencyData(JV_FREQ); F = JV_FREQ; }
+    // sa constellation (celle de l'accueil), qui s'élargit au rythme de sa voix
+    let niv = 0;
+    if (parle && !ecoute) {
+      if (F) { let sm = 0; for (let b = 1; b <= 20; b++) sm += F[b] || 0; niv = Math.min(1, sm / 20 / 150); }
+      else niv = Math.max(0, 0.35 + 0.32 * Math.sin(t / 110) * Math.sin(t / 370));
+    }
+    B.niv = (B.niv || 0) * 0.7 + niv * 0.3; window.JV_NIV = B.niv;
+    const cst = typeof isConst === "function" && isConst() && typeof CV !== "undefined" && !!cvH;
+    halo.classList.toggle("const", cst);
+    try { $("ring").classList.toggle("parle", parle && !ecoute && !pense); } catch (e) {}
+    if (cst) {
+      try {
+        const dpr = Math.min(3, window.devicePixelRatio || 1), W = Math.round((halo.clientWidth || 340) * dpr);
+        if (cvH.width !== W) { cvH.width = W; cvH.height = W; }
+        const c = cvH.getContext("2d"); c.clearRect(0, 0, W, W); c.drawImage(CV, 0, 0, CV.width, CV.height, 0, 0, W, W);
+      } catch (e) {}
+      JV_HALO_RAF = requestAnimationFrame(tour); return;
+    }
     const tete = ((t / 1500) * 360 + 350) % 360;
     for (let i = 0; i < n; i++) {
       let v = 0;
@@ -6853,7 +6879,7 @@ function jvBulleDom(){
   const st = document.createElement("style"); st.id = "jvBulleCss"; st.textContent = JV_BULLE_CSS; document.head.appendChild(st);
   const v = document.createElement("div"); v.id = "jvBulleVoile"; document.body.appendChild(v);
   b = document.createElement("div"); b.id = "jvBulle"; b.setAttribute("role", "dialog");
-  b.innerHTML = `<p class="h-q" id="jvBulleQ"></p><div class="h-anneau" id="jvHalo"><div class="h-radar" aria-hidden="true"></div>${jvHaloSvg()}<span class="h-nom" id="jvBulleNom"></span><div class="h-fen" id="jvHaloFen"><div class="b-txt" id="jvBulleTxt" aria-live="polite"></div></div></div><div class="h-bas" id="jvHaloBas"><div class="b-act" id="jvBulleAct"></div><div class="h-sym"><button id="jvBulleConv" aria-label="ouvrir la conversation en grand">${JV_SYM_GRAND}</button><button id="jvBulleMic" aria-label="répondre à la voix">${JV_SYM_MICRO}</button></div></div>`;
+  b.innerHTML = `<p class="h-q" id="jvBulleQ"></p><div class="h-anneau" id="jvHalo"><canvas class="h-cv" id="jvHaloCv" aria-hidden="true"></canvas><div class="h-radar" aria-hidden="true"></div>${jvHaloSvg()}<div class="h-fond" aria-hidden="true"></div><span class="h-nom" id="jvBulleNom"></span><div class="h-fen" id="jvHaloFen"><div class="b-txt" id="jvBulleTxt" aria-live="polite"></div></div></div><div class="h-bas" id="jvHaloBas"><div class="b-act" id="jvBulleAct"></div><div class="h-sym"><button id="jvBulleConv" aria-label="ouvrir la conversation en grand">${JV_SYM_GRAND}</button><button id="jvBulleMic" aria-label="répondre à la voix">${JV_SYM_MICRO}</button></div></div>`;
   document.body.appendChild(b);
   v.addEventListener("click", () => jvBulleFerme(true));
   $("jvBulleConv").addEventListener("click", e => { e.stopPropagation(); jvBulleFerme(false); openConv(); });
@@ -6892,7 +6918,7 @@ function jvBulle(question){
   const B = JV_BULLE = { ph: [], dit: -1, muet: !(CFG.jvParle !== false && CFG.vSay !== "0"), fini: false, err: false, to: null, lit: null, n0: JV.view.length, q: String(question || "").trim(), suite: false };
   $("jvBulleNom").textContent = jvEstNestor() ? "N.E.S.T.O.R." : String(jvNom()).toUpperCase();
   $("jvBulle").setAttribute("aria-label", "Réponse de " + jvNom());
-  const x = $("jvBulleTxt"); x.className = "b-txt"; x.style.transition = "none"; $("jvHaloFen").classList.remove("fin"); x.innerHTML = `<span class="b-pts" aria-label="un instant"><i></i><i></i><i></i></span>`;
+  const x = $("jvBulleTxt"); x.className = "b-txt"; x.style.transition = "none"; x.style.fontSize = ""; $("jvHaloFen").classList.remove("fin"); $("jvHalo").classList.remove("fin"); x.innerHTML = `<span class="b-pts" aria-label="un instant"><i></i><i></i><i></i></span>`;
   $("jvBulleAct").innerHTML = "";
   jvBullePlace(); jvBulleQ(B);
   x.style.transform = `translateY(${Math.round($("jvHaloFen").clientHeight * 0.4)}px)`;
@@ -6925,7 +6951,8 @@ function jvBullePeins(B){
   if (!B || JV_BULLE !== B) return;
   const x = $("jvBulleTxt"); if (!x) return;
   x.classList.toggle("err", B.err);
-  x.innerHTML = B.ph.map((t, i) => `<p class="${i <= B.dit ? "dit" : ""}">${esc(t)}</p>`).join("");
+  const nb = t => String(t).replace(/(\d+) h (\d{2})\b/g, "$1\u00a0h\u00a0$2").replace(/(\d+) h\b/g, "$1\u00a0h").replace(/(\d) (€|%|km|min)\b/g, "$1\u00a0$2");
+  x.innerHTML = B.ph.map((t, i) => `<p class="${i <= B.dit ? "dit" : ""}">${esc(nb(t))}</p>`).join("");
   jvBulleDefile(B, false);
 }
 /* le générique : la phrase qui se dit monte lentement vers le centre, pendant le temps qu'elle se dit */
@@ -6943,9 +6970,12 @@ function jvBulleDefile(B, anime){
 /* la voix a fini : la réponse entière au centre si elle tient, sinon son début (le reste au doigt) */
 function jvBullePose(B){
   const x = $("jvBulleTxt"), f = $("jvHaloFen"); if (!x || !f || JV_BULLE !== B) return;
-  const H = f.clientHeight || 200, T = x.scrollHeight || x.offsetHeight || 0;
-  f.classList.add("fin");
-  const y = T <= H * 0.9 ? (H - T) / 2 : H * 0.08;
+  const D = ($("jvHalo") && $("jvHalo").clientWidth) || 340;
+  f.style.top = Math.round(D * 0.2) + "px"; f.style.height = Math.round(D * 0.6) + "px";
+  const H = f.clientHeight || 200; let T = x.scrollHeight || x.offsetHeight || 0;
+  if (T > H * 0.86) { x.style.fontSize = "17px"; T = x.scrollHeight || T; }
+  f.classList.add("fin"); $("jvHalo").classList.add("fin");
+  const y = T <= H * 0.86 ? (H - T) / 2 : H * 0.08;
   x.style.transition = "transform .9s cubic-bezier(.2,.8,.2,1)"; x.style.transform = `translateY(${Math.round(y)}px)`; B.y = y;
 }
 /* glisser le doigt dans l'anneau : le texte monte ou descend */
@@ -7081,8 +7111,8 @@ function jvBulleMicro(){
 }
 function jvBulleFerme(stop){
   const B = JV_BULLE; if (B) { clearTimeout(B.to); clearTimeout(B.lit); clearInterval(B.veille); }
-  JV_BULLE = null;
-  try { document.body.classList.remove("jv-bulle"); } catch (e) {}
+  JV_BULLE = null; window.JV_NIV = 0;
+  try { document.body.classList.remove("jv-bulle"); $("ring").classList.remove("parle"); } catch (e) {}
   if (stop) {
     try { jvVoixDebut(); JV_VQ.muet = true; } catch (e) {} try { hush(); } catch (e) {}
     if (jvSuiteOn() && listening) { JV_SUITE = null; try { stopListen(); idle(); } catch (e) {} }
