@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v37 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v38 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 37;
+const TEMPO_BUILD = 38;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1022,6 +1022,7 @@ ICI C'EST UNE LIGNE D'UN MAIL qu'il s'est envoyé à lui-même pour te confier q
   });
   if (!r.ok) { clearTimeout(to); let m = ""; try { m = ((await r.json()).error || {}).message || ""; } catch (e) {} throw new Error("API " + r.status + (m ? " " + m : "")); }
   const j = await r.json(); clearTimeout(to);
+  try { if (typeof jvCountHaiku === "function") jvCountHaiku(j.usage); } catch (e) {}
   if (j.stop_reason === "max_tokens") throw new Error("coupé");
   const raw = (j.content || []).map(c => c.text || "").join("");
   const obj = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
@@ -1064,7 +1065,8 @@ async function aiMail(it){
     body: JSON.stringify({ model: "claude-haiku-5-5", max_tokens: 800, system: sys, messages: [{ role: "user", content: `${it.cat === "message" ? "C'EST UN TEXTO (SMS), pas un mail : court, sans objet ni signature, avec ses mots. Mets subject à \"\".\n" : ""}Tâche : ${it.title}${it.ch ? "\nChantier : " + it.ch : ""}${it.note ? "\nNote : " + it.note : ""}${it.raw ? "\nCe qu'il a dicté : " + it.raw : ""}` }] })
   });
   if (!r.ok) throw new Error("API " + r.status);
-  const raw = ((await r.json()).content || []).map(c => c.text || "").join("");
+  const jm = await r.json(); try { if (typeof jvCountHaiku === "function") jvCountHaiku(jm.usage); } catch (e) {}
+  const raw = (jm.content || []).map(c => c.text || "").join("");
   return JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
 }
 function applyUpdates(ups){
@@ -1474,7 +1476,7 @@ async function makeBrief(){
         system: `Tu fais le point pour ${myName()}, en un coup d'œil.\n\nQUI IL EST\n${CFG.profile}\n\nIl est ${WD[d.getDay()]} ${nowHM()}. En 2 phrases très courtes (35 mots maximum au total), dis-lui par quoi commencer maintenant et ce qui l'attend ensuite (cet après-midi, demain). Regroupe ce qui va ensemble (même chantier, même personne). Vouvoiement, à la manière de Jarvis, le majordome de Tony Stark (« monsieur » au plus une fois, jamais son prénom, pas d'exclamation), ton direct et calme, pas de liste, pas d'emoji, pas de formule d'introduction. Texte brut uniquement.`,
         messages: [{ role: "user", content: list }] })
     });
-    if (r.ok) { const t = ((await r.json()).content || []).map(c => c.text || "").join("").trim(); if (t) { S.brief = { sig, text: t }; save(); } }
+    if (r.ok) { const jb = await r.json(); try { if (typeof jvCountHaiku === "function") jvCountHaiku(jb.usage); } catch (e) {} const t = (jb.content || []).map(c => c.text || "").join("").trim(); if (t) { S.brief = { sig, text: t }; save(); } }
   } catch (e) {}
   briefBusy = false; $("point").classList.remove("load"); paintPoint();
 }
@@ -3669,7 +3671,8 @@ async function claudeText(system, user, max){
     headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
     body: JSON.stringify({ model: "claude-haiku-5-5", max_tokens: max || 600, system, messages: [{ role: "user", content: user }] }) });
   if (!r.ok) throw new Error("API " + r.status);
-  return ((await r.json()).content || []).map(c => c.text || "").join("").trim();
+  const jr = await r.json(); try { if (typeof jvCountHaiku === "function") jvCountHaiku(jr.usage); } catch (e) {}
+  return (jr.content || []).map(c => c.text || "").join("").trim();
 }
 let RITUAL = null;
 function openRitual(kind){
@@ -4203,7 +4206,7 @@ if (CFG.gmail) setTimeout(() => gmailColis(false), 4000);
    =================================================================================================== */
 const M_FN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/copilote-memoire";
 const CV_MODEL = "claude-sonnet-5-5";
-const CV_PRICE = { in: 2, cw: 2.5, cr: 0.10, out: 10 };   // $ par million de jetons, tarif Anthropic de Claude Sonnet 5.5 (nov. 2026)
+const CV_PRICE = { in: 2, cw: 2.5, cw1h: 4, cr: 0.10, out: 10 };   // $ par million de jetons, tarif Anthropic de Claude Sonnet 5.5 (nov. 2026)
 const CV_HIST = 13;                                       // messages gardés dans la conversation envoyée (6 échanges + la question)
 const CV_PAUSE = 30 * 60e3, CV_GARDE = 24 * 3600e3;      // 30 min sans échange : écran vierge ; l'ancienne reste 24 h à reprendre
 const TE = new TextEncoder(), TD = new TextDecoder();
@@ -4700,15 +4703,30 @@ function cvFenetre(){
   while (s < JV.msgs.length - 1 && !(JV.msgs[s].role === "user" && typeof JV.msgs[s].content === "string")) s++;
   return s;
 }
+/* économies (27/11) : ses souvenirs et le contexte ne sont envoyés qu'avec sa dernière question (plus répétés à chaque message de l'historique),
+   et les consignes + outils restent en mémoire chez Claude une heure au lieu de 5 minutes. Niveau 2 : tout ; 1 : consignes 1 h ; 0 : sans */
+let JV_CACHE = 2;
+const cvSansBlocs = t => String(t).replace(/<souvenirs>[\s\S]*?<\/souvenirs>\n?/, "").replace(/<contexte>[\s\S]*?<\/contexte>\n?/, "").replace(/<validations>[\s\S]*?<\/validations>\n?/, "").replace(/^\n+/, "");
+function cvCorps(from, niv){
+  const M = JV.msgs.slice(from); let last = -1;
+  M.forEach((m, i) => { if (m.role === "user" && typeof m.content === "string") last = i; });
+  const messages = M.map((m, i) => i !== last && m.role === "user" && typeof m.content === "string" ? { role: "user", content: cvSansBlocs(m.content) || "(…)" } : m);
+  const sys = jvSys();
+  return { system: niv >= 1 ? [{ type: "text", text: sys, cache_control: { type: "ephemeral", ttl: "1h" } }] : sys, messages };
+}
+const cvNiv = x => x === false ? 0 : typeof x === "number" ? x : JV_CACHE;
+const cvNivSuivant = (niv, j) => /output_config|effort/i.test(JSON.stringify(j || "")) ? 0 : niv - 1;   // l'effort refusé : sans rien ; seule la mise en cache refusée : un cran en dessous
 async function cvCall(extras){
-  const from = JV.from != null && JV.from < JV.msgs.length ? JV.from : cvFenetre();
-  const body = { model: CV_MODEL, max_tokens: 4000, system: jvSys(), tools: jvOutils(), messages: JV.msgs.slice(from) };
-  if (extras !== false) { body.cache_control = { type: "ephemeral" }; body.output_config = { effort: CFG.cvEffort || "medium" }; }
+  const niv = cvNiv(extras);
+  const from = JV.from != null && JV.from < JV.msgs.length ? JV.from : cvFenetre(), c = cvCorps(from, niv);
+  const body = { model: CV_MODEL, max_tokens: 4000, system: c.system, tools: jvOutils(), messages: c.messages };
+  if (niv >= 1) body.output_config = { effort: CFG.cvEffort || "medium" };
+  if (niv >= 2) body.cache_control = { type: "ephemeral" };
   const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
     headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
     body: JSON.stringify(body) });
   let j = null; try { j = await r.json(); } catch (e) {}
-  if (!r.ok && extras !== false && r.status === 400 && /cache_control|output_config|effort/i.test(JSON.stringify(j || ""))) return cvCall(false);
+  if (!r.ok && niv > 0 && r.status === 400 && /cache_control|output_config|effort|ttl/i.test(JSON.stringify(j || ""))) { JV_CACHE = cvNivSuivant(niv, j); return cvCall(JV_CACHE); }
   if (!r.ok) throw { status: r.status, j };
   return j;
 }
@@ -4718,15 +4736,17 @@ async function cvCall(extras){
 const jvNow = () => typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
 const jvEffort = t => CFG.cvEffort || (String(t || "").length > 400 || /\b(bilan|analys|compar|expliqu|pourquoi|strat[ée]gi|recherche|prépare|rédige|redige)/i.test(t || "") ? "medium" : "low");
 async function cvCallFlux(extras, surTexte, effort){
-  const from = JV.from != null && JV.from < JV.msgs.length ? JV.from : cvFenetre();
-  const body = { model: CV_MODEL, max_tokens: 4000, system: jvSys(), tools: jvOutils(), messages: JV.msgs.slice(from), stream: CFG.cvFlux !== false };
-  if (extras !== false) { body.cache_control = { type: "ephemeral" }; body.output_config = { effort: effort || "low" }; }
+  const niv = cvNiv(extras);
+  const from = JV.from != null && JV.from < JV.msgs.length ? JV.from : cvFenetre(), c = cvCorps(from, niv);
+  const body = { model: CV_MODEL, max_tokens: 4000, system: c.system, tools: jvOutils(), messages: c.messages, stream: CFG.cvFlux !== false };
+  if (niv >= 1) body.output_config = { effort: effort || "low" };
+  if (niv >= 2) body.cache_control = { type: "ephemeral" };
   const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
     headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
     body: JSON.stringify(body) });
   if (!r.ok) {
     let j = null; try { j = await r.json(); } catch (e) {}
-    if (extras !== false && r.status === 400 && /cache_control|output_config|effort/i.test(JSON.stringify(j || ""))) return cvCallFlux(false, surTexte, effort);
+    if (niv > 0 && r.status === 400 && /cache_control|output_config|effort|ttl/i.test(JSON.stringify(j || ""))) { JV_CACHE = cvNivSuivant(niv, j); return cvCallFlux(JV_CACHE, surTexte, effort); }
     throw { status: r.status, j };
   }
   // pas de flux (réglage, ou réponse déjà entière) : comme avant
@@ -4847,11 +4867,26 @@ function jvChronoTxt(){
   const d = L[L.length - 1], f = v => v == null ? "—" : String(v).replace(".", ",") + " s";
   return `dernière réponse : premier mot ${f(d.premier)}, complète ${f(d.total)}${d.voix != null ? ", voix " + f(d.voix) : ""}`;
 }
-function cvCount(u){
+function cvCount(u, cat){
   if (!u) return 0;
-  const usd = ((u.input_tokens || 0) * CV_PRICE.in + (u.cache_creation_input_tokens || 0) * CV_PRICE.cw + (u.cache_read_input_tokens || 0) * CV_PRICE.cr + (u.output_tokens || 0) * CV_PRICE.out) / 1e6;
-  const m = cvMonth(); m.usd += usd; m.n++; LS.set("copilote_conso", m);
+  const c1h = (u.cache_creation && u.cache_creation.ephemeral_1h_input_tokens) || 0, cw = (u.cache_creation_input_tokens || 0) - c1h;
+  const usd = ((u.input_tokens || 0) * CV_PRICE.in + cw * CV_PRICE.cw + c1h * CV_PRICE.cw1h + (u.cache_read_input_tokens || 0) * CV_PRICE.cr + (u.output_tokens || 0) * CV_PRICE.out) / 1e6;
+  const m = cvMonth(); m.usd += usd; m.n++; m.par = m.par || {}; const k = cat || "autre"; m.par[k] = (m.par[k] || 0) + usd; LS.set("copilote_conso", m);
   return usd;
+}
+/* les dictées rangées par Haiku : comptées à part (hors plafond Sonnet), pour voir l'ensemble */
+const CV_PRIX_HAIKU = { in: 0.10, cw: 0.125, cr: 0.01, out: 0.50 };
+function jvCountHaiku(u){
+  if (!u) return 0;
+  const usd = ((u.input_tokens || 0) * CV_PRIX_HAIKU.in + (u.cache_creation_input_tokens || 0) * CV_PRIX_HAIKU.cw + (u.cache_read_input_tokens || 0) * CV_PRIX_HAIKU.cr + (u.output_tokens || 0) * CV_PRIX_HAIKU.out) / 1e6;
+  const m = cvMonth(); m.haiku = (m.haiku || 0) + usd; LS.set("copilote_conso", m);
+  return usd;
+}
+function cvDetailConso(){
+  const m = cvMonth(), par = m.par || {}, L = Object.entries(par).filter(([, v]) => v >= 0.005).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${cvMoney(v)}`);
+  const reste = m.usd - Object.values(par).reduce((a, b) => a + b, 0);
+  if (reste >= 0.05) L.push(`avant le détail ${cvMoney(reste)}`);
+  return (L.length ? "détail : " + L.join(", ") : "") + (m.haiku >= 0.005 ? (L.length ? " · " : "") + `dictées (Haiku, hors plafond) ${cvMoney(m.haiku)}` : "");
 }
 async function cvSend(text, opt){
   text = (text || "").trim(); if (!text || JV.busy) return;
@@ -4897,7 +4932,7 @@ async function cvSend(text, opt){
     for (let step = 0; step < 6; step++) {
       etapes = step + 1;
       const j = await cvCallFlux(undefined, surTexte, effort);
-      usd += cvCount(j.usage);
+      usd += cvCount(j.usage, /^Mon brief du jour/.test(text) ? "brief" : /\bcheck\b/i.test(text) ? "check" : "conversation");
       const content = j.content || [];
       const t1 = content.filter(b => b.type === "text").map(b => b.text).join("\n").trim(); if (t1) texts.push(t1);
       const uses = content.filter(b => b.type === "tool_use");
@@ -5950,8 +5985,11 @@ const jvVendredi = d => jvAjoute(d, { 4: 1, 5: 0, 6: -1, 0: -2, 1: -3, 2: 3, 3: 
 const jvMercredi = d => jvAjoute(d, { 3: 0, 4: -1, 5: -2, 6: -3, 0: -4, 1: -5, 2: -6 }[new Date(d + "T12:00").getDay()]);
 const jvBetaNet = t => String(t || "").replace(/\*\*/g, "").replace(/^\s*[-•]\s*/gm, "").replace(/\n\s*\n+/g, "\n").trim().slice(0, 1600);
 /* Claude avec la recherche web, depuis le téléphone (compté dans le plafond du mois) */
-async function jvWeb(sys, user, maxUses){
-  if (!CFG.key || cvMonth().usd >= cvCap()) return null;
+let JV_WEB_ERR = "";   // pourquoi la dernière recherche web n'a rien donné (affiché dans Bêta)
+async function jvWeb(sys, user, maxUses, cat){
+  JV_WEB_ERR = "";
+  if (!CFG.key) { JV_WEB_ERR = "pas de clé Claude"; return null; }
+  if (cvMonth().usd >= cvCap()) { JV_WEB_ERR = "plafond du mois atteint"; return null; }
   const head = { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" };
   for (const v of ["web_search_20260318", "web_search_20250305"]) {
     let msgs = [{ role: "user", content: user }], autre = false;
@@ -5961,17 +5999,19 @@ async function jvWeb(sys, user, maxUses){
         r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: head, body: JSON.stringify({ model: CV_MODEL, max_tokens: 2000, system: sys,
           tools: [{ type: v, name: "web_search", max_uses: maxUses || 8, user_location: { type: "approximate", country: "FR", timezone: "Europe/Paris" } }], messages: msgs }) });
         j = await r.json().catch(() => ({}));
-      } catch (e) { return null; }
-      if (!r.ok) { if (r.status === 400 && step === 0) { autre = true; break; } return null; }   // version de l'outil refusée : on essaie l'autre
-      cvCount(j.usage);
+      } catch (e) { JV_WEB_ERR = "réseau"; return null; }
+      if (!r.ok) { JV_WEB_ERR = "erreur " + r.status + (j && j.error && j.error.message ? " · " + String(j.error.message).slice(0, 80) : ""); if (r.status === 400 && step === 0) { autre = true; break; } return null; }   // version de l'outil refusée : on essaie l'autre
+      cvCount(j.usage, cat || "recherche web");
       const n = +((j.usage && j.usage.server_tool_use && j.usage.server_tool_use.web_search_requests) || 0);
-      if (n) { const m = cvMonth(); m.usd += n * 0.01; LS.set("copilote_conso", m); }
+      if (n) { const m = cvMonth(); m.usd += n * 0.01; m.par = m.par || {}; const k = cat || "recherche web"; m.par[k] = (m.par[k] || 0) + n * 0.01; LS.set("copilote_conso", m); }
       const c = j.content || [];
       if (j.stop_reason === "pause_turn") { msgs = msgs.concat([{ role: "assistant", content: c }]); continue; }
       let k = -1; c.forEach((b, i) => { if (b.type === "web_search_tool_result" || b.type === "server_tool_use") k = i; });
-      return c.slice(k + 1).filter(b => b.type === "text").map(b => b.text).join("").trim() || null;
+      const out = c.slice(k + 1).filter(b => b.type === "text").map(b => b.text).join("").trim();
+      if (!out) JV_WEB_ERR = j.stop_reason === "max_tokens" ? "réponse coupée" : "réponse vide";
+      return out || null;
     }
-    if (!autre) return null;
+    if (!autre) { JV_WEB_ERR = JV_WEB_ERR || "recherche trop longue"; return null; }
   }
   return null;
 }
@@ -5994,7 +6034,8 @@ Réponds uniquement par ces lignes, en texte brut, sans emoji ni titre :
 Plan B : <même format>
 Piège : <le pari tentant à éviter> · <pourquoi>   (omets la ligne s'il n'y en a pas)${club ? `
 ${club} : <son match de la semaine et ton avis honnête en une phrase, même si ce n'est pas ce qu'il veut entendre>   (omets la ligne s'il ne joue pas du vendredi au lundi)` : ""}`;
-    const txt = await jvWeb(sys, `Prépare la sélection Cote & Match de cette semaine. Nous sommes le ${jvJourTxt(tod)} (${tod}).`, 10);
+    const txt = await jvWeb(sys, `Prépare la sélection Cote & Match de cette semaine. Nous sommes le ${jvJourTxt(tod)} (${tod}).`, 10, "Cote & Match");
+    LS.set("copilote_beta_essai_match", { at: Date.now(), ok: !!txt, err: txt ? "" : JV_WEB_ERR || "rien trouvé" });
     if (txt) { LS.set("copilote_beta_match", { sem, at: Date.now(), txt: jvBetaNet(txt) }); try { syncReminders(); } catch (e) {} }
   } finally { JV_BETA_BUSY.match = false; }
 }
@@ -6012,7 +6053,8 @@ Seulement les films sortis en salle en France le mercredi ${sem} (les sorties de
 Pour chaque film, une ligne : <titre> · <genre>, <durée> · <avis franc en une phrase, appuyé sur la presse et les spectateurs : vaut le déplacement, ou attends la télé> · <séances du vendredi soir et du samedi si tu les trouves>.
 De 2 à 6 films, les plus intéressants d'abord. Sois honnête, n'invente rien. Si tu ne trouves pas les séances, ajoute une dernière ligne : « Séances : voir le site du cinéma ».
 Réponds uniquement par ces lignes, en texte brut, sans emoji ni titre.`;
-    const txt = await jvWeb(sys, `Les sorties ciné de cette semaine au ${cine}. Nous sommes le ${jvJourTxt(tod)} (${tod}).`, 8);
+    const txt = await jvWeb(sys, `Les sorties ciné de cette semaine au ${cine}. Nous sommes le ${jvJourTxt(tod)} (${tod}).`, 8, "Ciné");
+    LS.set("copilote_beta_essai_cine", { at: Date.now(), ok: !!txt, err: txt ? "" : JV_WEB_ERR || "rien trouvé" });
     if (txt) { LS.set("copilote_beta_cine", { sem, at: Date.now(), txt: jvBetaNet(txt) }); try { syncReminders(); } catch (e) {} }
   } finally { JV_BETA_BUSY.cine = false; }
 }
@@ -6594,7 +6636,7 @@ function cvPaint(){
     return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">${head}</div><div>${esc(v.t)}</div>${v.why ? `<div class="sub">${esc(v.why)}</div>` : ""}${act}</div>`;
   }).join("") + `<div style="display:flex;justify-content:center;gap:22px">${JV.view.length ? `<button class="cv-new" id="cvNew">nouvelle conversation</button>` : ""}<button class="cv-new" id="cvBrief">brief du jour</button></div>`;
   const m = cvMonth();
-  $("cvCost").textContent = `Claude Sonnet · ce mois : ${cvMoney(m.usd)} sur ${cvMoney(cvCap())} · ${MEM.items.size} souvenir${MEM.items.size > 1 ? "s" : ""}` + (jvChronoTxt() ? " · " + jvChronoTxt() : "");
+  $("cvCost").textContent = `Claude Sonnet · ce mois : ${cvMoney(m.usd)} sur ${cvMoney(cvCap())} · ${MEM.items.size} souvenir${MEM.items.size > 1 ? "s" : ""}` + (jvChronoTxt() ? " · " + jvChronoTxt() : "") + (cvDetailConso() ? " · " + cvDetailConso() : "");
   L.querySelectorAll("[data-ok]").forEach(b => b.onclick = () => cvDecide(+b.dataset.ok, true));
   L.querySelectorAll("[data-no]").forEach(b => b.onclick = () => cvDecide(+b.dataset.no, false));
   L.querySelectorAll("[data-vtc]").forEach(b => b.onclick = () => cvDecide(+b.dataset.vtc, b.dataset.app));
@@ -6718,7 +6760,7 @@ async function jvPropositions(force){
       headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
       body: JSON.stringify({ model: CV_MODEL, max_tokens: 600, system: sys, messages: [{ role: "user", content: "Journal de la semaine :\n" + journal }] }) });
     const j = await r.json().catch(() => ({})); if (!r.ok) { LS.set("copilote_prop_sem", ""); return null; }
-    cvCount(j.usage);
+    cvCount(j.usage, "propositions");
     txt = (j.content || []).filter(b => b.type === "text").map(b => b.text).join("").trim();
   } catch (e) { LS.set("copilote_prop_sem", ""); return null; }
   const lignes = txt.split("\n").map(l => l.trim()).filter(l => /^\d+[.)]\s+\S/.test(l)).slice(0, 3);
@@ -6840,6 +6882,9 @@ function paintBeta(){
   const sm = LS.get("copilote_beta_match", null), sc = LS.get("copilote_beta_cine", null), tod = ymd(new Date()), L = [];
   if (CFG.jvBetaMatch !== false) L.push(sm && sm.sem === jvVendredi(tod) && sm.txt ? "Cote & Match : sélection prête (" + jvJourTxt(ymd(new Date(sm.at))) + ")" : "Cote & Match : prochaine sélection jeudi après-midi");
   if (CFG.jvBetaCine !== false) L.push(!String(CFG.jvBetaCinema || "").trim() ? "Ciné : indique ton cinéma" : sc && sc.sem === jvMercredi(tod) && sc.txt ? "Ciné : sorties de la semaine prêtes" : "Ciné : sorties de la semaine dès vendredi");
+  const essai = (k, nom) => { const e = LS.get("copilote_beta_essai_" + k, null); return e && !e.ok ? `${nom} : dernier essai ${jvJourTxt(ymd(new Date(e.at)))} ${jvHM(e.at)}, sans résultat (${e.err})` : ""; };
+  if (CFG.jvBetaMatch !== false) { const x = essai("match", "Cote & Match"); if (x) L.push(x); }
+  if (CFG.jvBetaCine !== false) { const x = essai("cine", "Ciné"); if (x) L.push(x); }
   $("cvBetaSt").textContent = L.join(" · ");
 }
 $("cvBetaMatchChk").onchange = () => { CFG.jvBetaMatch = $("cvBetaMatchChk").checked; saveCfg(); try { syncReminders(); } catch (e) {} paintBeta(); };
