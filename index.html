@@ -421,7 +421,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v49 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v50 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -677,7 +677,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 49;
+const TEMPO_BUILD = 50;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1395,7 +1395,7 @@ function render(fresh){
   if (doneT.length) h += `<button class="donebar" id="doneBar" style="width:100%">${doneT.length} réglé${doneT.length > 1 ? "s" : ""} aujourd'hui${streak() > 1 ? " · " + streak() + " jours d'affilée" : ""}</button><div class="donelist${showDone ? " show" : ""}">${doneT.map(i => itHTML(i)).join("")}</div>`;
   if (SPACE === "perso") h = colisSection() + h;
   $("list").innerHTML = h;
-  const GL = { now: "now", matin: "matin", aprem: "aprem", soir: "soir", today: "auj", demain: "dem", semaine: "sem", tard: "+ tard" };
+  const GL = { now: "mnt", matin: "mat", aprem: "aprm", soir: "soir", today: "auj", demain: "dem", semaine: "sem", tard: "+ tard" };
   $("glance").innerHTML = SLOTS.map(([k]) => { const a = open.filter(i => bucket(i) === k); return a.length ? `<button class="gl${a.some(i => i.u === 3) ? " hot" : ""}" data-g="${k}"><b>${a.length}</b>${GL[k]}</button>` : ""; }).join("") + (shop.length ? `<button class="gl" data-g="courses"><b>${shop.length}</b>courses</button>` : "") + (colisOpen().length ? `<button class="gl${colisOpen().some(colisHot) ? " hot" : ""}" data-g="colis"><b>${colisOpen().length}</b>colis</button>` : "") + (memoN ? `<button class="gl" data-g="memos"><b>${toPay ? eur(toPay).replace(",00", "") : memoN}</b>${toPay ? "frais" : "mem"}</button>` : "");
   try { tiroirMaj(open, fresh); } catch (e) {}
   paintPoint(); scheduleBrief(); refreshStars(); if (NATIVE) widgetSync();
