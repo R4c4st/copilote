@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v41 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v42 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 41;
+const TEMPO_BUILD = 42;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4437,6 +4437,7 @@ Ta façon de répondre
 - Trois phrases au plus, comme à l'oral, sauf pour un bilan, un brief ou s'il demande du détail. Une liste seulement si c'en est vraiment une. Pas de formule creuse, pas de reformulation de sa question, pas de formule de clôture.
 - Il dicte souvent : ses messages peuvent contenir des hésitations ou des mots mal transcrits. Comprends l'intention sans relever les fautes.
 - S'il te manque une information indispensable, pose une seule question, la plus utile.
+- Quand ta réponse finit par une question, son micro s'ouvre pour qu'il te réponde à la voix, sans redire ton nom. N'en pose une que si tu attends vraiment sa réponse, jamais par politesse (pas de « Autre chose ? »).
 - Ne lui fais jamais répéter ce qui est déjà dans ses souvenirs. Avant de répondre que tu n'as pas une information sur lui ou ses proches (adresse, lieu, personne, habitude), cherche-la avec chercher_souvenirs en essayant plusieurs mots d'un coup : le prénom, le lien (« ex-femme », « mère de son fils », « fils »), le lieu. Ne dis « je ne l'ai pas » qu'après cette recherche.
 
 Sa mémoire : c'est lui qui décide
@@ -6686,7 +6687,10 @@ function jvRaccourci(reste){
 }
 /* appelé par capture() pour la dictée du cercle et le texte tapé : true = c'est pour Nestor, rien d'autre ne se fait */
 function jvPourNestor(text){
-  const reste = jvAppel(text); if (reste === null) return false;
+  let reste = jvAppel(text);
+  if (reste === null && jvSuiteOn()) reste = String(text || "").trim();   // lot 23 : il répond à la question de Nestor
+  JV_SUITE = null;
+  if (reste === null) return false;
   if (!reste) { try { idle(); } catch (e) {} openConv(); return true; }   // « Nestor » tout seul : la conversation s'ouvre
   if (/^(?:(?:fais|donne|lance)[- ]moi |(?:mon|le|ton) )?(?:brief|point)(?: du (?:jour|matin))?[ .!?]*$/i.test(cvNorm(reste))) {   // « Nestor, mon brief »
     try { idle(); } catch (e) {} LS.set("copilote_brief", ymd(new Date())); openConv(); setTimeout(() => jvBrief().catch(() => {}), 500); return true;
@@ -6722,70 +6726,94 @@ async function jvAuCercle(reste){
   if (!nv.some(v => v.r === "e")) flashOk();
   B.fin(nv);
 }
-/* ---------- lot 23 · la réponse en bulle : Nestor répond sans ouvrir la conversation ----------
-   Une bulle de verre monte sous la constellation ; le texte s'y écrit au rythme de la voix (déjà dit : foncé,
-   à venir : clair) ; ce qu'il a fait ou propose est dedans, avec son bouton. Elle se range seule après la voix ;
-   on la touche pour ouvrir la conversation, on la glisse vers le bas (ou on touche à côté) pour la fermer. */
-let JV_BULLE = null, JV_BULLE_GLISSE = 0;
-const JV_BULLE_CSS = `#jvBulleVoile{position:fixed;left:0;right:0;bottom:0;top:45%;z-index:28;background:rgba(247,251,252,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .35s}
+/* ---------- lot 23 · le halo : Nestor répond sans ouvrir la conversation ----------
+   La constellation s'ouvre en anneau ; la réponse y défile comme un générique, au rythme de la voix.
+   Dessous : ce qu'il a fait ou propose (avec son bouton), puis deux symboles : ouvrir en grand, répondre.
+   S'il termine par une question, le micro s'ouvre tout seul : on lui répond sans redire son nom. */
+let JV_BULLE = null, JV_SUITE = null;
+const JV_BULLE_CSS = `#jvBulleVoile{position:fixed;inset:0;z-index:28;background:rgba(247,251,252,.8);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .4s}
 body.jv-bulle #jvBulleVoile{opacity:1;pointer-events:auto}
-#jvBulle{position:fixed;z-index:29;left:16px;right:16px;top:45%;max-width:520px;margin:0 auto;opacity:0;transform:translateY(22px) scale(.96);transform-origin:50% 0;pointer-events:none;transition:opacity .3s,transform .45s cubic-bezier(.2,.8,.2,1)}
-body.jv-bulle #jvBulle{opacity:1;transform:none;pointer-events:auto}
-#jvBulle .b-queue{position:absolute;top:-8px;left:calc(50% - 9px);width:18px;height:18px;transform:rotate(45deg);background:rgba(255,255,255,.9);border-left:1px solid #fff;border-top:1px solid #fff}
-#jvBulle .b-in{position:relative;display:flex;flex-direction:column;gap:16px;padding:22px 22px 4px;border-radius:32px;background:rgba(255,255,255,.9);border:1px solid #fff;box-shadow:0 30px 70px rgba(var(--glow),.2),0 2px 10px rgba(15,34,41,.06);overflow:auto;overscroll-behavior:contain}
-#jvBulle .b-tete{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:500;letter-spacing:.2em;color:#56717a}
-#jvBulle .b-nom{display:flex;align-items:center;gap:8px}
-#jvBulle .b-nom i{width:7px;height:7px;border-radius:50%;background:rgb(var(--glow));animation:jvRespire 3.2s ease-in-out infinite}
-#jvBulle .b-h{letter-spacing:0;font-weight:400;font-size:12px}
-#jvBulle .b-q{margin:-6px 0 0;font-size:14px;font-style:italic;color:#56717a;line-height:1.4}
-#jvBulle .b-txt{font-size:21px;line-height:1.42;letter-spacing:-.01em;font-weight:300;color:#6a858d;cursor:pointer}
-#jvBulle .b-txt .dit{color:var(--fg);font-weight:400}
-#jvBulle .b-txt span{transition:color .35s}
+#jvBulle{position:fixed;z-index:29;left:0;right:0;top:0;pointer-events:none;opacity:0;transition:opacity .35s}
+body.jv-bulle #jvBulle{opacity:1}
+#jvBulle .h-q{position:absolute;left:24px;right:24px;text-align:center;font-size:14px;font-style:italic;color:#56717a;line-height:1.4;max-height:2.8em;overflow:hidden}
+#jvBulle .h-q.live{font-style:normal;color:var(--fg)}
+#jvBulle .h-anneau{position:absolute;left:50%;transform:translateX(-50%);pointer-events:auto}
+#jvBulle .h-svg{position:absolute;inset:0;transform:scale(.45) rotate(-30deg);opacity:.3;transition:transform .9s cubic-bezier(.2,.8,.2,1),opacity .6s}
+body.jv-bulle #jvBulle .h-svg{transform:none;opacity:1}
+#jvBulle .h-svg .n{animation:jvRespire 3.6s ease-in-out infinite}
+#jvBulle .h-svg .n:nth-child(3n){animation-delay:.6s}#jvBulle .h-svg .n:nth-child(3n+1){animation-delay:1.2s}
+#jvBulle .h-anneau.ecoute .h-svg{animation:jvEcoute 1.4s ease-in-out infinite}
+#jvBulle .h-anneau.ecoute .h-svg .l{stroke:rgba(var(--glow),.95)}
+#jvBulle .h-nom{position:absolute;left:0;right:0;text-align:center;font-size:10px;font-weight:500;letter-spacing:.24em;color:#56717a}
+#jvBulle .h-fen{position:absolute;left:50%;transform:translateX(-50%);overflow:hidden;-webkit-mask-image:linear-gradient(transparent 0,#000 24%,#000 76%,transparent 100%);mask-image:linear-gradient(transparent 0,#000 24%,#000 76%,transparent 100%)}
+#jvBulle .b-txt{position:absolute;left:0;right:0;top:0;text-align:center;font-size:20px;line-height:1.42;letter-spacing:-.01em;font-weight:300;color:#6a858d;will-change:transform}
+#jvBulle .b-txt p{margin:0 0 .5em;text-wrap:balance}
+#jvBulle .b-txt .dit{color:var(--fg);font-weight:400;transition:color .4s}
 #jvBulle .b-txt.err .dit{color:#b23b3b}
-#jvBulle .b-pts{display:inline-flex;gap:6px;padding:6px 0}
+#jvBulle .b-pts{display:flex;justify-content:center;gap:7px;padding-top:6px}
 #jvBulle .b-pts i{width:7px;height:7px;border-radius:50%;background:rgb(var(--glow));animation:jvRespire 1.2s ease-in-out infinite}
 #jvBulle .b-pts i:nth-child(2){animation-delay:.2s}#jvBulle .b-pts i:nth-child(3){animation-delay:.4s}
-#jvBulle .b-act{display:flex;flex-direction:column;gap:10px}
+#jvBulle .h-bas{position:absolute;left:18px;right:18px;display:flex;flex-direction:column;align-items:center;gap:14px;pointer-events:auto}
+#jvBulle .b-act{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:440px}
 #jvBulle .b-act:empty{display:none}
-#jvBulle .b-l{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-#jvBulle .b-chip{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:999px;background:rgba(var(--glow),.1);font-size:13px;font-weight:400;color:#135e66;line-height:1.3}
+#jvBulle .b-l{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+#jvBulle .b-chip{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:999px;background:rgba(var(--glow),.12);font-size:13px;font-weight:400;color:#135e66;line-height:1.3}
 #jvBulle .b-chip.non{background:var(--faint);color:#56717a}
-#jvBulle .b-prop{font-size:14px;line-height:1.4;color:var(--fg);width:100%}
+#jvBulle .b-prop{font-size:14px;line-height:1.4;color:var(--fg);width:100%;text-align:center}
 #jvBulle .b-prop small{display:block;font-size:12px;color:#56717a;margin-bottom:2px}
-#jvBulle .b-l button{min-height:44px;padding:0 16px;border-radius:999px;font-size:13px;font-weight:500;color:#56717a}
+#jvBulle .b-l button{min-height:44px;padding:0 18px;border-radius:999px;font-size:13px;font-weight:500;color:#56717a}
 #jvBulle .b-l button.y{background:var(--fg);color:var(--bg);padding:0 22px}
-#jvBulle .b-l button.g{border:1px solid #c3d3d8}
-#jvBulle .b-conv{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-top:1px solid var(--faint);font-size:12px;color:#56717a;width:100%;flex-shrink:0}
+#jvBulle .b-l button.g{border:1px solid #c3d3d8;background:rgba(255,255,255,.6)}
+#jvBulle .h-sym{display:flex;gap:22px}
+#jvBulle .h-sym button{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#2d4a52;background:rgba(255,255,255,.65);border:1px solid #fff;box-shadow:0 8px 24px rgba(var(--glow),.16)}
+#jvBulle .h-sym button.on{background:rgb(var(--glow));color:#fff;box-shadow:0 0 0 8px rgba(var(--glow),.18),0 0 26px rgba(var(--glow),.6);animation:jvEcoute 1.4s ease-in-out infinite}
 @keyframes jvRespire{0%,100%{opacity:.5;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
-body.jv-bulle .ring{transform:translateY(-22px) scale(.72)}
-body.jv-bulle .ring.on{transform:translateY(-22px) scale(.78)}
-body.jv-bulle #hint{opacity:0}`;
+@keyframes jvEcoute{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+#jvBulle .h-svg .n{transform-box:fill-box;transform-origin:center}
+body.jv-bulle .ring{opacity:0;transform:scale(.6);transition:opacity .3s,transform .5s}
+body.jv-bulle #hint,body.jv-bulle #live,body.jv-bulle #acts{opacity:0}`;
+/* l'anneau : la constellation ouverte en cercle (points, liaisons voisines et croisées) */
+function jvHaloSvg(){
+  const n = 30, c = 170, R = 150, P = [];
+  for (let i = 0; i < n; i++) { const a = 2 * Math.PI * i / n - Math.PI / 2, k = 1 + 0.025 * Math.sin(i * 2.3); P.push([c + R * Math.cos(a) * k, c + R * Math.sin(a) * k]); }
+  const f = x => x.toFixed(1);
+  let s = `<svg class="h-svg" aria-hidden="true" viewBox="0 0 340 340" width="100%" height="100%" style="overflow:visible"><circle cx="170" cy="170" r="168" fill="none" stroke="rgba(var(--glow),.10)" stroke-width="18"/><g fill="none" stroke="rgba(var(--glow),.18)" stroke-width=".8">`;
+  for (let i = 0; i < n; i += 2) { const q = P[(i + 3) % n]; s += `<line x1="${f(P[i][0])}" y1="${f(P[i][1])}" x2="${f(q[0])}" y2="${f(q[1])}"/>`; }
+  s += `</g><g fill="none" stroke="rgba(var(--glow),.6)" stroke-width="1.2">`;
+  for (let i = 0; i < n; i++) { const q = P[(i + 1) % n]; s += `<line class="l" x1="${f(P[i][0])}" y1="${f(P[i][1])}" x2="${f(q[0])}" y2="${f(q[1])}"/>`; }
+  s += `</g><g>`;
+  P.forEach((p, i) => { const r = i % 3 ? 2.2 : 3.6; s += `<g class="n"><circle cx="${f(p[0])}" cy="${f(p[1])}" r="${f(r * 2.8)}" fill="rgba(var(--glow),.10)"/><circle cx="${f(p[0])}" cy="${f(p[1])}" r="${r}" fill="${i % 3 ? "#8fd6dc" : "rgb(var(--glow))"}"/></g>`; });
+  return s + `</g></svg>`;
+}
+const JV_SYM_GRAND = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>`;
+const JV_SYM_MICRO = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>`;
 const JV_BULLE_COCHE = `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`;
 function jvBulleDom(){
   let b = $("jvBulle"); if (b) return b;
   const st = document.createElement("style"); st.id = "jvBulleCss"; st.textContent = JV_BULLE_CSS; document.head.appendChild(st);
   const v = document.createElement("div"); v.id = "jvBulleVoile"; document.body.appendChild(v);
   b = document.createElement("div"); b.id = "jvBulle"; b.setAttribute("role", "dialog");
-  b.innerHTML = `<div class="b-queue" aria-hidden="true"></div><div class="b-in" id="jvBulleIn"><div class="b-tete"><span class="b-nom"><i aria-hidden="true"></i><span id="jvBulleNom"></span></span><span class="b-h" id="jvBulleH"></span></div><p class="b-q" id="jvBulleQ"></p><div class="b-txt" id="jvBulleTxt" aria-live="polite"></div><div class="b-act" id="jvBulleAct"></div><button class="b-conv" id="jvBulleConv"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>toucher pour la conversation</button></div>`;
+  b.innerHTML = `<p class="h-q" id="jvBulleQ"></p><div class="h-anneau" id="jvHalo">${jvHaloSvg()}<span class="h-nom" id="jvBulleNom"></span><div class="h-fen" id="jvHaloFen"><div class="b-txt" id="jvBulleTxt" aria-live="polite"></div></div></div><div class="h-bas" id="jvHaloBas"><div class="b-act" id="jvBulleAct"></div><div class="h-sym"><button id="jvBulleConv" aria-label="ouvrir la conversation en grand">${JV_SYM_GRAND}</button><button id="jvBulleMic" aria-label="répondre à la voix">${JV_SYM_MICRO}</button></div></div>`;
   document.body.appendChild(b);
-  const versConv = () => { if (Date.now() - JV_BULLE_GLISSE < 450) return; jvBulleFerme(false); openConv(); };
   v.addEventListener("click", () => jvBulleFerme(true));
-  $("jvBulleConv").addEventListener("click", versConv);
-  $("jvBulleTxt").addEventListener("click", versConv);
+  $("jvBulleConv").addEventListener("click", e => { e.stopPropagation(); jvBulleFerme(false); openConv(); });
+  $("jvBulleMic").addEventListener("click", e => { e.stopPropagation(); jvBulleMicro(); });
   $("jvBulleAct").addEventListener("click", jvBulleClic);
-  let y0 = null;
-  b.addEventListener("pointerdown", e => { y0 = $("jvBulleIn").scrollTop > 0 ? null : e.clientY; jvBulleSursis(); });
-  b.addEventListener("pointerup", e => { if (y0 != null && e.clientY - y0 > 60) { JV_BULLE_GLISSE = Date.now(); jvBulleFerme(true); } y0 = null; });
-  try { $("ring").addEventListener("pointerdown", () => { if (JV_BULLE) jvBulleFerme(true); }); } catch (e) {}   // il reparle : la bulle s'efface
+  $("jvHalo").addEventListener("click", () => jvBulleSursis());
   return b;
 }
-/* sous la constellation (réduite), le reste de l'écran voilé */
+/* à la place de la constellation : centré sur elle, le plus grand possible */
 function jvBullePlace(){
   try {
-    const r = $("ring").getBoundingClientRect(), cy = r.top + r.height / 2;
-    const top = Math.max(120, Math.round(cy - 22 + r.height * 0.36 + 20)), H = window.innerHeight || 800;
-    $("jvBulle").style.top = top + "px"; $("jvBulleVoile").style.top = Math.max(0, top - 24) + "px";
-    $("jvBulleIn").style.maxHeight = Math.max(220, H - top - 96) + "px";
+    const r = $("ring").getBoundingClientRect(), W = window.innerWidth || 390, H = window.innerHeight || 800;
+    const D = Math.round(Math.max(240, Math.min(W * 0.9, 390, H * 0.5)));
+    const bloc = 46 + D + 16 + 140;                                           // question, anneau, actions et symboles
+    const cy = Math.max(r.top + r.height / 2, 64 + D / 2, (H - bloc) / 2 + 46 + D / 2), top = Math.round(Math.min(cy, H - D / 2 - 170) - D / 2);
+    const h = $("jvHalo"); h.style.top = top + "px"; h.style.width = h.style.height = D + "px";
+    $("jvBulleQ").style.top = Math.max(8, top - 46) + "px";
+    $("jvBulleNom").style.top = Math.round(D * 0.15) + "px";
+    const f = $("jvHaloFen"); f.style.width = Math.round(D * 0.66) + "px"; f.style.height = Math.round(D * 0.56) + "px"; f.style.top = Math.round(D * 0.24) + "px";
+    $("jvHaloBas").style.top = (top + D + 16) + "px";
   } catch (e) {}
 }
 const jvBulleHeure = h => { const [a, b] = String(h || "").split(":"); return +a + " h" + (b && b !== "00" ? " " + b : ""); };
@@ -6793,33 +6821,83 @@ function jvBulleJour(d){
   const t = ymd(new Date()); if (d === t) return "aujourd'hui"; if (d === ymd(addDays(1))) return "demain";
   return new Date(d + "T12:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" });
 }
+const jvBulleDuree = t => Math.max(1400, Math.min(15000, String(t).length * 62 / (+CFG.jvRate || 1.05)));
 function jvBulle(question){
   const vide = { phrase(){}, dire(){}, fin(){} };
   if (typeof document === "undefined" || !document.body) return vide;
   try { jvBulleDom(); } catch (e) { return vide; }
-  if (JV_BULLE) clearTimeout(JV_BULLE.to);
-  const B = JV_BULLE = { ph: [], dit: -1, muet: !(CFG.jvParle !== false && CFG.vSay !== "0"), fini: false, err: false, to: null, n0: JV.view.length };
+  if (JV_BULLE) { clearTimeout(JV_BULLE.to); clearTimeout(JV_BULLE.lit); clearInterval(JV_BULLE.veille); }
+  const B = JV_BULLE = { ph: [], dit: -1, muet: !(CFG.jvParle !== false && CFG.vSay !== "0"), fini: false, err: false, to: null, lit: null, n0: JV.view.length, q: String(question || "").trim(), suite: false };
   $("jvBulleNom").textContent = jvEstNestor() ? "N.E.S.T.O.R." : String(jvNom()).toUpperCase();
   $("jvBulle").setAttribute("aria-label", "Réponse de " + jvNom());
-  const now = new Date(); $("jvBulleH").textContent = jvBulleHeure(String(now.getHours()) + ":" + String(now.getMinutes()).padStart(2, "0"));
-  const q = String(question || "").trim(); $("jvBulleQ").textContent = q ? "« " + q.slice(0, 160) + " »" : ""; $("jvBulleQ").style.display = q ? "" : "none";
-  $("jvBulleTxt").className = "b-txt"; $("jvBulleTxt").innerHTML = `<span class="b-pts" aria-label="un instant"><i></i><i></i><i></i></span>`;
-  $("jvBulleAct").innerHTML = ""; $("jvBulleIn").scrollTop = 0;
-  jvBullePlace(); document.body.classList.add("jv-bulle");
-  B.phrase = p => { const t = jvPourVoix(p).trim(); if (!t || JV_BULLE !== B) return; B.ph.push(t); jvBullePeins(B); };
+  const x = $("jvBulleTxt"); x.className = "b-txt"; x.style.transition = "none"; x.innerHTML = `<span class="b-pts" aria-label="un instant"><i></i><i></i><i></i></span>`;
+  $("jvBulleAct").innerHTML = "";
+  jvBullePlace(); jvBulleQ(B);
+  x.style.transform = `translateY(${Math.round($("jvHaloFen").clientHeight * 0.4)}px)`;
+  document.body.classList.add("jv-bulle");
+  B.veille = setInterval(() => jvBulleVeille(B), 250);
+  B.phrase = p => { const t = jvPourVoix(p).trim(); if (!t || JV_BULLE !== B) return; B.ph.push(t); jvBullePeins(B); if (B.muet) jvBulleLecture(B); };
   B.dire = t => { B.muet = true; B.phrase(t); };
   B.fin = nv => jvBulleFin(B, nv || []);
   return B;
+}
+/* la ligne du haut : sa question, ou ce qu'il est en train de dire */
+function jvBulleQ(B){
+  const q = $("jvBulleQ"); if (!q) return;
+  const live = listening ? String(($("live") && $("live").textContent) || "").trim() : "";
+  q.classList.toggle("live", !!listening);
+  q.textContent = listening ? (live || "je vous écoute…") : B.q ? "« " + B.q.slice(0, 160) + " »" : "";
+}
+/* toutes les 250 ms : l'écoute (anneau qui pulse, micro allumé, ses mots en haut) */
+function jvBulleVeille(B){
+  if (JV_BULLE !== B) { clearInterval(B.veille); return; }
+  const ec = !!listening;
+  $("jvHalo").classList.toggle("ecoute", ec); $("jvBulleMic").classList.toggle("on", ec);
+  $("jvBulleMic").setAttribute("aria-label", ec ? "j'ai fini de parler" : "répondre à la voix");
+  if (ec || B.ecoutait) jvBulleQ(B);
+  if (B.ecoutait && !ec) { B.ecoutait = false; jvBulleRange(B); }   // il n'a rien dit : on reprend le rangement
+  if (ec) B.ecoutait = true;
 }
 function jvBullePeins(B){
   if (!B || JV_BULLE !== B) return;
   const x = $("jvBulleTxt"); if (!x) return;
   x.classList.toggle("err", B.err);
-  x.innerHTML = B.ph.map((t, i) => `<span class="${B.muet || i <= B.dit ? "dit" : ""}">${esc(t)}</span>`).join(" ");
-  const inn = $("jvBulleIn"); if (inn && B.ph.length && !B.fini) inn.scrollTop = inn.scrollHeight;   // il suit la voix
+  x.innerHTML = B.ph.map((t, i) => `<p class="${i <= B.dit ? "dit" : ""}">${esc(t)}</p>`).join("");
+  jvBulleDefile(B, false);
+}
+/* le générique : la phrase qui se dit monte lentement vers le centre, pendant le temps qu'elle se dit */
+function jvBulleDefile(B, anime){
+  const x = $("jvBulleTxt"), f = $("jvHaloFen"); if (!x || !f) return;
+  const H = f.clientHeight || 200, P = x.querySelectorAll("p");
+  if (!P.length) return;
+  const i = Math.min(Math.max(B.dit, -1), P.length - 1);
+  let y;
+  if (i < 0) y = H * 0.55 - P[0].offsetTop;                                  // en attente, juste sous le centre
+  else y = H * 0.5 - (P[i].offsetTop + P[i].offsetHeight);                  // la phrase dite finit au centre
+  if (anime) x.style.transition = `transform ${anime}ms linear`;
+  x.style.transform = `translateY(${Math.round(y)}px)`;
 }
 /* la voix a commencé la phrase i (Infinity : tout est dit, ou la voix est coupée) */
-function jvBulleDit(i){ const B = JV_BULLE; if (!B || i <= B.dit) return; B.dit = i; jvBullePeins(B); }
+function jvBulleDit(i){
+  const B = JV_BULLE; if (!B || i <= B.dit) return;
+  if (i === Infinity) { if (!B.muet) { B.muet = true; jvBulleLecture(B); } return; }   // la voix ne parlera pas : le générique avance seul
+  B.dit = i; const P = $("jvBulleTxt").querySelectorAll("p");
+  P.forEach((p, k) => p.classList.toggle("dit", k <= i));
+  jvBulleDefile(B, jvBulleDuree(B.ph[i] || ""));
+}
+/* sans voix : le générique avance à la vitesse de lecture */
+function jvBulleLecture(B){
+  if (!B || JV_BULLE !== B || B.lit) return;
+  const pas = () => {
+    B.lit = null; if (JV_BULLE !== B) return;
+    if (B.dit >= B.ph.length - 1) return;
+    const i = B.dit + 1; B.dit = i;
+    const P = $("jvBulleTxt").querySelectorAll("p"); P.forEach((p, k) => p.classList.toggle("dit", k <= i));
+    const d = Math.max(1200, Math.min(12000, B.ph[i].length * 48));
+    jvBulleDefile(B, d); B.lit = setTimeout(pas, d);
+  };
+  pas();
+}
 function jvBulleLigne(v, i){
   const q = v.date && v.heure ? jvBulleJour(v.date) + " · " + jvBulleHeure(v.heure) : "";
   const chip = (t, non) => `<span class="b-chip${non ? " non" : ""}">${non ? "" : JV_BULLE_COCHE}${esc(t)}</span>`;
@@ -6879,28 +6957,54 @@ function jvBulleFin(B, nv){
     const t = nv.filter(v => v.r === "a").map(v => v.t).join(" ").trim();
     B.muet = true;
     if (t) B.phrase(t);
-    else if (e) { B.err = true; B.ph.push(e.t); }
-    else if (!nv.some(v => v.r === "p")) B.ph.push("C'est fait.");
+    else if (e) { B.err = true; B.phrase(e.t); }
+    else if (!nv.some(v => v.r === "p")) B.phrase("C'est fait.");
     if (!B.ph.length) $("jvBulleTxt").innerHTML = "";
-  } else if (e) { B.err = true; B.ph.push(e.t); B.dit = Infinity; }
-  jvBullePeins(B); jvBulleActions(B); jvBulleRange(B);
+  } else if (e) { B.err = true; B.ph.push(jvPourVoix(e.t)); B.muet = true; jvBullePeins(B); jvBulleLecture(B); }
+  jvBulleActions(B); jvBulleRange(B);
 }
-/* on la range quand la voix a fini, après le temps de lire (plus longtemps s'il reste une question) */
+/* une question à la fin : il attend sa réponse */
+const jvFinitParQuestion = B => !!B && !B.err && B.ph.length > 0 && /\?\s*[»"”)]?\s*$/.test(B.ph[B.ph.length - 1]);
+/* on range quand la voix a fini (ou on écoute sa réponse), après le temps de lire */
 function jvBulleRange(B){
   if (!B) return; clearTimeout(B.to);
   if (JV_BULLE !== B || !B.fini) return;
   const parle = !!JV_VQ.joue || JV_VQ.file.length > 0 || (typeof JV_PARLE !== "undefined" && JV_PARLE > 0) || !!(JV_AUDIO && !JV_AUDIO.paused && !JV_AUDIO.ended);
-  if (parle) { B.to = setTimeout(() => jvBulleRange(B), 400); return; }
-  if (B.dit !== Infinity) { B.dit = Infinity; jvBullePeins(B); }
+  const defile = !!B.lit || (B.muet && B.dit < B.ph.length - 1);
+  if (parle || defile || listening) { B.to = setTimeout(() => jvBulleRange(B), 400); return; }
+  if (B.dit < B.ph.length - 1) { B.dit = Infinity; jvBullePeins(B); }
+  if (!B.suite && jvFinitParQuestion(B)) { B.suite = true; jvSuiteEcoute(B); B.to = setTimeout(() => jvBulleRange(B), 600); return; }
   const n = B.ph.join(" ").length, ms = jvBulleAttend(B) || B.err ? 30000 : Math.min(25000, 8000 + Math.max(0, n - 140) * 35);
   B.to = setTimeout(() => jvBulleFerme(false), ms);
 }
 function jvBulleSursis(){ const B = JV_BULLE; if (B && B.fini) jvBulleRange(B); }   // il la touche : le compte repart
+/* le micro : sa réponse ira à Nestor, sans redire son nom */
+const jvSuiteOn = () => !!JV_SUITE && typeof MIC_GEN !== "undefined" && JV_SUITE.gen === MIC_GEN && Date.now() < JV_SUITE.until;
+function jvSuiteEcoute(B){
+  if (B && JV_BULLE !== B) return false;
+  if (typeof listening !== "undefined" && listening) return true;
+  try { if ($("ring").classList.contains("think")) return false; } catch (e) {}
+  try { if (typeof jvBip === "function") jvBip(); } catch (e) {}
+  try { startListen({ noSpeech: 8000 }); } catch (e) { return false; }
+  if (!listening) return false;
+  JV_SUITE = { gen: MIC_GEN, until: Date.now() + 120000 };
+  return true;
+}
+function jvBulleMicro(){
+  const B = JV_BULLE;
+  if (listening) { try { validate(); } catch (e) {} return; }   // il a fini de parler
+  try { jvVoixDebut(); JV_VQ.muet = true; } catch (e) {} try { hush(); } catch (e) {}   // Nestor se tait pour l'écouter
+  if (B) { B.suite = true; clearTimeout(B.to); }
+  jvSuiteEcoute(B);
+}
 function jvBulleFerme(stop){
-  const B = JV_BULLE; if (B) clearTimeout(B.to);
+  const B = JV_BULLE; if (B) { clearTimeout(B.to); clearTimeout(B.lit); clearInterval(B.veille); }
   JV_BULLE = null;
   try { document.body.classList.remove("jv-bulle"); } catch (e) {}
-  if (stop) { try { jvVoixDebut(); JV_VQ.muet = true; } catch (e) {} try { hush(); } catch (e) {} }
+  if (stop) {
+    try { jvVoixDebut(); JV_VQ.muet = true; } catch (e) {} try { hush(); } catch (e) {}
+    if (jvSuiteOn() && listening) { JV_SUITE = null; try { stopListen(); idle(); } catch (e) {} }
+  }
   if (jvBulleAttend(B)) { try { toast("une proposition vous attend", "voir", () => openConv(), 9000); } catch (e) {} }
 }
 const jvPourVoix = t => String(t || "").replace(/\*\*/g, "").replace(/\b(?:[A-Z]\.\s?){3,}[A-Z]?\.?/g, m => m.replace(/[.\s]/g, "").toLowerCase() === cvNorm(jvNom()) ? jvNom() + (/\s$/.test(m) ? " " : "") : m).replace(/^\s*[-•]\s*/gm, "").replace(/https?:\/\/\S+/g, "").replace(/\s*\n+\s*/g, " ").trim().slice(0, 900);
