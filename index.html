@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v47 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v48 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 47;
+const TEMPO_BUILD = 48;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4354,6 +4354,7 @@ Ta façon de répondre
 - Trois phrases au plus, comme à l'oral, sauf pour un bilan, un brief ou s'il demande du détail. Une liste seulement si c'en est vraiment une. Pas de formule creuse, pas de reformulation de sa question, pas de formule de clôture.
 - Il dicte souvent : ses messages peuvent contenir des hésitations ou des mots mal transcrits. Comprends l'intention sans relever les fautes.
 - S'il te manque une information indispensable, pose une seule question, la plus utile.
+- Aucune mise en forme : jamais d'astérisques, de soulignés ni de dièses, même pour un mot étranger ou un mot à souligner. Ta réponse est souvent lue à voix haute : écris le mot tel quel.
 - Quand ta réponse finit par une question, son micro s'ouvre pour qu'il te réponde à la voix, sans redire ton nom. N'en pose une que si tu attends vraiment sa réponse, jamais par politesse (pas de « Autre chose ? »).
 - Ne lui fais jamais répéter ce qui est déjà dans ses souvenirs. Avant de répondre que tu n'as pas une information sur lui ou ses proches (adresse, lieu, personne, habitude), cherche-la avec chercher_souvenirs en essayant plusieurs mots d'un coup : le prénom, le lien (« ex-femme », « mère de son fils », « fils »), le lieu. Ne dis « je ne l'ai pas » qu'après cette recherche.
 
@@ -7053,7 +7054,10 @@ function jvBulleFerme(stop){
   }
   if (jvBulleAttend(B)) { try { toast("une proposition vous attend", "voir", () => openConv(), 9000); } catch (e) {} }
 }
-const jvPourVoix = t => String(t || "").replace(/\*\*/g, "").replace(/\b(?:[A-Z]\.\s?){3,}[A-Z]?\.?/g, m => m.replace(/[.\s]/g, "").toLowerCase() === cvNorm(jvNom()) ? jvNom() + (/\s$/.test(m) ? " " : "") : m).replace(/^\s*[-•]\s*/gm, "").replace(/https?:\/\/\S+/g, "").replace(/\s*\n+\s*/g, " ").trim().slice(0, 900);
+/* la mise en forme Markdown ne se lit pas : *mot*, **mot**, _mot_, `mot`, titres # (sinon la voix dit « astérisque ») */
+const jvSansMd = t => String(t || "").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/__([^_\n]+)__/g, "$1")
+  .replace(/(^|[\s(«"'’\-])[*_]([^*_\n]+)[*_](?=[\s).,;:!?»"'’\-]|$)/g, "$1$2").replace(/`([^`\n]*)`/g, "$1").replace(/^\s*#{1,6}\s+/gm, "").replace(/\*/g, "");
+const jvPourVoix = t => jvSansMd(t).replace(/\b(?:[A-Z]\.\s?){3,}[A-Z]?\.?/g, m => m.replace(/[.\s]/g, "").toLowerCase() === cvNorm(jvNom()) ? jvNom() + (/\s$/.test(m) ? " " : "") : m).replace(/^\s*[-•]\s*/gm, "").replace(/https?:\/\/\S+/g, "").replace(/\s*\n+\s*/g, " ").trim().slice(0, 900);
 const _jvVoxBias = voxBias;
 voxBias = function(){ const r = _jvVoxBias.apply(this, arguments) || []; try { const have = new Set(r), lieux = []; jvLieux().forEach(l => { lieux.push(l.g.nom); String(l.g.alias || "").split(/[,;]/).forEach(a => lieux.push(a)); const v = /\b\d{5}\s+([A-ZÉÈÀ][\wÀ-ÿ'-]+(?:[ -][A-ZÉÈÀa-zà-ÿ'-]+){0,3})/.exec(String(l.t || "") + " " + String(l.g.adresse || "")); if (v) lieux.push(v[1]); }); [jvNom(), ...jvNoms(), ...lieux].map(n => String(n || "").trim()).filter(n => n.length > 1 && n.length < 60).forEach(n => { if (!have.has(n) && r.length < 80) { have.add(n); r.push(n); } }); } catch (e) {} return r; };
 
@@ -7070,7 +7074,7 @@ async function jvBrief(){
 }
 
 /* ---------- affichage ---------- */
-const cvHtml = t => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+const cvHtml = t => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|[\s(«"'’])[*_]([^*_\n]+)[*_](?=[\s).,;:!?»"'’]|$)/g, "$1<i>$2</i>").replace(/`([^`\n]+)`/g, "$1").replace(/^#{1,6}\s+/gm, "");
 function cvStatus(t){ const e = $("cvStat"); if (e) e.textContent = t || ""; }
 const cvUndoBtn = (v, i) => v.auto && (v.tid || (v.tids && v.tids.length)) ? `<button data-undo="${i}">annuler</button>` : "";
 function cvPaint(){
@@ -7766,6 +7770,7 @@ calSync = function(it){ try { jvLieuInconnu(it); } catch (e) {} return _jvCalSyn
 let JV_ASSIST = null, JV_PARLE = 0;
 const _jvSpeak21 = speak;
 speak = function(t, then){
+  try { t = jvSansMd(t); } catch (e) {}
   JV_PARLE++; let f = false;
   const fin = () => { if (!f) { f = true; JV_PARLE = Math.max(0, JV_PARLE - 1); } if (then) then(); };
   try { return _jvSpeak21(t, fin); } catch (e) { fin(); }
