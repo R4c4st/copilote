@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v40 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v41 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 40;
+const TEMPO_BUILD = 41;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4806,9 +4806,9 @@ function jvDecoupe(){
   return { ajoute: t => { tampon += t; return sortir(false); }, fin: () => sortir(true) };
 }
 /* la voix phrase par phrase : chaque phrase est demandée tout de suite, et jouée à son tour */
-const JV_VQ = { gen: 0, file: [], joue: false, ok: null, t0: 0 };
+const JV_VQ = { gen: 0, file: [], joue: false, ok: null, t0: 0, nq: 0, muet: false };
 function jvVoixDebut(){
-  JV_VQ.gen++; JV_VQ.file = []; JV_VQ.joue = false; JV_VQ.ok = null; JV_VQ.t0 = 0;
+  JV_VQ.gen++; JV_VQ.file = []; JV_VQ.joue = false; JV_VQ.ok = null; JV_VQ.t0 = 0; JV_VQ.nq = 0; JV_VQ.muet = false;
   try { if (JV_AUDIO) { JV_AUDIO.pause(); JV_AUDIO = null; } } catch (e) {}
 }
 async function jvVoixPermise(){
@@ -4828,18 +4828,19 @@ async function jvVoixAudio(t){
   return src;
 }
 function jvVoixPhrase(t){
-  t = jvPourVoix(t).trim(); if (!t) return;
+  t = jvPourVoix(t).trim(); if (!t || JV_VQ.muet) return;
   const g = JV_VQ.gen;
-  JV_VQ.file.push({ t, src: jvVoixGoogle() && MEM.tok && navigator.onLine !== false ? jvVoixAudio(t).catch(() => null) : null });
+  JV_VQ.file.push({ t, i: JV_VQ.nq++, src: jvVoixGoogle() && MEM.tok && navigator.onLine !== false ? jvVoixAudio(t).catch(() => null) : null });
   if (!JV_VQ.joue) { JV_VQ.joue = true; jvVoixSuite(g); }
 }
 async function jvVoixSuite(g){
   if (JV_VQ.ok === null) JV_VQ.ok = jvVoixPermise();
-  if (!(await JV_VQ.ok) || g !== JV_VQ.gen) { if (g === JV_VQ.gen) { JV_VQ.file = []; JV_VQ.joue = false; } return; }
+  if (!(await JV_VQ.ok) || g !== JV_VQ.gen) { if (g === JV_VQ.gen) { JV_VQ.file = []; JV_VQ.joue = false; try { jvBulleDit(Infinity); } catch (e) {} } return; }
   const it = JV_VQ.file.shift(); if (!it) { JV_VQ.joue = false; return; }
   const suite = () => { if (g === JV_VQ.gen) jvVoixSuite(g); };
   let src = null; if (it.src) { try { src = await it.src; } catch (e) {} }
   if (g !== JV_VQ.gen) return;
+  try { jvBulleDit(it.i); } catch (e) {}   // la bulle fonce la phrase qui se dit
   if (!JV_VQ.t0) { JV_VQ.t0 = jvNow(); jvChrono({ voix: JV_VQ.t0 }); }
   if (src) {
     try {
@@ -4919,6 +4920,7 @@ async function cvSend(text, opt){
   JV.from = cvFenetre();
   // lot 20 : la réponse s'affiche et se dit au fil de l'eau
   const voix = !!(opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0"), dec = jvDecoupe(), effort = jvEffort(text);
+  const bul = opt && typeof opt.phrase === "function" ? opt.phrase : null, dire = ps => ps.forEach(p => { if (bul) { try { bul(p); } catch (e) {} } if (voix) jvVoixPhrase(p); });
   if (voix) jvVoixDebut();
   JV_CHRONO = { id: Date.now(), t0: jvNow() };
   let vivant = null, peint = 0, etapes = 0;
@@ -4926,7 +4928,7 @@ async function cvSend(text, opt){
     if (JV_CHRONO && JV_CHRONO.premier == null) { JV_CHRONO.premier = jvNow(); cvStatus(""); }
     if (!vivant) { vivant = { r: "a", t: "", live: 1 }; JV.view.push(vivant); }
     vivant.t += t;
-    if (voix) dec.ajoute(t).forEach(jvVoixPhrase);
+    if (voix || bul) dire(dec.ajoute(t));
     const n = jvNow(); if (n - peint > 120) { peint = n; cvPaint(); }
   };
   try {
@@ -4941,7 +4943,7 @@ async function cvSend(text, opt){
       for (const t of uses) if (!JV_LOCAL[t.name]) { const k = t.name + JSON.stringify(t.input || {}); if (!seen.has(k)) { seen.add(k); tools.push(t); } }
       if (j.stop_reason !== "tool_use" || !uses.some(t => JV_LOCAL[t.name])) break;
       if (t1 && vivant) vivant.t += "\n\n";
-      if (voix) dec.fin().forEach(jvVoixPhrase);   // la phrase d'attente (« je regarde ton agenda ») se dit tout de suite
+      if (voix || bul) dire(dec.fin());   // la phrase d'attente (« je regarde ton agenda ») se dit tout de suite
       // il a besoin d'une info (bus, météo) : on la calcule ici et on la lui rend
       JV.msgs.push({ role: "assistant", content });
       const results = [];
@@ -4960,7 +4962,7 @@ async function cvSend(text, opt){
     JV.msgs.push({ role: "assistant", content: txt || "(je te propose quelque chose ci-dessous)" });
     if (txt) { if (vivant) { vivant.t = txt; delete vivant.live; vivant.usd = usd; } else JV.view.push({ r: "a", t: txt, usd }); }
     else if (vivant) JV.view.splice(JV.view.indexOf(vivant), 1);
-    if (voix) dec.fin().forEach(jvVoixPhrase);
+    if (voix || bul) dire(dec.fin());
     JV_CHRONO.etapes = etapes; jvChrono({ fin: jvNow() });
     const v0 = JV.view.length;
     for (const t of tools) {
@@ -6704,22 +6706,202 @@ async function jvAuCercle(reste){
   if (r) {
     const o = await jvFaireRaccourci(r, reste);
     idle();
-    if (o.err) { toast(o.err, "", null, 6000); parle(o.err); return; }
-    flashOk(); vib(18); toast(o.dit, "voir", () => openConv(), 7000); parle(o.dit);
+    const B = jvBulle(reste);
+    if (o.err) { B.err = true; B.dire(o.err); B.fin([]); parle(o.err); return; }
+    flashOk(); vib(18); B.dire(o.dit); B.fin([]); parle(o.dit);
     return;
   }
   if (!CFG.key) { idle(); toast("il me faut ta clé Claude pour te répondre (réglages)", "", null, 6000); return; }
   if (JV.busy) { idle(); toast("je réponds déjà à autre chose, réessaie dans un instant", "", null, 5000); return; }
   const n0 = JV.view.length;
-  await cvSend(reste, { voix: true });
+  // lot 23 : la réponse s'écrit dans la bulle, au rythme de la voix ; la conversation ne s'ouvre que s'il la touche
+  const B = jvBulle(reste);
+  await cvSend(reste, { voix: true, phrase: B.phrase });
   idle();
   const nv = JV.view.slice(n0);
-  // une proposition à valider (souvenir, lieu, oubli) ou une erreur : la conversation s'ouvre
-  if (nv.some(v => (v.r === "p" && !v.st) || v.r === "e")) { openConv(); return; }
-  if (nv.filter(v => v.r === "a").map(v => v.t).join(" ").length > 240) { openConv(); return; }   // lot 20 : longue, elle se lit mieux à l'écran
-  const rep = jvPourVoix(nv.filter(v => v.r === "a").map(v => v.t).join(" "));
-  let court = rep; if (court.length > 140) { const k = court.slice(0, 140).search(/[.!?…](?=\s[^.!?…]*$)/); court = k > 40 ? court.slice(0, k + 1) : court.slice(0, 137) + "…"; }
-  flashOk(); toast(court || "c'est fait", "voir", () => openConv(), 10000);
+  if (!nv.some(v => v.r === "e")) flashOk();
+  B.fin(nv);
+}
+/* ---------- lot 23 · la réponse en bulle : Nestor répond sans ouvrir la conversation ----------
+   Une bulle de verre monte sous la constellation ; le texte s'y écrit au rythme de la voix (déjà dit : foncé,
+   à venir : clair) ; ce qu'il a fait ou propose est dedans, avec son bouton. Elle se range seule après la voix ;
+   on la touche pour ouvrir la conversation, on la glisse vers le bas (ou on touche à côté) pour la fermer. */
+let JV_BULLE = null, JV_BULLE_GLISSE = 0;
+const JV_BULLE_CSS = `#jvBulleVoile{position:fixed;left:0;right:0;bottom:0;top:45%;z-index:28;background:rgba(247,251,252,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .35s}
+body.jv-bulle #jvBulleVoile{opacity:1;pointer-events:auto}
+#jvBulle{position:fixed;z-index:29;left:16px;right:16px;top:45%;max-width:520px;margin:0 auto;opacity:0;transform:translateY(22px) scale(.96);transform-origin:50% 0;pointer-events:none;transition:opacity .3s,transform .45s cubic-bezier(.2,.8,.2,1)}
+body.jv-bulle #jvBulle{opacity:1;transform:none;pointer-events:auto}
+#jvBulle .b-queue{position:absolute;top:-8px;left:calc(50% - 9px);width:18px;height:18px;transform:rotate(45deg);background:rgba(255,255,255,.9);border-left:1px solid #fff;border-top:1px solid #fff}
+#jvBulle .b-in{position:relative;display:flex;flex-direction:column;gap:16px;padding:22px 22px 4px;border-radius:32px;background:rgba(255,255,255,.9);border:1px solid #fff;box-shadow:0 30px 70px rgba(var(--glow),.2),0 2px 10px rgba(15,34,41,.06);overflow:auto;overscroll-behavior:contain}
+#jvBulle .b-tete{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:500;letter-spacing:.2em;color:#56717a}
+#jvBulle .b-nom{display:flex;align-items:center;gap:8px}
+#jvBulle .b-nom i{width:7px;height:7px;border-radius:50%;background:rgb(var(--glow));animation:jvRespire 3.2s ease-in-out infinite}
+#jvBulle .b-h{letter-spacing:0;font-weight:400;font-size:12px}
+#jvBulle .b-q{margin:-6px 0 0;font-size:14px;font-style:italic;color:#56717a;line-height:1.4}
+#jvBulle .b-txt{font-size:21px;line-height:1.42;letter-spacing:-.01em;font-weight:300;color:#6a858d;cursor:pointer}
+#jvBulle .b-txt .dit{color:var(--fg);font-weight:400}
+#jvBulle .b-txt span{transition:color .35s}
+#jvBulle .b-txt.err .dit{color:#b23b3b}
+#jvBulle .b-pts{display:inline-flex;gap:6px;padding:6px 0}
+#jvBulle .b-pts i{width:7px;height:7px;border-radius:50%;background:rgb(var(--glow));animation:jvRespire 1.2s ease-in-out infinite}
+#jvBulle .b-pts i:nth-child(2){animation-delay:.2s}#jvBulle .b-pts i:nth-child(3){animation-delay:.4s}
+#jvBulle .b-act{display:flex;flex-direction:column;gap:10px}
+#jvBulle .b-act:empty{display:none}
+#jvBulle .b-l{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#jvBulle .b-chip{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:999px;background:rgba(var(--glow),.1);font-size:13px;font-weight:400;color:#135e66;line-height:1.3}
+#jvBulle .b-chip.non{background:var(--faint);color:#56717a}
+#jvBulle .b-prop{font-size:14px;line-height:1.4;color:var(--fg);width:100%}
+#jvBulle .b-prop small{display:block;font-size:12px;color:#56717a;margin-bottom:2px}
+#jvBulle .b-l button{min-height:44px;padding:0 16px;border-radius:999px;font-size:13px;font-weight:500;color:#56717a}
+#jvBulle .b-l button.y{background:var(--fg);color:var(--bg);padding:0 22px}
+#jvBulle .b-l button.g{border:1px solid #c3d3d8}
+#jvBulle .b-conv{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-top:1px solid var(--faint);font-size:12px;color:#56717a;width:100%;flex-shrink:0}
+@keyframes jvRespire{0%,100%{opacity:.5;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+body.jv-bulle .ring{transform:translateY(-22px) scale(.72)}
+body.jv-bulle .ring.on{transform:translateY(-22px) scale(.78)}
+body.jv-bulle #hint{opacity:0}`;
+const JV_BULLE_COCHE = `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`;
+function jvBulleDom(){
+  let b = $("jvBulle"); if (b) return b;
+  const st = document.createElement("style"); st.id = "jvBulleCss"; st.textContent = JV_BULLE_CSS; document.head.appendChild(st);
+  const v = document.createElement("div"); v.id = "jvBulleVoile"; document.body.appendChild(v);
+  b = document.createElement("div"); b.id = "jvBulle"; b.setAttribute("role", "dialog");
+  b.innerHTML = `<div class="b-queue" aria-hidden="true"></div><div class="b-in" id="jvBulleIn"><div class="b-tete"><span class="b-nom"><i aria-hidden="true"></i><span id="jvBulleNom"></span></span><span class="b-h" id="jvBulleH"></span></div><p class="b-q" id="jvBulleQ"></p><div class="b-txt" id="jvBulleTxt" aria-live="polite"></div><div class="b-act" id="jvBulleAct"></div><button class="b-conv" id="jvBulleConv"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>toucher pour la conversation</button></div>`;
+  document.body.appendChild(b);
+  const versConv = () => { if (Date.now() - JV_BULLE_GLISSE < 450) return; jvBulleFerme(false); openConv(); };
+  v.addEventListener("click", () => jvBulleFerme(true));
+  $("jvBulleConv").addEventListener("click", versConv);
+  $("jvBulleTxt").addEventListener("click", versConv);
+  $("jvBulleAct").addEventListener("click", jvBulleClic);
+  let y0 = null;
+  b.addEventListener("pointerdown", e => { y0 = $("jvBulleIn").scrollTop > 0 ? null : e.clientY; jvBulleSursis(); });
+  b.addEventListener("pointerup", e => { if (y0 != null && e.clientY - y0 > 60) { JV_BULLE_GLISSE = Date.now(); jvBulleFerme(true); } y0 = null; });
+  try { $("ring").addEventListener("pointerdown", () => { if (JV_BULLE) jvBulleFerme(true); }); } catch (e) {}   // il reparle : la bulle s'efface
+  return b;
+}
+/* sous la constellation (réduite), le reste de l'écran voilé */
+function jvBullePlace(){
+  try {
+    const r = $("ring").getBoundingClientRect(), cy = r.top + r.height / 2;
+    const top = Math.max(120, Math.round(cy - 22 + r.height * 0.36 + 20)), H = window.innerHeight || 800;
+    $("jvBulle").style.top = top + "px"; $("jvBulleVoile").style.top = Math.max(0, top - 24) + "px";
+    $("jvBulleIn").style.maxHeight = Math.max(220, H - top - 96) + "px";
+  } catch (e) {}
+}
+const jvBulleHeure = h => { const [a, b] = String(h || "").split(":"); return +a + " h" + (b && b !== "00" ? " " + b : ""); };
+function jvBulleJour(d){
+  const t = ymd(new Date()); if (d === t) return "aujourd'hui"; if (d === ymd(addDays(1))) return "demain";
+  return new Date(d + "T12:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" });
+}
+function jvBulle(question){
+  const vide = { phrase(){}, dire(){}, fin(){} };
+  if (typeof document === "undefined" || !document.body) return vide;
+  try { jvBulleDom(); } catch (e) { return vide; }
+  if (JV_BULLE) clearTimeout(JV_BULLE.to);
+  const B = JV_BULLE = { ph: [], dit: -1, muet: !(CFG.jvParle !== false && CFG.vSay !== "0"), fini: false, err: false, to: null, n0: JV.view.length };
+  $("jvBulleNom").textContent = jvEstNestor() ? "N.E.S.T.O.R." : String(jvNom()).toUpperCase();
+  $("jvBulle").setAttribute("aria-label", "Réponse de " + jvNom());
+  const now = new Date(); $("jvBulleH").textContent = jvBulleHeure(String(now.getHours()) + ":" + String(now.getMinutes()).padStart(2, "0"));
+  const q = String(question || "").trim(); $("jvBulleQ").textContent = q ? "« " + q.slice(0, 160) + " »" : ""; $("jvBulleQ").style.display = q ? "" : "none";
+  $("jvBulleTxt").className = "b-txt"; $("jvBulleTxt").innerHTML = `<span class="b-pts" aria-label="un instant"><i></i><i></i><i></i></span>`;
+  $("jvBulleAct").innerHTML = ""; $("jvBulleIn").scrollTop = 0;
+  jvBullePlace(); document.body.classList.add("jv-bulle");
+  B.phrase = p => { const t = jvPourVoix(p).trim(); if (!t || JV_BULLE !== B) return; B.ph.push(t); jvBullePeins(B); };
+  B.dire = t => { B.muet = true; B.phrase(t); };
+  B.fin = nv => jvBulleFin(B, nv || []);
+  return B;
+}
+function jvBullePeins(B){
+  if (!B || JV_BULLE !== B) return;
+  const x = $("jvBulleTxt"); if (!x) return;
+  x.classList.toggle("err", B.err);
+  x.innerHTML = B.ph.map((t, i) => `<span class="${B.muet || i <= B.dit ? "dit" : ""}">${esc(t)}</span>`).join(" ");
+  const inn = $("jvBulleIn"); if (inn && B.ph.length && !B.fini) inn.scrollTop = inn.scrollHeight;   // il suit la voix
+}
+/* la voix a commencé la phrase i (Infinity : tout est dit, ou la voix est coupée) */
+function jvBulleDit(i){ const B = JV_BULLE; if (!B || i <= B.dit) return; B.dit = i; jvBullePeins(B); }
+function jvBulleLigne(v, i){
+  const q = v.date && v.heure ? jvBulleJour(v.date) + " · " + jvBulleHeure(v.heure) : "";
+  const chip = (t, non) => `<span class="b-chip${non ? " non" : ""}">${non ? "" : JV_BULLE_COCHE}${esc(t)}</span>`;
+  const annule = cvUndoBtn(v, i) ? `<button data-bundo="${i}">annuler</button>` : "";
+  if (v.st === "non") return `<div class="b-l">${chip(v.auto ? "annulé" : "laissé de côté", true)}</div>`;
+  if (v.st) {
+    const lab = v.k === "rappel" ? (v.rdv ? "Rendez-vous ajouté" : "Rappel posé") + (q ? " · " + q : "")
+      : v.k === "courses" ? "Liste de courses créée" + (v.t ? " · " + v.t : "")
+      : v.k === "ici" ? "En passant · " + v.lieu
+      : v.k === "modif" ? (v.act === "supprimer" ? "Supprimé" : v.act === "deplacer" ? "Déplacé" : "Corrigé") + " · " + v.t
+      : v.k === "retenir" ? "Retenu" : v.k === "oublier" ? "Effacé" : v.k === "lieu" ? "Lieu ajouté · " + v.t : v.k === "vtc" ? v.st + " ouvert" : "C'est fait";
+    return `<div class="b-l">${chip(lab)}${v.k === "rappel" && v.lieu ? `<button data-bwaze="${i}">Waze</button>` : ""}${annule}</div>`;
+  }
+  const P = v.k === "retenir" ? ["Je retiens", v.t, "Retenir"] : v.k === "oublier" ? ["J'efface de votre mémoire", v.t, "Effacer"]
+    : v.k === "lieu" ? ["Lieu habituel", v.t + " · " + v.adresse, "Ajouter"] : v.k === "rappel" ? [v.rdv ? "Rendez-vous" : "Rappel", v.t + (q ? " · " + q : ""), "Ajouter"]
+    : v.k === "courses" ? ["Courses", v.art.length + " article" + (v.art.length > 1 ? "s" : "") + (v.t ? " · " + v.t : ""), "Créer"]
+    : v.k === "ici" ? ["En passant · " + v.lieu, v.t, "Ajouter"] : v.k === "vtc" ? ["VTC", v.t, null] : [null, v.t || "", null];
+  const btn = v.k === "vtc" ? `<button class="y" data-bvtc="${i}" data-app="Uber">Uber</button><button class="y" data-bvtc="${i}" data-app="Bolt">Bolt</button>` : P[2] ? `<button class="y" data-bok="${i}">${P[2]}</button>` : `<button class="g" data-bvoir="1">voir</button>`;
+  return `<div class="b-l"><div class="b-prop">${P[0] ? `<small>${esc(P[0])}</small>` : ""}${esc(String(P[1]).slice(0, 220))}</div>${btn}<button class="g" data-bno="${i}">${v.k === "retenir" ? "Non merci" : "Non"}</button></div>`;
+}
+function jvBulleActions(B){
+  if (!B || JV_BULLE !== B) return;
+  const L = [];
+  for (let i = B.n0; i < JV.view.length; i++) {
+    const v = JV.view[i];
+    if (v.r === "p") L.push(jvBulleLigne(v, i));
+    if (v.r === "e" && v.retry) L.push(`<div class="b-l"><button class="y" data-bretry="${i}">Réessayer</button></div>`);
+  }
+  $("jvBulleAct").innerHTML = L.join("");
+}
+const jvBulleAttend = B => !!B && JV.view.slice(B.n0).some(v => v.r === "p" && !v.st);
+async function jvBulleClic(e){
+  const t = e.target.closest("button"); if (!t) return;
+  e.stopPropagation(); const B = JV_BULLE; jvBulleSursis();
+  const d = t.dataset;
+  try {
+    if (d.bok) await cvDecide(+d.bok, true);
+    else if (d.bno) await cvDecide(+d.bno, false);
+    else if (d.bvtc) await cvDecide(+d.bvtc, d.app);
+    else if (d.bundo) await cvUndo(+d.bundo);
+    else if (d.bwaze) { const v = JV.view[+d.bwaze]; if (v && v.lieu) jvWaze(v.lieu); }
+    else if (d.bvoir) { jvBulleFerme(false); openConv(); return; }
+    else if (d.bretry) {
+      const i = +d.bretry, v = JV.view[i]; if (!v) return;
+      JV.view.splice(i, 1); const u = JV.view.length && JV.view[JV.view.length - 1]; if (u && u.r === "u" && u.t === v.retry) JV.view.pop();
+      jvAuCercle(v.retry).catch(() => {}); return;
+    }
+  } catch (err) {}
+  try { await cvSave(); } catch (err) {}
+  jvBulleActions(B); jvBulleRange(B);
+}
+function jvBulleFin(B, nv){
+  if (!B || JV_BULLE !== B) return;
+  B.fini = true;
+  const e = nv.find(v => v.r === "e");
+  if (!B.ph.length) {
+    const t = nv.filter(v => v.r === "a").map(v => v.t).join(" ").trim();
+    B.muet = true;
+    if (t) B.phrase(t);
+    else if (e) { B.err = true; B.ph.push(e.t); }
+    else if (!nv.some(v => v.r === "p")) B.ph.push("C'est fait.");
+    if (!B.ph.length) $("jvBulleTxt").innerHTML = "";
+  } else if (e) { B.err = true; B.ph.push(e.t); B.dit = Infinity; }
+  jvBullePeins(B); jvBulleActions(B); jvBulleRange(B);
+}
+/* on la range quand la voix a fini, après le temps de lire (plus longtemps s'il reste une question) */
+function jvBulleRange(B){
+  if (!B) return; clearTimeout(B.to);
+  if (JV_BULLE !== B || !B.fini) return;
+  const parle = !!JV_VQ.joue || JV_VQ.file.length > 0 || (typeof JV_PARLE !== "undefined" && JV_PARLE > 0) || !!(JV_AUDIO && !JV_AUDIO.paused && !JV_AUDIO.ended);
+  if (parle) { B.to = setTimeout(() => jvBulleRange(B), 400); return; }
+  if (B.dit !== Infinity) { B.dit = Infinity; jvBullePeins(B); }
+  const n = B.ph.join(" ").length, ms = jvBulleAttend(B) || B.err ? 30000 : Math.min(25000, 8000 + Math.max(0, n - 140) * 35);
+  B.to = setTimeout(() => jvBulleFerme(false), ms);
+}
+function jvBulleSursis(){ const B = JV_BULLE; if (B && B.fini) jvBulleRange(B); }   // il la touche : le compte repart
+function jvBulleFerme(stop){
+  const B = JV_BULLE; if (B) clearTimeout(B.to);
+  JV_BULLE = null;
+  try { document.body.classList.remove("jv-bulle"); } catch (e) {}
+  if (stop) { try { jvVoixDebut(); JV_VQ.muet = true; } catch (e) {} try { hush(); } catch (e) {} }
+  if (jvBulleAttend(B)) { try { toast("une proposition vous attend", "voir", () => openConv(), 9000); } catch (e) {} }
 }
 const jvPourVoix = t => String(t || "").replace(/\*\*/g, "").replace(/\b(?:[A-Z]\.\s?){3,}[A-Z]?\.?/g, m => m.replace(/[.\s]/g, "").toLowerCase() === cvNorm(jvNom()) ? jvNom() + (/\s$/.test(m) ? " " : "") : m).replace(/^\s*[-•]\s*/gm, "").replace(/https?:\/\/\S+/g, "").replace(/\s*\n+\s*/g, " ").trim().slice(0, 900);
 const _jvVoxBias = voxBias;
@@ -7190,6 +7372,7 @@ function jvDedoublonne(){
 }
 setTimeout(jvDedoublonne, 800);
 async function openConv(){
+  try { if (JV_BULLE) jvBulleFerme(false); } catch (e) {}
   hide();
   setTimeout(async () => {
     show("conv");
