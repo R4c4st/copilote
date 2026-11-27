@@ -26,7 +26,7 @@ select{appearance:none}
 .top button{font-size:20px;letter-spacing:2px;color:var(--mut);padding:4px 0 4px 12px}
 
 body[data-space=perso]{--glow:96,140,232;--air1:#ecf1fc}
-body{background:radial-gradient(700px 460px at 50% 26%,rgba(var(--glow),.10),transparent 70%),linear-gradient(180deg,var(--air1) 0%,var(--air2) 45%,#fff 100%);background-attachment:fixed;min-height:100vh}
+body{background:radial-gradient(700px 460px at 50% 26%,rgba(var(--glow),.10),transparent 70%),linear-gradient(180deg,var(--air1) 0%,var(--air2) 45%,var(--air1) 100%);background-attachment:fixed;min-height:100vh}
 .spc{display:flex;gap:4px;margin-left:auto;margin-right:6px;border:1px solid var(--faint);border-radius:999px;padding:3px}
 .spc button{font-size:12px;letter-spacing:1px;padding:5px 12px;border-radius:999px;color:var(--mut)}
 .spc button.on{background:var(--fg);color:var(--bg)}
@@ -105,9 +105,9 @@ body.const .ring.on{transform:none}
 .tiroir-fond{position:fixed;inset:0;z-index:21;background:rgba(15,34,41,.14);opacity:0;pointer-events:none;transition:opacity .35s}
 body.tiroir-ouvert .tiroir-fond{opacity:1;pointer-events:auto}
 body.tiroir-ouvert{overflow:hidden}
-.tiroir{--tp:0;position:fixed;left:0;right:0;bottom:0;z-index:22;height:calc(100vh - var(--sat) - 64px);display:flex;flex-direction:column;background:rgba(255,255,255,.08);-webkit-backdrop-filter:blur(7px) saturate(1.3);backdrop-filter:blur(7px) saturate(1.3);border-radius:26px 26px 0 0;border-top:1px solid rgba(255,255,255,.75);box-shadow:0 -8px 26px rgba(var(--glow),.10),inset 0 1px 0 rgba(255,255,255,.5);transform:translateY(calc(100% - 82px - var(--sab)));transition:transform .42s cubic-bezier(.2,.8,.2,1)}
+.tiroir{--tp:0;position:fixed;left:0;right:0;bottom:0;z-index:22;height:calc(100vh - var(--sat) - 64px);display:flex;flex-direction:column;background:rgba(255,255,255,.02);-webkit-backdrop-filter:blur(calc(3px + 6px * var(--tp))) saturate(1.3);backdrop-filter:blur(calc(3px + 6px * var(--tp))) saturate(1.3);border-radius:26px 26px 0 0;border-top:1px solid rgba(255,255,255,.75);box-shadow:0 -8px 26px rgba(var(--glow),.10),inset 0 1px 0 rgba(255,255,255,.5);transform:translateY(calc(100% - 82px - var(--sab)));transition:transform .42s cubic-bezier(.2,.8,.2,1)}
 /* le verre : presque transparent fermé, il se voile en montant sans devenir opaque */
-.tiroir::before{content:"";position:absolute;inset:0;border-radius:inherit;background:#fff;opacity:calc(.12 + .62 * var(--tp));transition:opacity .42s;z-index:-1;pointer-events:none}
+.tiroir::before{content:"";position:absolute;inset:0;border-radius:inherit;background:#fff;opacity:calc(.03 + .55 * var(--tp));transition:opacity .42s;z-index:-1;pointer-events:none}
 .tiroir.glisse::before{transition:none}
 body.tiroir-ouvert .tiroir{transform:none;--tp:1}
 .tiroir.vide{display:none}
@@ -426,7 +426,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v53 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v54 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -682,7 +682,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 53;
+const TEMPO_BUILD = 54;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
