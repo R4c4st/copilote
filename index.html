@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v45 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v46 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 45;
+const TEMPO_BUILD = 46;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4810,7 +4810,7 @@ function jvDecoupe(){
 /* la voix phrase par phrase : chaque phrase est demandée tout de suite, et jouée à son tour */
 const JV_VQ = { gen: 0, file: [], joue: false, ok: null, t0: 0, nq: 0, muet: false };
 function jvVoixDebut(){
-  JV_VQ.gen++; JV_VQ.file = []; JV_VQ.joue = false; JV_VQ.ok = null; JV_VQ.t0 = 0; JV_VQ.nq = 0; JV_VQ.muet = false;
+  JV_VQ.gen++; JV_VQ.file = []; JV_VQ.joue = false; JV_VQ.ok = null; JV_VQ.t0 = 0; JV_VQ.nq = 0; JV_VQ.muet = false; JV_VQ.chaud = false;
   try { if (JV_AUDIO) { JV_AUDIO.pause(); JV_AUDIO = null; } } catch (e) {}
 }
 async function jvVoixPermise(){
@@ -4842,12 +4842,13 @@ async function jvVoixSuite(g){
   const suite = () => { if (g === JV_VQ.gen) jvVoixSuite(g); };
   let src = null; if (it.src) { try { src = await it.src; } catch (e) {} }
   if (g !== JV_VQ.gen) return;
+  if (src && !JV_VQ.chaud) { JV_VQ.chaud = true; await jvChauffe(); if (g !== JV_VQ.gen) return; }
   try { jvBulleDit(it.i); } catch (e) {}   // la bulle fonce la phrase qui se dit
   if (!JV_VQ.t0) { JV_VQ.t0 = jvNow(); jvChrono({ voix: JV_VQ.t0 }); }
   if (src) {
     try {
       if (JV_AUDIO) JV_AUDIO.pause();
-      const a = new Audio(src); JV_AUDIO = a; let fini = false; jvHaloSon(a);
+      const a = new Audio(src); JV_AUDIO = a; let fini = false; jvHaloSon(a); jvSonVu(a);
       const f = () => { if (!fini) { fini = true; suite(); } }, repli = () => { if (!fini) { fini = true; _jvSpeak(it.t, suite); } };
       try { a.preservesPitch = true; a.playbackRate = jvVitesseG(); } catch (e) {}
       a.onended = f; a.onerror = repli;
@@ -6734,8 +6735,9 @@ async function jvAuCercle(reste){
 let JV_BULLE = null, JV_SUITE = null;
 const JV_BULLE_CSS = `#jvBulleVoile{position:fixed;inset:0;z-index:28;background:rgba(247,251,252,.8);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .4s}
 body.jv-bulle #jvBulleVoile{opacity:1;pointer-events:auto}
-#jvBulle{position:fixed;z-index:29;left:0;right:0;top:0;pointer-events:none;opacity:0;transition:opacity .35s}
-body.jv-bulle #jvBulle{opacity:1}
+#jvBulle{position:fixed;z-index:29;left:0;right:0;top:0;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .35s,visibility 0s linear .35s}
+body.jv-bulle #jvBulle{opacity:1;visibility:visible;transition:opacity .35s}
+body:not(.jv-bulle) #jvBulle *{pointer-events:none!important}
 #jvBulle .h-q{position:absolute;left:24px;right:24px;text-align:center;font-size:14px;font-style:italic;color:#56717a;line-height:1.4;max-height:2.8em;overflow:hidden}
 #jvBulle .h-q.live{font-style:normal;color:var(--fg)}
 #jvBulle .h-anneau{position:absolute;left:50%;transform:translateX(-50%);pointer-events:auto}
@@ -6801,18 +6803,49 @@ const JV_SYM_GRAND = `<svg aria-hidden="true" width="20" height="20" viewBox="0 
 const JV_SYM_MICRO = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>`;
 const JV_BULLE_COCHE = `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`;
 /* l'anneau vivant : il réfléchit (une lueur tourne), il parle (les points suivent sa voix), il écoute (l'anneau suit la vôtre) */
-let JV_AC = null, JV_AN = null, JV_FREQ = null, JV_HALO_MIC = { t: 0, v: 0 }, JV_HALO_RAF = 0;
+let JV_HALO_MIC = { t: 0, v: 0 }, JV_HALO_RAF = 0, JV_DERNIER_SON = 0;
+const JV_ENV = new Map();
+/* le relief de sa voix, calculé à part à partir du même son (décodé hors lecture) : la lecture n'est jamais touchée */
 function jvHaloSon(a){
-  // on mesure la voix Google seulement halo visible et appli au premier plan : un son passé par l'analyseur
-  // se tairait si le téléphone suspendait l'audio en arrière-plan
   try {
-    if (!a || !JV_BULLE || document.hidden || document.body.classList.contains("verrou") || (typeof JV_ASSIST !== "undefined" && JV_ASSIST)) return;
-    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-    if (!JV_AC) { JV_AC = new AC(); JV_AN = JV_AC.createAnalyser(); JV_AN.fftSize = 128; JV_AN.smoothingTimeConstant = 0.55; JV_AN.connect(JV_AC.destination); JV_FREQ = new Uint8Array(JV_AN.frequencyBinCount); }
-    if (JV_AC.state !== "running") { JV_AC.resume().catch(() => {}); return; }
-    JV_AC.createMediaElementSource(a).connect(JV_AN); a._jvAn = true;
+    const src = a && a.src; if (!src || !/^data:audio/.test(src)) return;
+    if (JV_ENV.has(src)) { a._env = JV_ENV.get(src); return; }
+    const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!OAC) return;
+    const b = atob(src.slice(src.indexOf(",") + 1)), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i);
+    let fait = false;
+    const ok = buf => {
+      if (fait || !buf) return; fait = true;
+      const d = buf.getChannelData(0), pas = Math.max(1, Math.round(buf.sampleRate * 0.04)), n = Math.ceil(d.length / pas), env = new Float32Array(n);
+      let max = 0;
+      for (let k = 0; k < n; k++) { let sm = 0; const f = Math.min(d.length, (k + 1) * pas); for (let i = k * pas; i < f; i++) sm += d[i] * d[i]; env[k] = Math.sqrt(sm / pas); if (env[k] > max) max = env[k]; }
+      if (max > 0) for (let k = 0; k < n; k++) env[k] = Math.min(1, env[k] / (max * 0.8));
+      JV_ENV.set(src, env); if (JV_ENV.size > 30) JV_ENV.delete(JV_ENV.keys().next().value);
+      a._env = env;
+    };
+    const p = new OAC(1, 2, 22050).decodeAudioData(u.buffer, ok, () => {});
+    if (p && p.then) p.then(ok, () => {});
   } catch (e) {}
 }
+/* le début coupé : la sortie audio (écouteurs Bluetooth surtout) se réveille sur un court silence avant la première phrase */
+let JV_SILENCE = null;
+function jvSilence(){
+  if (JV_SILENCE) return JV_SILENCE;
+  const sr = 8000, n = Math.round(sr * 0.32), buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const w = (o, x) => { for (let i = 0; i < x.length; i++) v.setUint8(o + i, x.charCodeAt(i)); };
+  w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVEfmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, n * 2, true);
+  let b = ""; const u = new Uint8Array(buf); for (let i = 0; i < u.length; i++) b += String.fromCharCode(u[i]);
+  return (JV_SILENCE = "data:audio/wav;base64," + btoa(b));
+}
+function jvChauffe(){
+  if (Date.now() - JV_DERNIER_SON < 3000) return Promise.resolve();   // la sortie est déjà réveillée
+  return new Promise(r => {
+    let fin = false; const ok = () => { if (!fin) { fin = true; r(); } };
+    try { const x = new Audio(jvSilence()); x.onended = ok; x.onerror = ok; const p = x.play(); if (p && p.catch) p.catch(ok); } catch (e) { ok(); }
+    setTimeout(ok, 700);
+  });
+}
+const jvSonVu = a => { try { a.addEventListener("playing", () => { JV_DERNIER_SON = Date.now(); }); a.addEventListener("ended", () => { JV_DERNIER_SON = Date.now(); }); } catch (e) {} };
 /* le niveau de son micro (reconnaissance Google du téléphone, appli 0.3.9) ; sinon ses mots reconnus font l'affaire */
 function jvHaloMic(rms){
   const v = Math.max(0, Math.min(1, ((+rms || 0) - 1) / 8));
@@ -6838,12 +6871,12 @@ function jvHaloAnime(){
       mic = Math.max(r, k * 0.8);
     }
     halo.style.setProperty("--mic", (B.mic = (B.mic || 0) * 0.75 + mic * 0.25).toFixed(3));
-    let F = null;
-    if (parle && audio && JV_AUDIO._jvAn && JV_AN) { JV_AN.getByteFrequencyData(JV_FREQ); F = JV_FREQ; }
+    let envV = null;
+    if (parle && audio && JV_AUDIO._env) { const e = JV_AUDIO._env, k = Math.floor((JV_AUDIO.currentTime || 0) / 0.04); envV = e[Math.min(e.length - 1, Math.max(0, k))] || 0; }
     // sa constellation (celle de l'accueil), qui s'élargit au rythme de sa voix
     let niv = 0;
     if (parle && !ecoute) {
-      if (F) { let sm = 0; for (let b = 1; b <= 20; b++) sm += F[b] || 0; niv = Math.min(1, sm / 20 / 150); }
+      if (envV != null) niv = envV;
       else niv = Math.max(0, 0.35 + 0.32 * Math.sin(t / 110) * Math.sin(t / 370));
     }
     B.niv = (B.niv || 0) * 0.7 + niv * 0.3; window.JV_NIV = B.niv;
@@ -6863,7 +6896,7 @@ function jvHaloAnime(){
       let v = 0;
       if (pense) { const d = (tete - i * 360 / n + 720) % 360; v = d < 100 ? 1 - d / 100 : 0; }
       else if (parle) {
-        if (F) { const k = i <= n / 2 ? i : n - i, b = 1 + Math.round(k * 20 / (n / 2)); v = Math.min(1, (F[b] || 0) / 210); }
+        if (envV != null) v = envV * (0.6 + 0.4 * Math.sin(t / 120 + i * 1.3));
         else v = Math.max(0, 0.3 + 0.35 * Math.sin(t / 95 + i * 1.7) * Math.sin(t / 330 + i * 0.9));   // voix du téléphone : on mime
       } else if (ecoute) v = B.mic * (0.65 + 0.35 * Math.sin(t / 140 + i * 0.8));
       lv[i] = lv[i] * 0.6 + v * 0.4;
@@ -7675,16 +7708,16 @@ function jvDire(t, then){
   const repli = () => { if (fini) return; fini = true; _jvSpeak(t, then); };
   const voix = CFG.jvVoix.slice(2), mode = CFG.jvStyle ? "style" : "hd", style = mode === "style" ? (CFG.jvStyleTxt || JV_STYLE_DEF) : "";
   const k = [mode, voix, style, t].join("|");
-  const joue = src => {
+  const joue = src => jvChauffe().then(() => {
     try {
       try { if (JV_AUDIO) JV_AUDIO.pause(); } catch (e) {}
-      const a = new Audio(src); JV_AUDIO = a; try { jvHaloSon(a); } catch (e) {}
+      const a = new Audio(src); JV_AUDIO = a; try { jvHaloSon(a); jvSonVu(a); } catch (e) {}
       try { a.preservesPitch = true; a.playbackRate = jvVitesseG(); } catch (e) {}
       a.onended = done; a.onerror = repli;
       const p = a.play(); if (p && p.catch) p.catch(repli);
       setTimeout(done, 6000 + t.length * 110);
     } catch (e) { repli(); }
-  };
+  });
   if (JV_SONS.has(k)) { joue(JV_SONS.get(k)); return; }
   vFn({ action: "dire", texte: t, voix, mode, style }).then(r => {
     if (r && r.mois) LS.set("copilote_vmois", { m: curMonth(), u: r.mois });
