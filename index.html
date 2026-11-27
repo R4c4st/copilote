@@ -398,7 +398,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v36 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v37 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -654,7 +654,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 36;
+const TEMPO_BUILD = 37;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -3578,7 +3578,7 @@ async function pushHeal(force, renew){
   } catch (e) {}
 }
 function spaceState(sp){ return sp === SPACE ? S : (LS.get(SKEY(sp), null) || { items: [], doneDays: [] }); }
-function putSpace(sp, st){ if (sp === SPACE) { S = st; save(); } else LS.set(SKEY(sp), st); }
+function putSpace(sp, st){ if (sp === SPACE) { S = st; save(); } else { LS.set(SKEY(sp), st); schedulePushSync(); } }   // l'autre espace aussi : les rappels du téléphone suivent (plus de rappel fantôme)
 const RIT = () => Object.assign({ on: true, matin: "08:00", soir: "18:30", semaine: "19:00" }, LS.get("tempo_ritcfg", {}));
 var pushT = null;
 function schedulePushSync(){ if (!pushOn() && !NATIVE) return; clearTimeout(pushT); pushT = setTimeout(() => syncReminders(), 2500); }
@@ -4397,6 +4397,7 @@ function cvSouvenirs(q){
   const all = [...MEM.items.values()];
   const picked = new Map();
   all.filter(i => i.p).sort(byDate).slice(0, 15).forEach(i => picked.set(i.id, i));                 // épinglés : toujours
+  all.filter(i => i.g && i.g.nom).slice(0, 25).forEach(i => picked.set(i.id, i));                    // ses lieux habituels (adresses) : toujours, ils sont peu nombreux
   const lastU = JV.view.filter(v => v.r === "u").slice(-2).map(v => v.t).join(" ");
   memSearch(q + " " + lastU, 10).forEach(i => picked.set(i.id, i));                                  // utiles à la question
   all.filter(i => !i.p).sort(byDate).slice(0, 3).forEach(i => picked.set(i.id, i));                 // les plus récents
@@ -4433,7 +4434,7 @@ Ta façon de répondre
 - Trois phrases au plus, comme à l'oral, sauf pour un bilan, un brief ou s'il demande du détail. Une liste seulement si c'en est vraiment une. Pas de formule creuse, pas de reformulation de sa question, pas de formule de clôture.
 - Il dicte souvent : ses messages peuvent contenir des hésitations ou des mots mal transcrits. Comprends l'intention sans relever les fautes.
 - S'il te manque une information indispensable, pose une seule question, la plus utile.
-- Ne lui fais jamais répéter ce qui est déjà dans ses souvenirs.
+- Ne lui fais jamais répéter ce qui est déjà dans ses souvenirs. Avant de répondre que tu n'as pas une information sur lui ou ses proches (adresse, lieu, personne, habitude), cherche-la avec chercher_souvenirs en essayant plusieurs mots d'un coup : le prénom, le lien (« ex-femme », « mère de son fils », « fils »), le lieu. Ne dis « je ne l'ai pas » qu'après cette recherche.
 
 Sa mémoire : c'est lui qui décide
 - Quand il te donne une information durable sur lui, ses proches, son travail, ses habitudes ou ses préférences, ou quand il dit « retiens », propose-la avec l'outil proposer_souvenir : une phrase autonome, compréhensible seule dans six mois, datée si la date compte. Pas pour les broutilles ni pour ce qui ne vaut que pour aujourd'hui.
@@ -5343,7 +5344,7 @@ const JV_BETA_TOOLS = [
   { name: "cote_match_choix", description: "Note le pari qu'il a choisi cette semaine pour Cote & Match (ça coupe la relance de 11h du vendredi).",
     input_schema: { type: "object", properties: { pari: { type: "string", description: "match et pari, ex. « Lens - Brest, victoire de Lens »" } }, required: ["pari"] } }
 ];
-const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS, JV_HORLOGE_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); return t; };
+const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS, JV_HORLOGE_TOOLS, JV_MEM_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); return t; };
 /* zones de la maison pour le chauffage selon la présence (l'appli Android les déclenche, même fermée) */
 const jvMaisonLieu = () => jvLieux().find(l => l.g.type === "maison");
 const jvChauffeAuto = () => jvNetOn() && CFG.jvChauffe !== false && !!jvMaisonLieu();
@@ -5384,7 +5385,7 @@ function jvAddCourses(p){
   });
   // la liste s'affiche par date de création : le premier rayon d'abord
   if (SPACE === "perso") { S.items.unshift(...items); save(); try { render(items.map(i => i.id)); } catch (e) {} }
-  else { st.items = st.items || []; st.items.unshift(...items); LS.set(SKEY("perso"), st); }
+  else { st.items = st.items || []; st.items.unshift(...items); LS.set(SKEY("perso"), st); schedulePushSync(); }
   if (l) jvGeoSync();
   return items;
 }
@@ -5697,7 +5698,7 @@ async function jvSortieAilleurs(it, sp){
   if (!o || o.jvBus) return false;
   const sv = SPACE, sS = S;
   SPACE = sp; S = st;
-  try { jvSortieApplique(o, m, x, true); } finally { LS.set(SKEY(sp), S); SPACE = sv; S = sS; try { render(); } catch (e) {} }
+  try { jvSortieApplique(o, m, x, true); } finally { LS.set(SKEY(sp), S); SPACE = sv; S = sS; try { render(); } catch (e) {} schedulePushSync(); }
   return true;
 }
 /* corriger d'un geste depuis la fiche : il retient la correction */
@@ -6816,6 +6817,19 @@ async function toolMinuteur(x){
 JV_LOCAL.regler_reveil = toolReveil; JV_LOCAL.lancer_minuteur = toolMinuteur;
 JV_ATTENTE.regler_reveil = "je règle le réveil…"; JV_ATTENTE.lancer_minuteur = "je lance le minuteur…";
 
+/* ---------- chercher dans ses souvenirs : Nestor ne dit plus « je ne l'ai pas » sans avoir cherché ---------- */
+const JV_MEM_TOOLS = [
+  { name: "chercher_souvenirs", description: "Cherche dans tous ses souvenirs (adresses, proches, lieux, habitudes, préférences). Donne plusieurs mots d'un coup : prénom, lien de parenté, lieu, synonymes.",
+    input_schema: { type: "object", properties: { mots: { type: "string", description: "Mots-clés séparés par des espaces (ex. « Julie ex-femme mère adresse »)." } }, required: ["mots"] } }
+];
+async function toolSouvenirs(x){
+  try { await memUnlock(); } catch (e) {}
+  if (!MEM.key) return { erreur: "mémoire verrouillée" };
+  const L = memSearch(String((x && x.mots) || ""), 15);
+  return { trouves: L.map(i => `[${cvShort(i.id)}] ${i.t}`), nb: L.length };
+}
+JV_LOCAL.chercher_souvenirs = toolSouvenirs; JV_ATTENTE.chercher_souvenirs = "je cherche dans vos souvenirs…";
+
 /* ---------- ouverture, micro, branchements ---------- */
 /* lot 17 : réglages de la section Bêta, et « reprendre la conversation précédente » */
 function paintBeta(){
@@ -6964,7 +6978,7 @@ function jvDedoublonne(){
       const rest = uniques.filter(i => garde.has(i));
       if (rest.length === arr.length) continue;
       n += parti.length;
-      if (sp === SPACE) { S.items = rest; save(); } else { st.items = rest; LS.set(SKEY(sp), st); }
+      if (sp === SPACE) { S.items = rest; save(); } else { st.items = rest; LS.set(SKEY(sp), st); schedulePushSync(); }
       parti.forEach(i => { if (i.gId || i.evId) { try { _jvCalDel(i); } catch (e) {} } });
     }
   } catch (e) {}
