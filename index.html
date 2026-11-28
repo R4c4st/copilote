@@ -174,6 +174,7 @@ body.tiroir-ouvert .t-res{display:none}
 .menu{display:flex;flex-direction:column}
 .menu button{text-align:left;font-size:19px;padding:16px 0;border-bottom:1px solid var(--faint)}
 .menu button:last-child{border-bottom:0}
+.regSub{display:block;font-size:12.5px;color:var(--mut);margin-top:4px;line-height:1.4}
 .sheet.full{top:var(--sat);max-height:none;border-radius:26px 26px 0 0}
 .tabs{display:flex;gap:22px}
 .tabs button{font-size:22px;color:var(--mut)} .tabs button.on{color:var(--fg)}
@@ -335,15 +336,118 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   </div>
 </div>
 
-<div class="sheet" id="set">
-  <div class="lab" style="margin-top:0">Claude</div>
-  <input type="password" id="sKey" placeholder="clé API Anthropic (sk-ant-…)">
-  <div id="appBox">
-    <div class="lab">Appli Android</div>
-    <p class="small" id="appState"></p>
-    <div class="foot" style="margin-top:10px"><div class="l"><button id="appGet" style="color:var(--fg)">installer l'appli</button><button id="appUpd">mettre à jour</button></div></div>
+<div class="sheet full" id="reg">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+    <button id="regBack" style="font-size:15px;color:var(--mut);display:none;flex:none">‹ retour</button>
+    <div class="tabs" style="flex:1;min-width:0"><button class="on" id="regT">réglages</button></div>
+    <button id="regClose" style="font-size:14px;color:var(--mut)">fermer</button>
   </div>
-  <p class="small">Sans clé, Nestor trie seul avec ses règles. Avec, c'est Claude qui comprend, découpe et range — en s'appuyant sur la fiche ci-dessous et sur vos corrections.</p>
+  <div class="menu" id="regHome">
+    <button data-p="nestor">Nestor<span class="regSub" id="regSub-nestor">son caractère, ce qu'il a appris, la bêta, le carnet</span></button>
+    <button data-p="voix">Voix et dictée<span class="regSub" id="regSub-voix">sa voix, quand il parle, la dictée</span></button>
+    <button data-p="memoire">Mémoire et journal<span class="regSub" id="regSub-memoire">vos lieux, vos souvenirs, le journal de bord</span></button>
+    <button data-p="journee">Ma journée<span class="regSub" id="regSub-journee">briefs, rituels, relances, focus, rappels</span></button>
+    <button data-p="moi">Moi<span class="regSub" id="regSub-moi">qui je suis, signature, chantiers ou thèmes, contacts</span></button>
+    <button data-p="connexions">Connexions<span class="regSub" id="regSub-connexions">Claude, Google, Outlook, Gmail, téléphone, chauffage, santé</span></button>
+    <button data-p="appli">Appli<span class="regSub" id="regSub-appli">mise à jour, widget, sauvegarde</span></button>
+  </div>
+  <div class="regP" id="regP-nestor" style="display:none">
+    <div class="lab">Son caractère</div>
+    <div id="cvCurs"></div>
+    <div class="foot" style="margin-top:8px"><p class="small" style="margin:0;flex:1;min-width:0">ou dites-lui « augmente ton humour de 10 % »</p><button id="cvCursDef">par défaut</button></div>
+    <div class="lab">Un seul Nestor</div>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:4px"><input type="checkbox" id="cvUniqueChk" style="width:auto"> tout ce que je dis au rond passe par lui : il range, répond ou me pose une question (décoché : le tri rapide d'avant)</label>
+    <div class="lab">Ce qu'il a appris de vous</div>
+    <div id="cvApprend" style="margin-top:4px"></div>
+    <div class="lab">Bêta</div>
+    <p class="small" style="margin-top:4px">Des essais : décochez ce qui vous encombre. Si vous n'en voulez plus, je les retire.</p>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBetaMatchChk" style="width:auto"> Cote &amp; Match : votre sélection le jeudi soir et le vendredi matin</label>
+    <input id="cvBetaClub" placeholder="votre club de cœur (facultatif)" style="margin-top:6px">
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:12px"><input type="checkbox" id="cvBetaCineChk" style="width:auto"> Ciné du week-end : les sorties de la semaine, le vendredi soir et le samedi matin</label>
+    <input id="cvBetaCinema" placeholder="votre cinéma (nom et ville)" style="margin-top:6px">
+    <p class="small" id="cvBetaSt" style="margin-top:6px"></p>
+    <div class="lab">Carnet d'évolutions</div>
+    <p class="small" style="margin:4px 0 6px">Ce qu'il ne sait pas encore faire : Claude le lit à chaque session de développement.</p>
+    <div id="cvCarnet"></div>
+  </div>
+  <div class="regP" id="regP-voix" style="display:none">
+    <div class="lab">Son nom et sa voix</div>
+    <input id="cvNom" list="cvNoms" placeholder="son nom (ex. Nestor, Véga)" style="margin-top:4px">
+    <datalist id="cvNoms"><option value="Jarvis"></option><option value="Nestor"></option><option value="Véga"></option></datalist>
+    <select id="cvVoix" style="margin-top:8px"></select>
+    <div id="cvStyleBox" style="display:none;margin-top:8px">
+      <label class="small" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="cvStyleChk" style="width:auto"> style majordome (Gemini) : la voix suit la consigne ci-dessous · environ 1 à 2 $ par mois</label>
+      <textarea id="cvStyleTxt" rows="2" style="margin-top:6px"></textarea>
+    </div>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px">grave <input type="range" id="cvPitch" min="0.6" max="1.3" step="0.05" style="flex:1"> aigu</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:6px">posé <input type="range" id="cvRate" min="0.75" max="1.3" step="0.05" style="flex:1"> rapide</label>
+    <label class="small" id="cvExprBox" style="display:none;gap:10px;align-items:center;margin-top:6px">sobre <input type="range" id="cvExpr" min="1" max="5" step="0.1" style="flex:1"> expressif</label>
+    <div class="foot" style="margin-top:10px"><p class="small" id="cvVoixSt" style="margin:0;flex:1;min-width:0;overflow-wrap:anywhere"></p><button class="ok" id="cvVoixTest">écouter</button></div>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvParleChk" style="width:auto"> il me répond à voix haute quand je lui parle</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvDiscretChk" style="width:auto"> mode discret : il ne parle plus du tout (ou dites-lui « mode discret » / « tu peux parler »)</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvDiscretAutoChk" style="width:auto"> se taire tout seul quand le téléphone est en silencieux, vibreur ou « ne pas déranger » (sauf casque ou Bluetooth)</label>
+  <div class="lab">Nestor me répond à voix haute</div>
+  <select id="vSay"><option value="auto">quand il m'écoute dès l'ouverture</option><option value="1">toujours</option><option value="0">jamais</option></select>
+  <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" id="vAuto" style="width:auto"> ouvrir Nestor = il m'écoute tout de suite (idéal avec la touche latérale)</label>
+  <div class="lab">Reconnaissance vocale</div>
+  <select id="vMode"><option value="google">Google — gratuit, dans le téléphone</option><option value="voxtral">Voxtral (Mistral) — plus précis, payant</option></select>
+  <div id="vBox" style="display:none">
+    <input type="password" id="vKey" placeholder="clé API Mistral" style="margin-top:10px">
+    <div class="two"><div><div class="lab">Plafond par mois</div><select id="vCap"><option value="1">1 €</option><option value="2">2 €</option><option value="3">3 €</option><option value="5">5 €</option><option value="10">10 €</option></select></div><div><div class="lab">Dictée max</div><select id="vMax"><option value="60">1 min</option><option value="120">2 min</option><option value="180">3 min</option></select></div></div>
+    <p class="small" id="vUse"></p>
+  </div>
+  <div class="lab">Fin de dictée</div>
+  <select id="sSil"><option value="0">je touche le rond pour finir</option><option value="2">après 2 s de silence</option><option value="3">après 3 s de silence</option><option value="5">après 5 s de silence</option></select>
+  <p class="small">Vous pouvez aussi finir en disant « c'est tout ».</p>
+  <div class="lab">Visuel d'écoute</div>
+  <select id="sVis"><option value="const">la constellation</option><option value="rond">le rond (pulsar)</option></select>
+  </div>
+  <div class="regP" id="regP-memoire" style="display:none">
+  <div id="regMemLock" style="display:none"><p class="small" style="margin-top:18px">Votre mémoire est verrouillée sur ce téléphone.</p><div class="foot"><span></span><button class="ok" id="regMemOpen">la déverrouiller</button></div></div>
+    <div class="lab" style="margin-top:18px">Mes lieux</div>
+    <div id="cvLieux"></div>
+    <input id="cvLieuNom" placeholder="nom : maison, golf, médecin, Intermarché…">
+    <input id="cvLieuAdr" placeholder="adresse (vide = l'endroit où je suis)">
+    <div class="foot" style="margin-top:12px"><select id="cvLieuType" style="width:auto"><option value="maison">maison</option><option value="arret">arrêt de bus</option><option value="golf">golf</option><option value="medecin">médecin</option><option value="magasin">magasin</option><option value="relais">relais colis</option><option value="autre" selected>autre</option></select><button class="ok" id="cvLieuGo">ajouter</button></div>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:16px"><input type="checkbox" id="cvAlChk" style="width:auto"> me prévenir quand j'arrive à un lieu (bus, colis, choses à faire)</label>
+    <p class="small" id="cvAlSt" style="margin-top:4px"></p>
+    <div class="lab">Mes souvenirs</div>
+    <input id="cvQ" placeholder="chercher dans ma mémoire…" style="margin-top:4px">
+    <div id="cvMemList" style="margin-top:6px"></div>
+    <div class="lab">Ajouter à la main</div>
+    <textarea id="cvAdd" rows="2" placeholder="une chose à retenir, en une phrase"></textarea>
+    <div class="foot" style="margin-top:12px"><div class="sl" id="cvAddDom"><button data-d="pro">pro</button><button data-d="perso" class="on">perso</button><button data-d="pin">épingler</button></div><button class="ok" id="cvAddGo">retenir</button></div>
+    <div class="lab">Importer une liste</div>
+    <p class="small" style="margin-top:0">Choisissez un fichier .txt ou collez votre liste : chaque ligne qui commence par « - » devient un souvenir. Repères reconnus : (pro), (perso), [épingle].</p>
+    <textarea id="cvImpTxt" rows="3" placeholder="collez votre liste ici…"></textarea>
+    <input type="file" id="cvImpIn" accept=".txt,text/plain" hidden>
+    <div class="foot" style="margin-top:12px"><div class="l"><button id="cvImpFile">choisir un fichier</button></div><button class="ok" id="cvImpGo">lire la liste</button></div>
+    <div id="cvImpList"></div>
+    <div class="lab">Journal de bord</div>
+    <div id="cvJournal"></div>
+    <input type="file" id="cvJrIn" accept=".json,application/json" multiple hidden>
+    <p class="small">Votre mémoire est chiffrée sur ce téléphone avec votre phrase secrète : le serveur ne garde que du chiffré illisible, et seuls les souvenirs utiles à une question partent chez Claude. Ce plafond s'ajoute à celui que vous fixez dans la console Claude.</p>
+    <div class="foot" style="margin-top:18px"><div class="l"><button id="cvLockBtn">verrouiller sur cet appareil</button></div><span></span></div>
+  </div>
+  <div class="regP" id="regP-journee" style="display:none">
+  <div class="lab">Briefs et rappels de Nestor</div>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBriefChk" style="width:auto"> brief du jour à la première ouverture du matin</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvProChk" style="width:auto"> Nestor anticipe aussi le pro</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBnChk" style="width:auto"> brief en notification, le matin et le soir (aux heures des rituels)</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvMeteoChk" style="width:auto"> météo automatique dans les briefs (sinon, demandez-la à Nestor)</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvEchChk" style="width:auto"> repérer les échéances dans mes mails et SMS</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvRelChk" style="width:auto"> relancer une fois les tâches qui traînent</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvEspChk" style="width:auto"> ranger tout seul chaque chose en pro ou en perso</label>
+  <div class="lab">Rituels</div>
+  <label class="small" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="rOn" style="width:auto"> point du matin, bilan du soir et bilan du dimanche</label>
+  <div class="two"><div><div class="lab">Matin</div><input type="time" id="rM"></div><div><div class="lab">Soir</div><input type="time" id="rS"></div><div><div class="lab">Dimanche</div><input type="time" id="rW"></div></div>
+  <div class="foot" style="margin-top:12px"><div class="l"><button id="rTry1">voir le matin</button><button id="rTry2">le soir</button><button id="rTry3">la semaine</button></div></div>
+  <div class="lab">Focus (minutes)</div>
+  <select id="sFoc"><option>15</option><option>20</option><option>25</option><option>45</option></select>
+  <div class="lab">Notifications des rappels</div>
+  <div class="foot" style="margin-top:6px"><div class="l"><button id="sNotif">activer ou tester</button></div></div>
+  </div>
+  <div class="regP" id="regP-moi" style="display:none">
   <div class="lab" id="lProf">Qui je suis (lu par Claude à chaque tri)</div>
   <textarea id="sProfile" rows="7" placeholder="Prénom Nom, votre métier, ce que vous faites, vos contacts clés, ce qui passe en premier pour vous…"></textarea>
   <div class="lab">Signature des rapports (espace pro)</div>
@@ -357,6 +461,13 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <button id="sPick" style="margin-top:10px;font-size:14px;color:rgb(var(--glow));display:none">＋ ajouter depuis mes contacts</button>
   <div class="lab" id="lStyle">Ma façon d'écrire mes mails</div>
   <textarea id="sStyle" rows="8"></textarea>
+  </div>
+  <div class="regP" id="regP-connexions" style="display:none">
+  <div class="lab" style="margin-top:0">Claude</div>
+  <input type="password" id="sKey" placeholder="clé API Anthropic (sk-ant-…)">
+  <p class="small">Sans clé, Nestor trie seul avec ses règles. Avec, c'est Claude qui comprend, découpe et range — en s'appuyant sur la fiche ci-dessous et sur vos corrections.</p>
+    <div class="lab">Plafond mensuel de la conversation (Claude Sonnet)</div>
+    <input id="cvCapIn" type="number" min="1" max="200" step="1" inputmode="numeric">
   <div class="lab">Google Agenda</div>
   <p class="small" id="gState"></p>
   <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="gAll" style="width:auto"> aussi les tâches avec une heure (rappels), pas seulement les rendez-vous</label>
@@ -368,39 +479,19 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="sCal" style="width:auto"> mettre mes tâches datées dans l'agenda Outlook (cochées « ✓ » quand c'est fait)</label>
   <div class="foot" style="margin-top:10px"><div class="l"><button id="sMsGo" style="color:var(--fg)">connecter Outlook</button><button id="sMsOff">déconnecter</button></div></div>
   </div>
+    <div class="lab">Mail « Nestor »</div>
+    <p class="small" id="cvMnSt" style="margin-top:4px"></p>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvMnChk" style="width:auto"> lire mes mails « Nestor » (Gmail)</label>
+    <input id="cvMnDe" placeholder="accepter aussi les mails envoyés depuis… (adresse pro, par ex.)" autocomplete="off" style="margin-top:8px">
+    <div class="foot" style="margin-top:10px"><button class="ok" id="cvMnGo">relever maintenant</button></div>
   <div class="lab">Réservations (mails avec un .ics)</div>
   <input id="sBook" placeholder="mots ou expéditeurs, séparés par des virgules (ex. golf)">
   <p class="small">Un mail de réservation qui contient un de ces mots (Outlook perso ou Gmail) devient un rendez-vous perso : rappel la veille au soir et 1 h avant. Une modification ou une annulation met le rendez-vous à jour.</p>
   <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:22px"><input type="checkbox" id="sAg" style="width:auto"> proposer d'ajouter les rendez-vous à mon agenda</label>
-  <div class="lab">Rituels</div>
-  <label class="small" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="rOn" style="width:auto"> point du matin, bilan du soir et bilan du dimanche</label>
-  <div class="two"><div><div class="lab">Matin</div><input type="time" id="rM"></div><div><div class="lab">Soir</div><input type="time" id="rS"></div><div><div class="lab">Dimanche</div><input type="time" id="rW"></div></div>
-  <div class="foot" style="margin-top:12px"><div class="l"><button id="rTry1">voir le matin</button><button id="rTry2">le soir</button><button id="rTry3">la semaine</button></div></div>
-  <div class="lab">Focus (minutes)</div>
-  <select id="sFoc"><option>15</option><option>20</option><option>25</option><option>45</option></select>
-  <div class="lab">Visuel d'écoute</div>
-  <select id="sVis"><option value="const">la constellation</option><option value="rond">le rond (pulsar)</option></select>
-  <div class="lab">Fin de dictée</div>
-  <select id="sSil"><option value="0">je touche le rond pour finir</option><option value="2">après 2 s de silence</option><option value="3">après 3 s de silence</option><option value="5">après 5 s de silence</option></select>
-  <p class="small">Vous pouvez aussi finir en disant « c'est tout ».</p>
-  <div class="lab">Reconnaissance vocale</div>
-  <select id="vMode"><option value="google">Google — gratuit, dans le téléphone</option><option value="voxtral">Voxtral (Mistral) — plus précis, payant</option></select>
-  <div id="vBox" style="display:none">
-    <input type="password" id="vKey" placeholder="clé API Mistral" style="margin-top:10px">
-    <div class="two"><div><div class="lab">Plafond par mois</div><select id="vCap"><option value="1">1 €</option><option value="2">2 €</option><option value="3">3 €</option><option value="5">5 €</option><option value="10">10 €</option></select></div><div><div class="lab">Dictée max</div><select id="vMax"><option value="60">1 min</option><option value="120">2 min</option><option value="180">3 min</option></select></div></div>
-    <p class="small" id="vUse"></p>
-  </div>
-  <div class="lab">Nestor me répond à voix haute</div>
-  <select id="vSay"><option value="auto">quand il m'écoute dès l'ouverture</option><option value="1">toujours</option><option value="0">jamais</option></select>
-  <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" id="vAuto" style="width:auto"> ouvrir Nestor = il m'écoute tout de suite (idéal avec la touche latérale)</label>
-  <div id="wBox" style="display:none">
-    <div class="lab">Widget de l'écran d'accueil</div>
-    <div class="wPrev" title="aperçu sur un fond d'écran"><i id="wPrevBg"></i><img id="wPrevImg" alt=""></div>
-    <div class="two"><div><div class="lab">Fond · <span id="wBgV"></span></div><input type="range" id="wBg" min="0" max="100" step="5"></div><div><div class="lab">Éclat · <span id="wImgV"></span></div><input type="range" id="wImg" min="20" max="100" step="5"></div></div>
-    <div class="two"><div><div class="lab">Teinte du fond</div><select id="wTone"><option value="clair">clair</option><option value="sombre">sombre</option></select></div><div><div class="lab">Points</div><select id="wCol"><option value="blanc">blancs</option><option value="espace">couleur de l'espace</option><option value="turquoise">turquoise</option><option value="nuit">bleu nuit</option><option value="or">dorés</option></select></div></div>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" id="wStars" style="width:auto"> les étoiles dorées de la semaine</label>
-    <p class="small">Fond à 0 % : la constellation flotte directement sur votre fond d'écran. Un appui sur le widget = Nestor vous écoute.</p>
-  </div>
+  <div class="lab">Colis</div>
+  <p class="small" id="cState"></p>
+  <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cGm" style="width:auto"> lire aussi les mails de colis dans Gmail</label>
+  <div class="foot" style="margin-top:10px"><div class="l"><button id="cSee" style="color:var(--fg)">voir mes colis</button><button id="cGmGo">autoriser Gmail</button></div></div>
   <div class="lab">Téléphone · appels manqués, SMS, WhatsApp</div>
   <p class="small" id="iState"></p>
   <div class="lab">Messages lus par Claude</div>
@@ -416,23 +507,39 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <input id="sChat" placeholder="prénoms, comme affichés dans Snapchat (séparés par des virgules)">
     <p class="small">Les Snaps photo ne se lisent pas : seulement les messages écrits, quand Snapchat affiche le texte dans la notification. Nestor n'ouvre et ne marque rien comme lu.</p>
   </div>
-  <div class="lab">Colis</div>
-  <p class="small" id="cState"></p>
-  <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cGm" style="width:auto"> lire aussi les mails de colis dans Gmail</label>
-  <div class="foot" style="margin-top:10px"><div class="l"><button id="cSee" style="color:var(--fg)">voir mes colis</button><button id="cGmGo">autoriser Gmail</button></div></div>
-  <p class="small" id="sLearn"></p>
-  <div class="foot" style="flex-wrap:wrap;gap:16px">
-    <div class="l" style="flex-wrap:wrap"><button id="sNotif">rappels</button><button id="sExp">sauvegarder</button><button id="sImp">restaurer</button><button id="sForget">oublier mes corrections</button></div>
-    <button class="ok" id="sSave">OK</button>
+    <div class="lab">Chauffage</div>
+    <p class="small" id="cvNetSt" style="margin-top:4px"></p>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvChauffeChk" style="width:auto"> selon ma présence : absent quand je pars, planning quand je rentre</label>
+    <div class="foot" style="margin-top:10px"><button id="cvNetOff" style="color:var(--mut);display:none">déconnecter</button><button class="ok" id="cvNetGo">connecter Netatmo</button></div>
+    <div class="lab">Santé</div>
+    <p class="small" id="cvSanteSt" style="margin-top:4px"></p>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvSanteBriefChk" style="width:auto"> dans le brief du matin, seulement ce qui sort de mes habitudes</label>
+    <div class="foot" style="margin-top:10px"><button id="cvSanteOff" style="color:var(--mut);display:none">couper</button><button id="cvSanteGerer" style="display:none">autorisations</button><button class="ok" id="cvSanteGo">relier ma montre et ma balance</button></div>
   </div>
+  <div class="regP" id="regP-appli" style="display:none">
+  <div id="appBox">
+    <div class="lab">Appli Android</div>
+    <p class="small" id="appState"></p>
+    <div class="foot" style="margin-top:10px"><div class="l"><button id="appGet" style="color:var(--fg)">installer l'appli</button><button id="appUpd">mettre à jour</button></div></div>
+  </div>
+  <div id="wBox" style="display:none">
+    <div class="lab">Widget de l'écran d'accueil</div>
+    <div class="wPrev" title="aperçu sur un fond d'écran"><i id="wPrevBg"></i><img id="wPrevImg" alt=""></div>
+    <div class="two"><div><div class="lab">Fond · <span id="wBgV"></span></div><input type="range" id="wBg" min="0" max="100" step="5"></div><div><div class="lab">Éclat · <span id="wImgV"></span></div><input type="range" id="wImg" min="20" max="100" step="5"></div></div>
+    <div class="two"><div><div class="lab">Teinte du fond</div><select id="wTone"><option value="clair">clair</option><option value="sombre">sombre</option></select></div><div><div class="lab">Points</div><select id="wCol"><option value="blanc">blancs</option><option value="espace">couleur de l'espace</option><option value="turquoise">turquoise</option><option value="nuit">bleu nuit</option><option value="or">dorés</option></select></div></div>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" id="wStars" style="width:auto"> les étoiles dorées de la semaine</label>
+    <p class="small">Fond à 0 % : la constellation flotte directement sur votre fond d'écran. Un appui sur le widget = Nestor vous écoute.</p>
+  </div>
+  <p class="small" id="sLearn"></p>
+  <div class="foot" style="flex-wrap:wrap;gap:16px"><div class="l" style="flex-wrap:wrap"><button id="sExp">sauvegarder</button><button id="sImp">restaurer</button><button id="sForget">oublier mes corrections</button></div></div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v64 · Rc4st</p>
+  </div>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v65 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
   <div class="menu">
-    <button id="mConv">parler à Nestor</button>
-    <button id="mRep">rapport</button>
+    <button id="mConv">conversation avec Nestor</button>
     <button id="mMemo">mémos & frais</button>
     <button id="mHist">historique & chantiers</button>
     <button id="mSet">réglages</button>
@@ -506,86 +613,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     </div>
     <p class="small" id="cvCost"></p>
   </div>
-  <div id="cvMem" style="display:none">
-    <div class="lab" style="margin-top:18px">Mes lieux</div>
-    <div id="cvLieux"></div>
-    <input id="cvLieuNom" placeholder="nom : maison, golf, médecin, Intermarché…">
-    <input id="cvLieuAdr" placeholder="adresse (vide = l'endroit où je suis)">
-    <div class="foot" style="margin-top:12px"><select id="cvLieuType" style="width:auto"><option value="maison">maison</option><option value="arret">arrêt de bus</option><option value="golf">golf</option><option value="medecin">médecin</option><option value="magasin">magasin</option><option value="relais">relais colis</option><option value="autre" selected>autre</option></select><button class="ok" id="cvLieuGo">ajouter</button></div>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:16px"><input type="checkbox" id="cvAlChk" style="width:auto"> me prévenir quand j'arrive à un lieu (bus, colis, choses à faire)</label>
-    <p class="small" id="cvAlSt" style="margin-top:4px"></p>
-    <div class="lab">Chauffage</div>
-    <p class="small" id="cvNetSt" style="margin-top:4px"></p>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvChauffeChk" style="width:auto"> selon ma présence : absent quand je pars, planning quand je rentre</label>
-    <div class="foot" style="margin-top:10px"><button id="cvNetOff" style="color:var(--mut);display:none">déconnecter</button><button class="ok" id="cvNetGo">connecter Netatmo</button></div>
-    <div class="lab">Santé</div>
-    <p class="small" id="cvSanteSt" style="margin-top:4px"></p>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvSanteBriefChk" style="width:auto"> dans le brief du matin, seulement ce qui sort de mes habitudes</label>
-    <div class="foot" style="margin-top:10px"><button id="cvSanteOff" style="color:var(--mut);display:none">couper</button><button id="cvSanteGerer" style="display:none">autorisations</button><button class="ok" id="cvSanteGo">relier ma montre et ma balance</button></div>
-    <div class="lab">Mail « Nestor »</div>
-    <p class="small" id="cvMnSt" style="margin-top:4px"></p>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvMnChk" style="width:auto"> lire mes mails « Nestor » (Gmail)</label>
-    <input id="cvMnDe" placeholder="accepter aussi les mails envoyés depuis… (adresse pro, par ex.)" autocomplete="off" style="margin-top:8px">
-    <div class="foot" style="margin-top:10px"><button class="ok" id="cvMnGo">relever maintenant</button></div>
-    <div class="lab">Bêta</div>
-    <p class="small" style="margin-top:4px">Des essais : décochez ce qui vous encombre. Si vous n'en voulez plus, je les retire.</p>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBetaMatchChk" style="width:auto"> Cote &amp; Match : votre sélection le jeudi soir et le vendredi matin</label>
-    <input id="cvBetaClub" placeholder="votre club de cœur (facultatif)" style="margin-top:6px">
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:12px"><input type="checkbox" id="cvBetaCineChk" style="width:auto"> Ciné du week-end : les sorties de la semaine, le vendredi soir et le samedi matin</label>
-    <input id="cvBetaCinema" placeholder="votre cinéma (nom et ville)" style="margin-top:6px">
-    <p class="small" id="cvBetaSt" style="margin-top:6px"></p>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBriefChk" style="width:auto"> brief du jour à la première ouverture du matin</label>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvProChk" style="width:auto"> Nestor anticipe aussi le pro</label>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBnChk" style="width:auto"> brief en notification, le matin et le soir (aux heures des rituels)</label>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvMeteoChk" style="width:auto"> météo automatique dans les briefs (sinon, demandez-la à Nestor)</label>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvEchChk" style="width:auto"> repérer les échéances dans mes mails et SMS</label>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvRelChk" style="width:auto"> relancer une fois les tâches qui traînent</label>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvEspChk" style="width:auto"> ranger tout seul chaque chose en pro ou en perso</label>
-    <div class="lab">Son nom et sa voix</div>
-    <input id="cvNom" list="cvNoms" placeholder="son nom (ex. Nestor, Véga)" style="margin-top:4px">
-    <datalist id="cvNoms"><option value="Jarvis"></option><option value="Nestor"></option><option value="Véga"></option></datalist>
-    <select id="cvVoix" style="margin-top:8px"></select>
-    <div id="cvStyleBox" style="display:none;margin-top:8px">
-      <label class="small" style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="cvStyleChk" style="width:auto"> style majordome (Gemini) : la voix suit la consigne ci-dessous · environ 1 à 2 $ par mois</label>
-      <textarea id="cvStyleTxt" rows="2" style="margin-top:6px"></textarea>
-    </div>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px">grave <input type="range" id="cvPitch" min="0.6" max="1.3" step="0.05" style="flex:1"> aigu</label>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:6px">posé <input type="range" id="cvRate" min="0.75" max="1.3" step="0.05" style="flex:1"> rapide</label>
-    <label class="small" id="cvExprBox" style="display:none;gap:10px;align-items:center;margin-top:6px">sobre <input type="range" id="cvExpr" min="1" max="5" step="0.1" style="flex:1"> expressif</label>
-    <div class="foot" style="margin-top:10px"><p class="small" id="cvVoixSt" style="margin:0;flex:1;min-width:0;overflow-wrap:anywhere"></p><button class="ok" id="cvVoixTest">écouter</button></div>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvParleChk" style="width:auto"> il me répond à voix haute quand je lui parle</label>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvDiscretChk" style="width:auto"> mode discret : il ne parle plus du tout (ou dites-lui « mode discret » / « tu peux parler »)</label>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvDiscretAutoChk" style="width:auto"> se taire tout seul quand le téléphone est en silencieux, vibreur ou « ne pas déranger » (sauf casque ou Bluetooth)</label>
-    <div class="lab">Un seul Nestor</div>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:4px"><input type="checkbox" id="cvUniqueChk" style="width:auto"> tout ce que je dis au rond passe par lui : il range, répond ou me pose une question (décoché : le tri rapide d'avant)</label>
-    <div class="lab">Son caractère</div>
-    <div id="cvCurs"></div>
-    <div class="foot" style="margin-top:8px"><p class="small" style="margin:0;flex:1;min-width:0">ou dites-lui « augmente ton humour de 10 % »</p><button id="cvCursDef">par défaut</button></div>
-    <div class="lab">Ce qu'il a appris de vous</div>
-    <div id="cvApprend" style="margin-top:4px"></div>
-    <div class="lab">Journal de bord</div>
-    <div id="cvJournal"></div>
-    <input type="file" id="cvJrIn" accept=".json,application/json" multiple hidden>
-    <div class="lab">Carnet d'évolutions</div>
-    <p class="small" style="margin:4px 0 6px">Ce qu'il ne sait pas encore faire : Claude le lit à chaque session de développement.</p>
-    <div id="cvCarnet"></div>
-    <div class="lab">Mes souvenirs</div>
-    <input id="cvQ" placeholder="chercher dans ma mémoire…" style="margin-top:4px">
-    <div id="cvMemList" style="margin-top:6px"></div>
-    <div class="lab">Ajouter à la main</div>
-    <textarea id="cvAdd" rows="2" placeholder="une chose à retenir, en une phrase"></textarea>
-    <div class="foot" style="margin-top:12px"><div class="sl" id="cvAddDom"><button data-d="pro">pro</button><button data-d="perso" class="on">perso</button><button data-d="pin">épingler</button></div><button class="ok" id="cvAddGo">retenir</button></div>
-    <div class="lab">Importer une liste</div>
-    <p class="small" style="margin-top:0">Choisissez un fichier .txt ou collez votre liste : chaque ligne qui commence par « - » devient un souvenir. Repères reconnus : (pro), (perso), [épingle].</p>
-    <textarea id="cvImpTxt" rows="3" placeholder="collez votre liste ici…"></textarea>
-    <input type="file" id="cvImpIn" accept=".txt,text/plain" hidden>
-    <div class="foot" style="margin-top:12px"><div class="l"><button id="cvImpFile">choisir un fichier</button></div><button class="ok" id="cvImpGo">lire la liste</button></div>
-    <div id="cvImpList"></div>
-    <div class="lab">Plafond mensuel de la conversation (Claude Sonnet)</div>
-    <input id="cvCapIn" type="number" min="1" max="200" step="1" inputmode="numeric">
-    <p class="small">Votre mémoire est chiffrée sur ce téléphone avec votre phrase secrète : le serveur ne garde que du chiffré illisible, et seuls les souvenirs utiles à une question partent chez Claude. Ce plafond s'ajoute à celui que vous fixez dans la console Claude.</p>
-    <div class="foot" style="margin-top:18px"><div class="l"><button id="cvLockBtn">verrouiller sur cet appareil</button></div><span></span></div>
-  </div>
+  <div id="cvMem" style="display:none"></div>
 </div>
 
 <div id="focus">
@@ -696,7 +724,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 64;
+const TEMPO_BUILD = 65;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -3067,7 +3095,6 @@ $("eShare").onclick = async () => {
 $("bSet").onclick = () => show("menu");
 $("mHist").onclick = () => { hide(); setTimeout(openHist, 60); };
 $("mMemo").onclick = () => { hide(); setTimeout(openMemos, 60); };
-$("mRep").onclick = () => { hide(); setTimeout(() => { toast(`dites par exemple : « sors-moi un état ${((CFG.ch || "").split("\n")[0] || "").split(":")[0].trim() || "chantier"} sur 3 mois »`, "", null, 6000); startListen(); }, 120); };
 
 /* mémos & frais */
 let mRb = "depense", mShowPaid = false;
@@ -3156,7 +3183,7 @@ $("aList").onchange = async () => {
   await tn("setWatch", { pkgs }); CFG.watch = pkgs; CFG.watchInit = true; saveCfg(); loadApps();
 };
 $("aMore").onclick = () => { appsAll = !appsAll; paintApps(); };
-$("mSet").onclick = () => { hide(); setTimeout(openSettings, 60); };
+$("mSet").onclick = () => openReglages();
 const openSettings = () => {
   $("sKey").value = CFG.key || ""; $("sProfile").value = CFG.profile; $("sSign").value = CFG.meSign || ""; $("sCh").value = CFG.ch; $("sTeam").value = CFG.team;
   $("sMsId").value = CFG.msId || ""; $("sBook").value = CFG.bookWords == null ? "golf" : CFG.bookWords; $("sCal").checked = CFG.calSync !== false; paintG();
@@ -3174,15 +3201,14 @@ const openSettings = () => {
   paintInbox(); paintApp(); $("sMsg").value = CFG.msgScope || "connus"; $("sChat").value = CFG.chatWho || ""; paintColisSet(); paintApps();
   $("wBox").style.display = NATIVE ? "" : "none";
   if (NATIVE) { const W = wCfg(); $("wBg").value = W.bg; $("wImg").value = W.img; $("wTone").value = W.tone; $("wCol").value = W.col; $("wStars").checked = W.stars; paintWidgetPrev(); }
-  show("set");
 };
 $("vMode").onchange = paintVox;
-$("sSave").onclick = () => { CFG.key = $("sKey").value.trim(); CFG.profile = $("sProfile").value.trim() || DEFAULT_PROFILE; CFG.meSign = $("sSign").value.trim(); CFG.ch = $("sCh").value; CFG.team = $("sTeam").value; CFG.contacts = $("sContacts").value; CFG.style = $("sStyle").value.trim() || DEFAULT_STYLE; CFG.silence = +$("sSil").value; LS.set("tempo_ritcfg", { on: $("rOn").checked, matin: $("rM").value || "08:00", soir: $("rS").value || "18:30", semaine: $("rW").value || "19:00" }); CFG.focusMin = +$("sFoc").value; schedulePushSync(); CFG.visual = $("sVis").value; applyVisual(); CFG.agenda = $("sAg").checked; CFG.msId = $("sMsId").value.trim(); CFG.bookWords = $("sBook").value.trim(); CFG.calSync = $("sCal").checked; CFG.gAll = $("gAll").checked;
+const setSave = () => { const claudeWas = CFG.key; CFG.key = $("sKey").value.trim(); CFG.profile = $("sProfile").value.trim() || DEFAULT_PROFILE; CFG.meSign = $("sSign").value.trim(); CFG.ch = $("sCh").value; CFG.team = $("sTeam").value; CFG.contacts = $("sContacts").value; CFG.style = $("sStyle").value.trim() || DEFAULT_STYLE; CFG.silence = +$("sSil").value; LS.set("tempo_ritcfg", { on: $("rOn").checked, matin: $("rM").value || "08:00", soir: $("rS").value || "18:30", semaine: $("rW").value || "19:00" }); CFG.focusMin = +$("sFoc").value; schedulePushSync(); CFG.visual = $("sVis").value; applyVisual(); CFG.agenda = $("sAg").checked; CFG.msId = $("sMsId").value.trim(); CFG.bookWords = $("sBook").value.trim(); CFG.calSync = $("sCal").checked; CFG.gAll = $("gAll").checked;
   const capWas = CFG.vCap, keyWas = CFG.mkey;
   CFG.msgScope = $("sMsg").value; CFG.chatWho = $("sChat").value.trim(); CFG.vMode = $("vMode").value; CFG.mkey = $("vKey").value.trim(); LS.set("tempo_voxoff", null); CFG.vCap = +$("vCap").value || 2; CFG.vMax = +$("vMax").value || 120; CFG.vSay = $("vSay").value; CFG.vAuto = $("vAuto").checked;
   if (CFG.mkey && (CFG.vCap !== capWas || CFG.mkey !== keyWas)) voxSync(true);
-  saveCfg(); paintMailBtn(); hide(); render();
-  toast(CFG.vMode === "voxtral" && CFG.mkey && CFG.mkey !== keyWas ? "Voxtral branché · plafond " + eur(CFG.vCap) + " par mois" : CFG.key ? "Claude est branché" : "enregistré"); };
+  saveCfg(); paintMailBtn(); render();
+  const msg = CFG.vMode === "voxtral" && CFG.mkey && CFG.mkey !== keyWas ? "Voxtral branché · plafond " + eur(CFG.vCap) + " par mois" : CFG.key && CFG.key !== claudeWas ? "Claude est branché" : ""; if (msg) toast(msg); };
 $("sPick").onclick = pickMany;
 $("rTry1").onclick = () => { hide(); setTimeout(() => openRitual("matin"), 150); };
 $("rTry2").onclick = () => { hide(); setTimeout(() => openRitual("soir"), 150); };
@@ -3207,7 +3233,35 @@ $("sFile").onchange = async e => {
 };
 
 function show(id){ $("mask").classList.add("show"); $(id).classList.add("show"); }
-function hide(){ $("mask").classList.remove("show"); document.querySelectorAll(".sheet").forEach(s => s.classList.remove("show")); cur = null; }
+/* ---------- réglages rangés comme ceux du téléphone : une page d'accueil, une page par thème ----------
+   Les champs sont ceux d'avant, déplacés : chacun garde son rôle. Tout s'enregistre en revenant à l'accueil ou en fermant. */
+var REG_CUR = "";
+const REG_P = { nestor: "Nestor", voix: "Voix et dictée", memoire: "Mémoire et journal", journee: "Ma journée", moi: "Moi", connexions: "Connexions", appli: "Appli" };
+function regVu(p){ const r = $("reg"); return !!(r && r.classList.contains("show") && (!p || REG_CUR === p)); }
+function regPage(p){
+  REG_CUR = REG_P[p] ? p : "";
+  $("regHome").style.display = REG_CUR ? "none" : "";
+  Object.keys(REG_P).forEach(k => { $("regP-" + k).style.display = k === REG_CUR ? "" : "none"; });
+  $("regT").textContent = REG_CUR ? REG_P[REG_CUR] : "réglages";
+  $("regBack").style.display = REG_CUR ? "" : "none";
+  if (REG_CUR) { try { paintMem(); } catch (e) {} } else regSubs();
+  regMemLock(); $("reg").scrollTop = 0;
+}
+function regMemLock(){ const b = $("regMemLock"); if (b) b.style.display = MEM.key ? "none" : ""; }
+function regSubs(){
+  try { const c = jvCurseurs(); $("regSub-nestor").textContent = `humour ${c.humour} %, impertinence ${c.impertinence} % · ce qu'il a appris, bêta, carnet`; } catch (e) {}
+  try { const o = $("cvVoix") && $("cvVoix").selectedOptions[0]; $("regSub-voix").textContent = (o ? o.textContent.trim() + " · " : "") + "quand il parle, la dictée"; } catch (e) {}
+  try { if (MEM.key) { const n = MEM.items.size, l = jvLieux().length; $("regSub-memoire").textContent = `${l} lieu${l > 1 ? "x" : ""}, ${n} souvenir${n > 1 ? "s" : ""} · le journal de bord`; } } catch (e) {}
+}
+function openReglages(p){
+  hide();
+  setTimeout(async () => {
+    try { openSettings(); } catch (e) {}
+    regPage(p || ""); show("reg");
+    try { if (await memUnlock()) { regMemLock(); if (REG_CUR) paintMem(); else regSubs(); } } catch (e) {}
+  }, 60);
+}
+function hide(){ if (regVu()) { try { setSave(); } catch (e) {} } $("mask").classList.remove("show"); document.querySelectorAll(".sheet").forEach(s => s.classList.remove("show")); cur = null; }
 function closeEdit(){
   const under = ["memos", "hist"].find(id => $(id).classList.contains("show"));
   if (!under) { hide(); return; }
@@ -4382,7 +4436,7 @@ async function memSync(){
     }
   } catch (e) { /* hors ligne ou serveur indisponible : la file attend, on réessaiera */ }
   MEM.busy = false;
-  if (cvVisible() && JV.tab === "memoire") paintMem();
+  if (regVu("memoire")) paintMem();
   if (MEM.again) memSync();
 }
 async function memRemember(t, d, pin, src){
@@ -8261,7 +8315,7 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible" || !jvSanteOn()) return;
   jvSantePrep().catch(() => {});
-  const m = $("cvMem"); if (m && m.style.display !== "none") paintSante();
+  if (regVu("connexions")) paintSante();
 });
 /* lot 16 : connexion Netatmo (comme Google : Chrome dans l'appli, retour par copilote://gauth) et réglages */
 async function jvNetConnecter(){
@@ -8358,7 +8412,11 @@ idle = function(){ const r = _cvIdle.apply(this, arguments); const b = $("cvMic"
 $("mConv").onclick = openConv;
 $("bConv").onclick = openConv;
 $("cvClose").onclick = () => hide();
-document.querySelectorAll("#cvTabs button").forEach(b => b.onclick = () => { if (MEM.key) cvTab(b.dataset.t); });
+document.querySelectorAll("#cvTabs button").forEach(b => b.onclick = () => { if (b.dataset.t === "memoire") return openReglages("memoire"); if (MEM.key) cvTab(b.dataset.t); });
+$("regBack").onclick = () => { try { setSave(); } catch (e) {} regPage(""); };
+$("regClose").onclick = () => hide();
+document.querySelectorAll("#regHome [data-p]").forEach(b => b.onclick = () => regPage(b.dataset.p));
+$("regMemOpen").onclick = () => openConv();
 $("cvGo").onclick = () => { const t = $("cvIn").value; $("cvIn").value = ""; cvSend(t); };
 $("cvIn").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("cvGo").click(); } });
 $("cvMic").onclick = () => {
@@ -8579,7 +8637,7 @@ $("cvAlChk").onchange = async () => {
   if (CFG.jvAlertes && (await jvNative()) >= 6) { const s = await jvAlertesState(); if (!s.ok) await tn("locAsk"); }
   paintLieux(); jvGeoSync();
 };
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && MEM.key) { jvGeoSync(); if (cvVisible() && JV.tab === "memoire") paintLieux(); } });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && MEM.key) { jvGeoSync(); if (regVu("memoire")) paintLieux(); } });
 $("fiche").addEventListener("click", e => { if (e.target.closest("#fiWaze") && typeof FICHE !== "undefined" && FICHE && FICHE.it) jvWaze(FICHE.it.place); });
 $("cvImpFile").onclick = () => $("cvImpIn").click();
 $("cvImpIn").onchange = async e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; try { $("cvImpTxt").value = await f.text(); impRead(); } catch (err) { toast("fichier illisible"); } };
