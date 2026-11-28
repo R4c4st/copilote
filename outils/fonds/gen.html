@@ -1,0 +1,755 @@
+<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#111}canvas{display:block}</style></head><body>
+<canvas id="c" width="1440" height="3120"></canvas><canvas id="m" width="1080" height="2340"></canvas>
+<script>
+const Q = new URLSearchParams(location.search), W = +(Q.get("w") || 1440), H = Math.round(W * 2340 / 1080), S = W / 1080, LW = 1080, LH = 2340, TAU = Math.PI * 2;
+const C = document.getElementById("c"); C.width = W; C.height = H; let X = C.getContext("2d");
+function rng(seed){ let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+let R = rng(1);
+const rnd = (a = 0, b = 1) => a + (b - a) * R();
+const gauss = () => { let u = 0, v = 0; while (!u) u = R(); while (!v) v = R(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * v); };
+const TEAL = [46,184,196], TEAL_L = [143,214,220], TEAL_D = [28,140,154], PERI = [96,140,232], PERI_L = [185,201,245], PERI_D = [70,108,206],
+      GOLD = [214,158,58], GOLD_L = [242,205,130], INK = [15,34,41], WHITE = [255,255,255], MIST = [207,214,221];
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function reset(){ X.setTransform(S, 0, 0, S, 0, 0); X.globalAlpha = 1; X.globalCompositeOperation = "source-over"; X.filter = "none"; X.shadowBlur = 0; X.shadowColor = "transparent"; X.lineCap = "round"; X.lineJoin = "round"; X.letterSpacing = "0px"; }
+function lin(stops, x0 = 0, y0 = 0, x1 = 0, y1 = LH){ const g = X.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); X.fillStyle = g; X.fillRect(0, 0, LW, LH); }
+function radial(cx, cy, r, stops, sx = 1, sy = 1, rot = 0){ X.save(); X.translate(cx, cy); X.rotate(rot); X.scale(sx, sy); const g = X.createRadialGradient(0, 0, 0, 0, 0, r); stops.forEach(([o, c]) => g.addColorStop(o, c)); X.fillStyle = g; X.beginPath(); X.arc(0, 0, r, 0, TAU); X.fill(); X.restore(); }
+function glow(cx, cy, r, c, a, sx = 1, sy = 1, rot = 0){ radial(cx, cy, r, [[0, rgba(c, a)], [.45, rgba(c, a * .45)], [1, rgba(c, 0)]], sx, sy, rot); }
+function dot(x, y, r, c, a = 1, halo = 0){ if (halo) radial(x, y, r * halo, [[0, rgba(c, a * .32)], [.4, rgba(c, a * .1)], [1, rgba(c, 0)]]); X.fillStyle = rgba(c, a); X.beginPath(); X.arc(x, y, r, 0, TAU); X.fill(); }
+function layer(draw, o = {}){
+  const c = document.createElement("canvas"); c.width = W; c.height = H; const old = X; X = c.getContext("2d"); reset(); draw(); X = old;
+  X.save(); X.setTransform(1, 0, 0, 1, 0, 0); X.globalCompositeOperation = o.comp || "source-over"; X.globalAlpha = o.alpha == null ? 1 : o.alpha; if (o.blur) X.filter = `blur(${o.blur * S}px)`; X.drawImage(c, 0, 0); X.restore();
+}
+function links(P, maxD, c, la, lw = 1, cf){
+  X.lineWidth = lw;
+  for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) {
+    const a = P[i], b = P[j], d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (d < maxD) { X.strokeStyle = rgba(cf ? cf(a, b) : c, la * (1 - d / maxD)); X.beginPath(); X.moveTo(a.x, a.y); X.lineTo(b.x, b.y); X.stroke(); }
+  }
+}
+function drawPts(P, halo = 3.2){ P.forEach(p => dot(p.x, p.y, p.s, p.c, p.al, p.big ? halo : 0)); }
+/* la constellation de Nestor : des points de lumière autour d'un centre, reliés quand ils sont proches */
+function constel(o){
+  const P = [], sz = o.sz || 3;
+  for (let i = 0; i < o.n; i++) {
+    const a = R() * TAU, r = o.rIn + Math.pow(R(), o.pow || .8) * (o.rOut - o.rIn), sq = o.squash || 1, rot = o.rot || 0;
+    const x = Math.cos(a) * r, y = Math.sin(a) * r * sq;
+    const s0 = .6 + R() * 1.6;
+    P.push({ x: o.cx + x * Math.cos(rot) - y * Math.sin(rot), y: o.cy + x * Math.sin(rot) + y * Math.cos(rot), s: s0 * sz, big: s0 > 1.6, al: (o.a || 1) * (.45 + R() * .55), c: o.c2 && R() < (o.mixP || .3) ? o.c2 : o.c });
+  }
+  const area = Math.PI * (o.rOut * o.rOut - o.rIn * o.rIn) * (o.squash || 1), sp = Math.sqrt(area / o.n);
+  if (o.gen) { P.maxD = o.maxD || sp * (o.link || 1.05); return P; }
+  links(P, o.maxD || sp * (o.link || 1.05), o.lc || o.c, o.la == null ? .22 : o.la, o.lw || 1, o.cf);
+  drawPts(P); return P;
+}
+function dust(n, o = {}){
+  for (let i = 0; i < n; i++) {
+    let x, y; if (o.band) { const t = rnd(-.1, 1.1), off = gauss() * o.band.w * (1 + .35 * Math.sin(t * 9)); x = o.band.x0 + (o.band.x1 - o.band.x0) * t + off * o.band.nx; y = o.band.y0 + (o.band.y1 - o.band.y0) * t + off * o.band.ny; }
+    else { x = rnd(-20, LW + 20); y = rnd(o.y0 || -20, o.y1 || LH + 20); }
+    if (o.skip && o.skip(x, y)) continue;
+    const cs = o.cols || [TEAL_L]; dot(x, y, rnd(o.s0 || .5, o.s1 || 1.4), cs[Math.floor(R() * cs.length)], rnd(o.a0 || .08, o.a1 || .45));
+  }
+}
+/* étoile dorée : une chose réglée (comme dans l'appli), en étincelle fine */
+function spark(x, y, r, c = GOLD, a = 1, cl = GOLD_L){
+  glow(x, y, r * 7, c, .22 * a);
+  X.fillStyle = rgba(cl, .9 * a); X.beginPath();
+  const L = r * 3.4, k = r * .32;
+  X.moveTo(x, y - L); X.quadraticCurveTo(x + k, y - k, x + L, y); X.quadraticCurveTo(x + k, y + k, x, y + L); X.quadraticCurveTo(x - k, y + k, x - L, y); X.quadraticCurveTo(x - k, y - k, x, y - L); X.fill();
+  dot(x, y, r * .62, [255, 244, 220], a);
+}
+function goldPath(pts, la = .35, lw = 1.2){ X.lineWidth = lw; for (let k = 1; k < pts.length; k++) { const a = pts[k - 1], b = pts[k]; X.strokeStyle = rgba(GOLD, la); X.beginPath(); X.moveTo(a[0], a[1]); X.lineTo(b[0], b[1]); X.stroke(); } }
+/* l'anneau de la bulle : 30 points, liaisons voisines et croisées */
+function ring(cx, cy, Rr, n, c, cl, o = {}){
+  const P = [], k0 = Math.sqrt(Rr / 150), A = o.a || 1;
+  for (let i = 0; i < n; i++) { const an = TAU * i / n - Math.PI / 2 + (o.rot || 0), k = 1 + .02 * Math.sin(i * 2.3); P.push([cx + Rr * Math.cos(an) * k, cy + Rr * Math.sin(an) * k]); }
+  if (o.band) { X.strokeStyle = rgba(c, o.band * A); X.lineWidth = Rr * .1; X.beginPath(); X.arc(cx, cy, Rr, 0, TAU); X.stroke(); }
+  X.lineWidth = .8 * k0 * (o.lw || 1); X.strokeStyle = rgba(c, .16 * A);
+  for (let i = 0; i < n; i += 2) { const q = P[(i + 3) % n]; X.beginPath(); X.moveTo(P[i][0], P[i][1]); X.lineTo(q[0], q[1]); X.stroke(); }
+  X.lineWidth = 1.1 * k0 * (o.lw || 1); X.strokeStyle = rgba(c, .55 * A);
+  for (let i = 0; i < n; i++) { const q = P[(i + 1) % n]; X.beginPath(); X.moveTo(P[i][0], P[i][1]); X.lineTo(q[0], q[1]); X.stroke(); }
+  P.forEach((p, i) => dot(p[0], p[1], (i % 3 ? 2.2 : 3.6) * k0 * (o.ns || 1), i % 3 ? cl : c, A, 2.8));
+  return P;
+}
+function radar(cx, cy, r0, r1, ang, c, a){
+  layer(() => {
+    const g = X.createConicGradient(ang, cx, cy);
+    g.addColorStop(0, rgba(c, 0)); g.addColorStop(.62, rgba(c, 0)); g.addColorStop(.97, rgba(c, a)); g.addColorStop(.975, rgba(c, a * .2)); g.addColorStop(1, rgba(c, 0));
+    X.fillStyle = g; X.beginPath(); X.arc(cx, cy, r1, 0, TAU); X.fill();
+    X.globalCompositeOperation = "destination-in";
+    const m = X.createRadialGradient(cx, cy, r0, cx, cy, r1); m.addColorStop(0, "rgba(0,0,0,0)"); m.addColorStop(.55, "rgba(0,0,0,1)"); m.addColorStop(.85, "rgba(0,0,0,1)"); m.addColorStop(1, "rgba(0,0,0,0)");
+    X.fillStyle = m; X.beginPath(); X.arc(cx, cy, r1, 0, TAU); X.fill();
+  }, { comp: "screen" });
+}
+/* le N de l'icône : cinq points reliés, du sarcelle au pervenche */
+const N_COLS = [[63,163,214], [43,189,194], [69,164,216], [72,160,220], [99,142,238]];
+function monoN(cx, cy, w, o = {}){
+  const h = w * 160 / 152, x0 = cx - w / 2, y0 = cy - h / 2, cols = o.cols || N_COLS, A = o.a == null ? 1 : o.a;
+  const N = [[x0, y0], [x0, y0 + h], [cx, cy], [x0 + w, y0 + h], [x0 + w, y0]];
+  if (o.glow !== false) N.forEach((p, i) => glow(p[0], p[1], w * .42, cols[i], .22 * A * (o.ga || 1)));
+  X.lineCap = "round";
+  const seg = (a, b, ca, cb) => { const g = X.createLinearGradient(a[0], a[1], b[0], b[1]); g.addColorStop(0, rgba(ca, (o.la || .95) * A)); g.addColorStop(1, rgba(cb, (o.la || .95) * A)); X.strokeStyle = g; X.lineWidth = w * (o.lwk || .055); X.beginPath(); X.moveTo(a[0], a[1]); X.lineTo(b[0], b[1]); X.stroke(); };
+  seg(N[1], N[0], cols[1], cols[0]); seg(N[0], N[2], cols[0], cols[2]); seg(N[2], N[3], cols[2], cols[3]); seg(N[3], N[4], cols[3], cols[4]);
+  const rr = [.132, .13, .108, .145, .132];
+  const nk = o.nk || 1;
+  N.forEach((p, i) => { glow(p[0], p[1], rr[i] * w * 2.1 * nk, cols[i], .5 * A * (o.ga || 1)); dot(p[0], p[1], rr[i] * w * nk, cols[i], A); if (o.core) dot(p[0] - rr[i] * w * nk * .25, p[1] - rr[i] * w * nk * .25, rr[i] * w * nk * .35, [255, 255, 255], .25 * A); if (o.ring) { X.strokeStyle = rgba(cols[i], .35 * A); X.lineWidth = 1.1; X.beginPath(); X.arc(p[0], p[1], rr[i] * w * nk * 1.9, 0, TAU); X.stroke(); } });
+  if (o.sat !== false) { dot(x0 + w * 1.26, y0 - h * .2, w * .046, [128, 160, 238], .85 * A, 2.4); dot(x0 - w * .26, y0 + h * 1.2, w * .04, [96, 200, 210], .8 * A, 2.4); dot(x0 + w * 1.29, y0 + h * 1.175, w * .03, [120, 170, 230], .7 * A, 2.4); }
+}
+/* bruit de Perlin pour les reliefs */
+function perlin(seed){
+  const r = rng(seed), p = [...Array(256).keys()]; for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
+  const P = new Uint16Array(512); for (let i = 0; i < 512; i++) P[i] = p[i & 255];
+  const GX = new Float32Array(256), GY = new Float32Array(256); for (let i = 0; i < 256; i++) { const a = r() * TAU; GX[i] = Math.cos(a); GY[i] = Math.sin(a); }
+  const f = t => t * t * t * (t * (t * 6 - 15) + 10);
+  return (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, a = xi & 255, b = yi & 255;
+    const h00 = P[P[a] + b], h10 = P[P[a + 1] + b], h01 = P[P[a] + b + 1], h11 = P[P[a + 1] + b + 1];
+    const n00 = GX[h00] * xf + GY[h00] * yf, n10 = GX[h10] * (xf - 1) + GY[h10] * yf, n01 = GX[h01] * xf + GY[h01] * (yf - 1), n11 = GX[h11] * (xf - 1) + GY[h11] * (yf - 1);
+    const u = f(xf), v = f(yf), nx0 = n00 + (n10 - n00) * u, nx1 = n01 + (n11 - n01) * u; return nx0 + (nx1 - nx0) * v; };
+}
+/* courbes de niveau, tracées au pixel (nettes, sans escalier) */
+function topo(o){
+  const nz = perlin(o.seed || 7), fq = (o.freq || 1 / 520) / S, id = X.getImageData(0, 0, W, H), d = id.data, F = new Float32Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let v = 0, amp = 1, f = fq; for (let k = 0; k < (o.oct || 4); k++) { v += nz(x * f + k * 17.3, y * f - k * 9.1) * amp; amp *= .5; f *= 2.03; } F[y * W + x] = v + (o.tilt ? (y / H) * o.tilt : 0); }
+  const K = o.k || 9, w = (o.w || 1.1) * S * .9;
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+    const i = y * W + x, f = F[i] * K, gx = (F[i + 1] - F[i - 1]) * K / 2, gy = (F[i + W] - F[i - W]) * K / 2, g = Math.hypot(gx, gy) + 1e-6;
+    const lv = Math.round(f), dd = Math.abs(f - lv) / g, major = ((lv % 5) + 5) % 5 === 0, ww = major ? w * 1.6 : w;
+    let a = clamp(1 - (dd - ww / 2 + .5), 0, 1); if (!a) continue;
+    let al = a * (major ? o.a1 : o.a0); if (o.fade) al *= o.fade(x / W, y / H); if (al <= 0) continue;
+    const c = o.cf ? o.cf(x / W, y / H) : o.c, j = i * 4;
+    d[j] += (c[0] - d[j]) * al; d[j + 1] += (c[1] - d[j + 1]) * al; d[j + 2] += (c[2] - d[j + 2]) * al;
+  }
+  X.putImageData(id, 0, 0);
+}
+function grain(amt){ const id = X.getImageData(0, 0, W, H), d = id.data, r = rng(4242); for (let i = 0; i < d.length; i += 4) { const n = (r() - .5) * amt; d[i] += n; d[i + 1] += n; d[i + 2] += n; } X.putImageData(id, 0, 0); }
+function vignette(a, c = [0, 0, 0]){ X.save(); X.translate(LW / 2, LH / 2); X.scale(LW / LH * 1.35, 1); const g = X.createRadialGradient(0, 0, 0, 0, 0, LH * .62); g.addColorStop(0, rgba(c, 0)); g.addColorStop(.55, rgba(c, 0)); g.addColorStop(1, rgba(c, a)); X.fillStyle = g; X.fillRect(-LW * 3, -LH, LW * 6, LH * 2); X.restore(); }
+/* une nébuleuse : des lueurs floues, pour la profondeur */
+function nebula(cx, cy, r, cols, n, a){ layer(() => { for (let i = 0; i < n; i++) { const an = rnd(0, TAU), d = Math.sqrt(R()) * r; glow(cx + Math.cos(an) * d, cy + Math.sin(an) * d * 1.15, rnd(.18, .42) * r, cols[i % cols.length], rnd(.4, 1), rnd(.8, 1.6), rnd(.5, 1), rnd(0, TAU)); } }, { blur: 70, comp: "screen", alpha: a }); }
+/* deux plans de constellation : loin (petit, flou) et près */
+function constelProf(o){ layer(() => constel(Object.assign({}, o, { n: Math.round(o.n * 1.3), rIn: o.rIn * .6, rOut: o.rOut * 1.35, sz: o.sz * .5, la: (o.la || .22) * .6, a: (o.a || 1) * .55 })), { blur: 1.2 }); return constel(o); }
+/* fonds */
+const night = () => lin([[0, "#060d12"], [.5, "#0b1a21"], [1, "#11293200"]]) || lin([[0, "#060d12"], [.55, "#0b1a21"], [1, "#102830"]]);
+function nuit(){ lin([[0, "#060d12"], [.55, "#0b1a21"], [1, "#102830"]]); }
+function nuitPerso(){ lin([[0, "#070b1a"], [.55, "#0d1430"], [1, "#151e44"]]); }
+function aube(){ lin([[0, "#fafdfd"], [.5, "#eef8f9"], [1, "#e3f3f5"]]); }
+function aubePerso(){ lin([[0, "#fbfcff"], [.5, "#f0f4fd"], [1, "#e6ecfb"]]); }
+function onde(t, seed){ const n = perlin(seed), r = rng(seed), G = [[.5, .1, 1], [.36, .06, .7], [.63, .07, .82], [.24, .05, .42], [.76, .05, .5], [.44, .03, .55], [.56, .035, .6]];
+  return v => { let e = 0; G.forEach(([m, s, h]) => e += h * Math.exp(-Math.pow((v - m) / s, 2))); const win = Math.exp(-Math.pow((v - .5) / .3, 4)); return Math.min(1, e * (.75 + .25 * (n(v * 14, 1.7) + .5))) * win + .03; }; }
+/* aurore : des rideaux de lumière */
+function aurora(o){
+  layer(() => {
+    X.translate(LW / 2, LH / 2); X.rotate(o.rot || -.35); X.translate(-LW / 2, -LH / 2);
+    const nz = perlin(o.seed || 3);
+    o.rubans.forEach(rb => {
+      for (let x = -400; x < LW + 400; x += 1.6) {
+        const t = (x + 400) / (LW + 800), y = rb.y + rb.amp * Math.sin(t * rb.f + rb.ph) + 60 * nz(t * 5, rb.y / 300);
+        const h = rb.h * (.55 + .45 * (nz(t * 11, rb.y / 97 + 2) + .5)) * Math.sin(Math.PI * clamp(t * 1.15 - .07, 0, 1)), c = mix(rb.c0, rb.c1, t);
+        const al = rb.a * (.55 + .45 * (nz(t * 37, rb.y / 50) + .5));
+        const g = X.createLinearGradient(x, y - h, x, y + 30); g.addColorStop(0, rgba(c, 0)); g.addColorStop(.75, rgba(c, al * .45)); g.addColorStop(.97, rgba(mix(c, [255, 255, 255], .35), al)); g.addColorStop(1, rgba(c, 0));
+        X.fillStyle = g; X.fillRect(x, y - h, 1.8, h + 30);
+      }
+    });
+  }, { blur: o.blur || 4, comp: o.comp || "screen", alpha: o.alpha || 1 });
+}
+function spline(pts, step){ // Catmull-Rom → points réguliers
+  const out = []; for (let i = 0; i < pts.length - 1; i++) { const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+    for (let t = 0; t < 1; t += .002) { const t2 = t * t, t3 = t2 * t; out.push([.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3), .5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)]); } }
+  const res = [out[0]]; let acc = 0; for (let i = 1; i < out.length; i++) { acc += Math.hypot(out[i][0] - out[i - 1][0], out[i][1] - out[i - 1][1]); if (acc >= step) { res.push(out[i]); acc = 0; } } return res;
+}
+function blob(cx, cy, r, seed, wob = .08){ const n = perlin(seed); X.beginPath(); for (let i = 0; i <= 180; i++) { const a = TAU * i / 180, k = 1 + wob * n(Math.cos(a) * 1.3 + 5, Math.sin(a) * 1.3 + 5); const x = cx + Math.cos(a) * r * k, y = cy + Math.sin(a) * r * k; i ? X.lineTo(x, y) : X.moveTo(x, y); } X.closePath(); }
+function plane(cx, cy, r, c0, c1, sh, seed, o = {}){
+  X.save(); X.shadowColor = sh; X.shadowBlur = (o.sb || 90) * S; X.shadowOffsetY = (o.sy || 26) * S;
+  const g = X.createLinearGradient(cx - r * .7, cy - r, cx + r * .7, cy + r); g.addColorStop(0, c0); g.addColorStop(1, c1); X.fillStyle = g; blob(cx, cy, r, seed, o.wob || .05); X.fill(); X.restore();
+  if (o.rim) { X.save(); blob(cx, cy, r, seed, o.wob || .05); X.clip(); X.strokeStyle = o.rim; X.lineWidth = 3; blob(cx, cy - 2, r, seed, o.wob || .05); X.stroke(); X.restore(); }
+}
+/* ---------- les propositions ---------- */
+const D = [];
+const add = (id, serie, nom, light, draw) => D.push({ id, serie, nom, light, draw });
+
+add("a1", "Constellation", "Nuit de Nestor", false, () => {
+  nuit(); glow(540, 1180, 760, TEAL, .16);
+  dust(320, { cols: [TEAL_L, WHITE], a0: .05, a1: .35 });
+  nebula(540, 1180, 520, [TEAL, [40, 120, 160], PERI], 26, .35);
+  const P = constelProf({ cx: 540, cy: 1180, rIn: 90, rOut: 470, n: 150, c: TEAL, c2: TEAL_L, mixP: .4, sz: 2.4, la: .26, lw: 1.1, link: 1.15 });
+  const g = P.filter(p => Math.hypot(p.x - 540, p.y - 1180) > 220).sort((a, b) => Math.atan2(a.y - 1180, a.x - 540) - Math.atan2(b.y - 1180, b.x - 540)).filter((p, i) => i % 19 === 4).slice(0, 6).map(p => [p.x, p.y]);
+  goldPath(g, .32); g.forEach(p => spark(p[0], p[1], 5.2));
+  vignette(.35); grain(6);
+});
+add("a2", "Constellation", "Voie lactée", false, () => {
+  nuit(); const band = { x0: -80, y0: 2050, x1: 1160, y1: 380, w: 170, nx: .8, ny: .6 };
+  layer(() => { X.strokeStyle = rgba(TEAL, .5); X.lineWidth = 260; X.beginPath(); X.moveTo(band.x0, band.y0); X.lineTo(band.x1, band.y1); X.stroke(); X.strokeStyle = rgba(PERI, .35); X.lineWidth = 120; X.beginPath(); X.moveTo(band.x0 + 60, band.y0); X.lineTo(band.x1 + 60, band.y1); X.stroke(); }, { blur: 150, comp: "screen", alpha: .55 });
+  dust(3200, { band, cols: [TEAL_L, PERI_L, WHITE, WHITE], s0: .35, s1: 1.25, a0: .1, a1: .75 });
+  dust(220, { cols: [WHITE, TEAL_L], a0: .05, a1: .3 });
+  const P = []; for (let i = 0; i < 70; i++) { const t = rnd(0, 1), off = gauss() * 120; P.push({ x: band.x0 + (band.x1 - band.x0) * t + off * .8, y: band.y0 + (band.y1 - band.y0) * t + off * .6, s: rnd(1.4, 4.2), big: R() < .3, al: rnd(.5, 1), c: R() < .5 ? TEAL_L : WHITE }); }
+  links(P, 105, TEAL_L, .28, 1); drawPts(P);
+  [[300, 1640], [560, 1210], [840, 760]].forEach(p => spark(p[0], p[1], 5.6));
+  vignette(.4); grain(6);
+});
+add("a3", "Constellation", "Semaine dorée", false, () => {
+  nuit(); glow(560, 1250, 820, TEAL, .08); dust(420, { cols: [TEAL_L, WHITE], a0: .04, a1: .3 });
+  const S7 = [[210, 1830], [380, 1600], [330, 1330], [560, 1180], [770, 1010], [700, 760], [880, 560]];
+  S7.forEach((s, i) => constel({ cx: s[0], cy: s[1], rIn: 20, rOut: 120, n: 16, c: TEAL, c2: TEAL_L, sz: 1.6, la: .2, a: .8 }));
+  goldPath(S7, .45, 1.4); S7.forEach((s, i) => spark(s[0], s[1], i === 6 ? 8 : 5.6));
+  vignette(.35); grain(6);
+});
+add("a4", "Constellation", "Nuit perso", false, () => {
+  nuitPerso(); glow(540, 1180, 760, PERI, .18); dust(320, { cols: [PERI_L, WHITE], a0: .05, a1: .35 });
+  nebula(540, 1180, 520, [PERI, [120, 90, 210], [60, 120, 200]], 26, .38);
+  const P = constelProf({ cx: 540, cy: 1180, rIn: 90, rOut: 470, n: 150, c: PERI, c2: PERI_L, mixP: .45, sz: 2.4, la: .28, lw: 1.1, link: 1.15 });
+  const g = P.filter(p => Math.hypot(p.x - 540, p.y - 1180) > 240).sort((a, b) => Math.atan2(a.y - 1180, a.x - 540) - Math.atan2(b.y - 1180, b.x - 540)).filter((p, i) => i % 17 === 3).slice(0, 5).map(p => [p.x, p.y]);
+  goldPath(g, .3); g.forEach(p => spark(p[0], p[1], 5));
+  vignette(.35); grain(6);
+});
+add("b1", "Aube", "Brume", true, () => {
+  aube(); glow(540, 1150, 900, TEAL, .16); glow(900, 320, 600, PERI, .07);
+  const P = []; for (let i = 0; i < 46; i++) { const a = rnd(0, TAU), r = 140 + Math.sqrt(R()) * 520; P.push({ x: 540 + Math.cos(a) * r, y: 1150 + Math.sin(a) * r * 1.1, s: rnd(1.4, 4), big: R() < .25, al: rnd(.35, .7), c: TEAL_D }); }
+  links(P, 150, TEAL_D, .16, 1); drawPts(P, 3); grain(3);
+});
+add("b2", "Aube", "Constellation claire", true, () => {
+  aube(); glow(540, 1230, 760, TEAL, .2);
+  const P = constel({ cx: 540, cy: 1230, rIn: 90, rOut: 470, n: 150, c: TEAL_D, c2: TEAL, mixP: .5, sz: 2.4, la: .24, lw: 1.1, link: 1.15, a: .85 });
+  const g = P.filter(p => Math.hypot(p.x - 540, p.y - 1230) > 230).filter((p, i) => i % 21 === 5).slice(0, 5).map(p => [p.x, p.y]);
+  goldPath(g, .45); g.forEach(p => spark(p[0], p[1], 5.4, GOLD, 1, [226, 170, 74]));
+  grain(3);
+});
+add("b3", "Aube", "Brume perso", true, () => {
+  aubePerso(); glow(540, 1150, 900, PERI, .17); glow(220, 400, 600, TEAL, .06);
+  const P = []; for (let i = 0; i < 46; i++) { const a = rnd(0, TAU), r = 140 + Math.sqrt(R()) * 520; P.push({ x: 540 + Math.cos(a) * r, y: 1150 + Math.sin(a) * r * 1.1, s: rnd(1.4, 4), big: R() < .25, al: rnd(.35, .7), c: PERI_D }); }
+  links(P, 150, PERI_D, .16, 1); drawPts(P, 3); grain(3);
+});
+add("b4", "Aube", "Pro & perso", true, () => {
+  lin([[0, "#e6f6f7"], [.5, "#f6fafc"], [1, "#e6ecfb"]], 0, 0, LW, LH);
+  glow(220, 640, 760, TEAL, .2); glow(880, 1760, 760, PERI, .2);
+  const P = []; for (let i = 0; i < 190; i++) { const t = R(), off = gauss() * 150; const x = 120 + t * 840 + off * .9, y = 520 + t * 1360 - off * .45; const c = mix(TEAL_D, PERI_D, clamp((x / LW + y / LH) / 1.6, 0, 1)); P.push({ x, y, s: rnd(1.3, 4.2), big: R() < .28, al: rnd(.4, .85), c }); }
+  links(P, 90, TEAL_D, .22, 1, (a, b) => mix(a.c, b.c, .5)); drawPts(P, 3); grain(3);
+});
+add("c1", "Anneau", "L'anneau", false, () => {
+  nuit(); glow(540, 1220, 620, TEAL, .14); dust(260, { cols: [TEAL_L, WHITE], a0: .04, a1: .3 });
+  ring(540, 1220, 640, 60, TEAL, TEAL_L, { a: .28, ns: .8 });
+  ring(540, 1220, 410, 36, TEAL, TEAL_L, { band: .05 });
+  glow(540, 1220, 120, TEAL_L, .1);
+  vignette(.35); grain(6);
+});
+add("c2", "Anneau", "L'anneau, clair", true, () => {
+  aube(); glow(540, 1220, 640, TEAL, .16);
+  ring(540, 1220, 640, 60, TEAL_D, TEAL, { a: .3, ns: .8 });
+  ring(540, 1220, 410, 36, TEAL_D, TEAL, { band: .05 });
+  grain(3);
+});
+add("c3", "Anneau", "Radar", false, () => {
+  lin([[0, "#04090c"], [1, "#0b1a21"]]); glow(540, 1220, 560, TEAL, .12);
+  X.strokeStyle = rgba(TEAL_L, .07); X.lineWidth = 1; [150, 260, 520].forEach(r => { X.beginPath(); X.arc(540, 1220, r, 0, TAU); X.stroke(); });
+  for (let i = 0; i < 180; i++) { const a = TAU * i / 180, l = i % 15 === 0 ? 26 : i % 5 === 0 ? 14 : 7, r0 = 470; X.strokeStyle = rgba(TEAL_L, i % 15 === 0 ? .45 : .2); X.lineWidth = i % 15 === 0 ? 1.6 : 1; X.beginPath(); X.moveTo(540 + Math.cos(a) * r0, 1220 + Math.sin(a) * r0); X.lineTo(540 + Math.cos(a) * (r0 + l), 1220 + Math.sin(a) * (r0 + l)); X.stroke(); }
+  radar(540, 1220, 260, 460, -1.1, TEAL, .55);
+  ring(540, 1220, 400, 30, TEAL, TEAL_L, {});
+  dot(540, 1220, 4, TEAL_L, .8, 4);
+  vignette(.45); grain(6);
+});
+add("c4", "Anneau", "Orbites", false, () => {
+  nuit(); glow(540, 1200, 520, TEAL, .16); dust(240, { cols: [TEAL_L, WHITE], a0: .04, a1: .28 });
+  const O = [[170, 1, 0, 26], [320, .58, .5, 38], [470, .82, -.35, 52]];
+  O.forEach(([r, sq, rot, n], k) => {
+    X.save(); X.translate(540, 1200); X.rotate(rot); X.scale(1, sq); X.strokeStyle = rgba(TEAL_L, .13); X.lineWidth = 1.2 / Math.sqrt(sq); X.beginPath(); X.arc(0, 0, r, 0, TAU); X.restore(); X.stroke();
+    const P = []; for (let i = 0; i < n; i++) { const a = TAU * i / n + rnd(-.06, .06), x = Math.cos(a) * r, y = Math.sin(a) * r * sq; const s0 = rnd(.6, 2.2); P.push({ x: 540 + x * Math.cos(rot) - y * Math.sin(rot), y: 1200 + x * Math.sin(rot) + y * Math.cos(rot), s: s0 * 2.6, big: s0 > 1.6, al: rnd(.5, 1), c: k === 1 ? TEAL_L : TEAL }); }
+    links(P, r * TAU / n * 1.6, TEAL, .35, 1); drawPts(P);
+    if (k === 2) spark(P[7].x, P[7].y, 6);
+  });
+  dot(540, 1200, 7, TEAL_L, .9, 5);
+  vignette(.35); grain(6);
+});
+add("d1", "Monogramme", "N, nuit", false, () => {
+  lin([[0, "#050b10"], [.5, "#0a171e"], [1, "#0e232b"]]); glow(540, 1170, 700, [70, 160, 215], .12);
+  dust(300, { cols: [TEAL_L, PERI_L, WHITE], a0: .04, a1: .3 });
+  const P = []; for (let i = 0; i < 70; i++) { const a = rnd(0, TAU), r = 330 + Math.abs(gauss()) * 170; P.push({ x: 540 + Math.cos(a) * r, y: 1170 + Math.sin(a) * r * 1.12, s: rnd(1, 3.2), big: R() < .2, al: rnd(.3, .8), c: mix(TEAL, PERI, (Math.cos(a) + 1) / 2) }); }
+  links(P, 95, TEAL, .2, 1, (a, b) => mix(a.c, b.c, .5)); drawPts(P);
+  layer(() => monoN(540, 1170, 380, { sat: false, glow: false, ga: 0, lwk: .03, nk: .62 }), { blur: 26, comp: "screen", alpha: .7 });
+  monoN(540, 1170, 380, { lwk: .03, nk: .62, ga: 1.3, core: true, ring: true, sat: false });
+  vignette(.4); grain(6);
+});
+add("d2", "Monogramme", "N, aube", true, () => {
+  lin([[0, "#fdfefe"], [.45, "#f1f7fa"], [1, "#dfe7f8"]], 0, 0, LW, LH);
+  glow(540, 1170, 720, [70, 170, 220], .08);
+  const P = []; for (let i = 0; i < 70; i++) { const a = rnd(0, TAU), r = 330 + Math.abs(gauss()) * 170; P.push({ x: 540 + Math.cos(a) * r, y: 1170 + Math.sin(a) * r * 1.12, s: rnd(1, 3.2), big: R() < .2, al: rnd(.35, .8), c: mix([40, 160, 175], PERI_D, (Math.cos(a) + 1) / 2) }); }
+  links(P, 95, TEAL, .2, 1, (a, b) => mix(a.c, b.c, .5)); drawPts(P);
+  monoN(540, 1170, 380, { lwk: .03, nk: .62, ga: 1.1, ring: true, sat: false });
+  grain(3);
+});
+add("d3", "Monogramme", "Signature", false, () => {
+  lin([[0, "#070c10"], [1, "#0d1d24"]]); glow(540, 1300, 420, TEAL, .07);
+  dust(160, { cols: [TEAL_L, WHITE], a0: .03, a1: .2 });
+  monoN(540, 1300, 74, { ga: 1.2 });
+  grain(5);
+});
+add("d4", "Monogramme", "Monogramme", false, () => {
+  lin([[0, "#081117"], [1, "#0f2229"]]);
+  for (let row = 0, y = 90; y < LH + 80; y += 150, row++) for (let x = row % 2 ? 105 : 30; x < LW + 80; x += 150) {
+    const hi = row === 8 && Math.abs(x - 555) < 80;
+    if (!hi) monoN(x, y, 30, { a: .16, glow: false, sat: false, ga: 0, la: .9 });
+  }
+  monoN(555, 90 + 150 * 8, 30, { ga: 1.6, sat: false });
+  glow(555, 90 + 150 * 8, 260, TEAL, .1);
+  vignette(.45); grain(5);
+});
+add("e1", "Voix", "Il parle", false, () => {
+  nuit(); glow(540, 1250, 640, TEAL, .12, 1.4, .7); const env = onde(0, 11);
+  for (let x = 60, k = 0; x <= 1020; x += 20, k++) {
+    const t = (x - 60) / 960, h = env(t) * 620, c = mix(TEAL, PERI, t);
+    for (let y = -h / 2; y <= h / 2; y += 20) { const f = 1 - Math.abs(y) / (h / 2 + 30); dot(x, 1250 + y, 3.1 + f * 1.2, mix(c, WHITE, f * .35), .25 + f * .75, f > .8 ? 3 : 0); }
+  }
+  X.strokeStyle = rgba(TEAL_L, .1); X.lineWidth = 1; X.beginPath(); X.moveTo(40, 1250); X.lineTo(1040, 1250); X.stroke();
+  vignette(.35); grain(6);
+});
+add("e2", "Voix", "Il parle, clair", true, () => {
+  aube(); glow(540, 1250, 640, TEAL, .14, 1.4, .7); const env = onde(0, 11);
+  for (let x = 60; x <= 1020; x += 20) {
+    const t = (x - 60) / 960, h = env(t) * 620, c = mix(TEAL_D, PERI_D, t);
+    for (let y = -h / 2; y <= h / 2; y += 20) { const f = 1 - Math.abs(y) / (h / 2 + 30); dot(x, 1250 + y, 3.1 + f * 1.2, c, .22 + f * .7); }
+  }
+  grain(3);
+});
+add("e3", "Voix", "Le cercle qui parle", false, () => {
+  nuit(); glow(540, 1210, 600, TEAL, .14); dust(220, { cols: [TEAL_L, WHITE], a0: .04, a1: .28 });
+  const nz = perlin(23), n = 140;
+  [[1, 1], [.78, .5], [.58, .28]].forEach(([k, A], e) => {
+    const P = []; for (let i = 0; i < n; i++) { const a = TAU * i / n - Math.PI / 2, v = Math.max(0, nz(Math.cos(a) * 1.6 + 3, Math.sin(a) * 1.6 + 3) + .25) * (1 + .5 * Math.sin(a * 3 + 1)), r = 330 * k + v * 120 * k; P.push({ x: 540 + Math.cos(a) * r, y: 1210 + Math.sin(a) * r, s: (e ? 1.8 : 2.6) + v * 2, big: !e && v > .55, al: A * (.55 + v * .45), c: mix(TEAL, PERI, (Math.sin(a) + 1) / 2) }); }
+    X.lineWidth = 1.1; for (let i = 0; i < n; i++) { const a = P[i], b = P[(i + 1) % n]; X.strokeStyle = rgba(a.c, .35 * A); X.beginPath(); X.moveTo(a.x, a.y); X.lineTo(b.x, b.y); X.stroke(); }
+    drawPts(P);
+  });
+  vignette(.35); grain(6);
+});
+add("f1", "Majordome", "Art déco", false, () => {
+  lin([[0, "#0a1418"], [1, "#0f2229"]]); const ox = 540, oy = 1340;
+  glow(ox, oy, 900, GOLD, .07);
+  for (let i = 0; i <= 64; i++) { const a = Math.PI + Math.PI * i / 64; const long = i % 2 === 0; X.strokeStyle = rgba(GOLD_L, long ? .2 : .1); X.lineWidth = long ? 1.2 : .9; X.beginPath(); X.moveTo(ox + Math.cos(a) * 230, oy + Math.sin(a) * 230); X.lineTo(ox + Math.cos(a) * (long ? 1900 : 1100), oy + Math.sin(a) * (long ? 1900 : 1100)); X.stroke(); }
+  X.strokeStyle = rgba(GOLD_L, .55); X.lineWidth = 1.4; [200, 214].forEach(r => { X.beginPath(); X.arc(ox, oy, r, Math.PI, TAU); X.stroke(); });
+  X.strokeStyle = rgba(GOLD_L, .28); X.lineWidth = 1.2; X.setLineDash([2, 12]); X.beginPath(); X.arc(ox, oy, 560, Math.PI, TAU); X.stroke(); X.setLineDash([]);
+  X.strokeStyle = rgba(GOLD_L, .45); X.lineWidth = 1.2; X.beginPath(); X.moveTo(60, oy); X.lineTo(1020, oy); X.stroke(); X.beginPath(); X.moveTo(60, oy + 14); X.lineTo(1020, oy + 14); X.stroke();
+  X.strokeStyle = rgba(GOLD_L, .35); X.lineWidth = 1.2; X.strokeRect(54, 54 + 60, LW - 108, LH - 108 - 60); X.strokeRect(68, 68 + 60, LW - 136, LH - 136 - 60);
+  const G = [[201, 150, 64], [226, 182, 96], [214, 164, 76], [236, 196, 118], [246, 214, 146]];
+  monoN(ox, oy - 92, 92, { cols: G, sat: false, ga: .8 });
+  grain(6);
+});
+add("f2", "Majordome", "Le gilet", false, () => {
+  lin([[0, "#0c181d"], [1, "#10252c"]], 0, 0, LW, LH);
+  for (let x = 13, i = 0; x < LW; x += 26, i++) { X.strokeStyle = i % 4 === 0 ? rgba(GOLD_L, .085) : rgba(WHITE, .028); X.lineWidth = i % 4 === 0 ? 1.3 : 1; X.beginPath(); X.moveTo(x, 0); X.lineTo(x, LH); X.stroke(); }
+  const G = [[201, 150, 64], [226, 182, 96], [214, 164, 76], [236, 196, 118], [246, 214, 146]];
+  monoN(540, 1290, 56, { cols: G, sat: false, ga: .9 });
+  vignette(.45); grain(9);
+});
+add("f3", "Majordome", "N.E.S.T.O.R.", false, () => {
+  lin([[0, "#07090c"], [1, "#0b0f14"]]); glow(540, LH, 900, TEAL, .1, 1.3, .6);
+  X.fillStyle = rgba(MIST, .92); X.font = "200 46px Inter"; X.letterSpacing = "26px"; X.textAlign = "center"; X.fillText("N.E.S.T.O.R.", 540 + 13, 1330);
+  X.strokeStyle = rgba(MIST, .28); X.lineWidth = 1; X.beginPath(); X.moveTo(500, 1240); X.lineTo(580, 1240); X.stroke();
+  dot(540, 1200, 3.4, TEAL_L, .9, 6);
+  X.fillStyle = rgba([138, 163, 172], .7); X.font = "300 25px Inter"; X.letterSpacing = "9px"; X.fillText("à votre service", 540 + 4.5, 1400);
+  grain(5);
+});
+add("f4", "Majordome", "Papier à lettres", true, () => {
+  lin([[0, "#faf6ee"], [1, "#efe6d6"]]);
+  for (let i = 0; i < 2600; i++) { const x = rnd(0, LW), y = rnd(0, LH), a = rnd(0, TAU), l = rnd(4, 22); X.strokeStyle = rgba([150, 120, 80], rnd(.03, .08)); X.lineWidth = rnd(.4, .9); X.beginPath(); X.moveTo(x, y); X.quadraticCurveTo(x + Math.cos(a + .6) * l * .5, y + Math.sin(a + .6) * l * .5, x + Math.cos(a) * l, y + Math.sin(a) * l); X.stroke(); }
+  const OR = [176, 132, 58], P = constel({ cx: 540, cy: 1220, rIn: 80, rOut: 440, n: 95, c: OR, c2: [150, 110, 50], sz: 2, la: .3, link: 1.2, a: .85 });
+  P.filter(p => Math.hypot(p.x - 540, p.y - 1220) > 200).filter((p, i) => i % 13 === 3).slice(0, 4).forEach(p => spark(p.x, p.y, 4.6, [196, 146, 60], 1, [205, 160, 75]));
+  const G = [[176, 132, 58], [190, 146, 70], [182, 138, 62], [196, 152, 76], [206, 164, 88]];
+  monoN(540, 462, 60, { cols: G, sat: false, ga: .35 });
+  grain(8);
+});
+add("f5", "Majordome", "Le cadran", false, () => {
+  const cx = 540, cy = 1170;
+  const g = X.createConicGradient(0, cx, cy); for (let i = 0; i <= 720; i++) g.addColorStop(i / 720, i % 2 ? "#0f2930" : "#0b1f25"); X.fillStyle = g; X.fillRect(0, 0, LW, LH);
+  glow(cx, cy - 120, 700, TEAL, .1);
+  X.strokeStyle = rgba(GOLD_L, .35); X.lineWidth = 1.2; [478, 488].forEach(r => { X.beginPath(); X.arc(cx, cy, r, 0, TAU); X.stroke(); });
+  for (let i = 0; i < 60; i++) { const a = TAU * i / 60 - Math.PI / 2, hr = i % 5 === 0; if (hr && i % 15 === 0) continue; const r0 = hr ? 400 : 452, r1 = 470; X.strokeStyle = rgba(GOLD_L, hr ? .8 : .35); X.lineWidth = hr ? 5 : 1.4; X.lineCap = hr ? "butt" : "round"; X.beginPath(); X.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); X.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); X.stroke(); }
+  [[0, -1], [1, 0], [0, 1], [-1, 0]].forEach(([dx, dy], k) => { if (k === 0) return; spark(cx + dx * 432, cy + dy * 432, 4.6); });
+  X.lineCap = "round";
+  const G = [[201, 150, 64], [226, 182, 96], [214, 164, 76], [236, 196, 118], [246, 214, 146]];
+  monoN(cx, cy - 330, 62, { cols: G, sat: false, ga: .8 });
+  X.fillStyle = rgba(GOLD_L, .75); X.font = "300 22px Inter"; X.letterSpacing = "12px"; X.textAlign = "center"; X.fillText("N.E.S.T.O.R.", cx + 6, cy + 300);
+  vignette(.55); grain(6);
+});
+add("g1", "Journal de bord", "Topographie", false, () => {
+  nuit(); glow(540, 1200, 900, TEAL, .08);
+  topo({ seed: 5, k: 13, oct: 3, freq: 1 / 1000, c: TEAL_L, a0: .13, a1: .3, w: 1.1, fade: (u, v) => .55 + .45 * Math.exp(-Math.pow((v - .5) / .35, 2)) });
+  vignette(.4); grain(6);
+});
+add("g2", "Journal de bord", "Topographie, claire", true, () => {
+  aube(); glow(540, 1200, 900, TEAL, .1);
+  topo({ seed: 5, k: 13, oct: 3, freq: 1 / 1000, c: [48, 132, 146], a0: .17, a1: .36, w: 1.1 });
+  grain(3);
+});
+add("g3", "Journal de bord", "Le trajet", false, () => {
+  nuit(); topo({ seed: 9, k: 12, oct: 3, freq: 1 / 1000, c: TEAL_L, a0: .07, a1: .17, w: 1 });
+  const stops = [[170, 2060], [300, 1720], [610, 1560], [470, 1240], [760, 1000], [610, 700], [880, 420]];
+  spline(stops, 15).forEach(p => dot(p[0], p[1], 1.9, GOLD_L, .7));
+  stops.forEach((s, i) => { X.strokeStyle = rgba(GOLD_L, .5); X.lineWidth = 1.2; X.beginPath(); X.arc(s[0], s[1], i === 0 || i === 6 ? 16 : 11, 0, TAU); X.stroke(); dot(s[0], s[1], i === 0 || i === 6 ? 6 : 4.4, GOLD_L, 1, 4); });
+  vignette(.4); grain(6);
+});
+add("h1", "Voile", "Le voile", false, () => {
+  X.fillStyle = "#000"; X.fillRect(0, 0, LW, LH); glow(540, 1240, 380, TEAL, .1);
+  constel({ cx: 540, cy: 1240, rIn: 34 * 1.45, rOut: 142 * 1.45, n: 84, c: TEAL, c2: TEAL_L, mixP: .3, sz: 1.45, la: .3, lw: 1, link: 1.2 });
+});
+add("h2", "Voile", "Le voile, radar", false, () => {
+  X.fillStyle = "#000"; X.fillRect(0, 0, LW, LH); glow(540, 1240, 380, TEAL, .08);
+  radar(540, 1240, 150, 250, -.9, TEAL, .5); ring(540, 1240, 220, 30, TEAL, TEAL_L, {});
+});
+add("i1", "Strates", "Strates", true, () => {
+  lin([[0, "#eef7f8"], [1, "#e4f2f4"]]); const sh = "rgba(15,34,41,.13)";
+  plane(1180, 260, 880, "#e6f4f6", "#d3eaee", sh, 1); plane(-180, 1420, 980, "#f6fbfc", "#e3f1f3", sh, 2); plane(980, 2420, 860, "#d6eef1", "#c2e2e7", sh, 3);
+  plane(560, 1220, 470, "#ffffff", "#e5f3f5", sh, 4, { rim: "rgba(255,255,255,.9)", wob: .02 });
+  glow(560, 1220, 420, TEAL, .1);
+  const P = constel({ cx: 560, cy: 1220, rIn: 60, rOut: 300, n: 60, c: TEAL_D, c2: TEAL, sz: 1.8, la: .2, a: .6, link: 1.2 });
+  grain(3);
+});
+add("i2", "Strates", "Strates, nuit", false, () => {
+  lin([[0, "#081219"], [1, "#0c1d24"]]); const sh = "rgba(0,0,0,.55)";
+  plane(1180, 260, 880, "#0f242c", "#0b1b21", sh, 1); plane(-180, 1420, 980, "#12303a", "#0d2129", sh, 2); plane(980, 2420, 860, "#0f2a33", "#0a1b22", sh, 3);
+  plane(560, 1220, 470, "#16353f", "#0d222a", sh, 4, { rim: "rgba(143,214,220,.18)", wob: .02 });
+  glow(560, 1220, 420, TEAL, .12);
+  constel({ cx: 560, cy: 1220, rIn: 60, rOut: 300, n: 60, c: TEAL, c2: TEAL_L, sz: 1.8, la: .25, a: .9, link: 1.2 });
+  grain(6);
+});
+add("i3", "Aurore", "Aurore", false, () => {
+  lin([[0, "#03070a"], [.6, "#071116"], [1, "#0b1a20"]]);
+  dust(700, { cols: [WHITE, TEAL_L, PERI_L], a0: .05, a1: .55, s0: .4, s1: 1.2 });
+  const rub = [{ y: 900, amp: 160, f: 5, ph: .5, h: 620, a: .55, c0: TEAL, c1: [70, 220, 190] }, { y: 1350, amp: 120, f: 4, ph: 2.2, h: 520, a: .42, c0: [60, 200, 200], c1: PERI }, { y: 1750, amp: 90, f: 6, ph: 1, h: 380, a: .25, c0: PERI, c1: [150, 120, 230] }];
+  aurora({ rubans: rub, blur: 70, alpha: .55, seed: 4 }); aurora({ rubans: rub, blur: 3, alpha: .9, seed: 4 });
+  vignette(.45); grain(7);
+});
+add("i4", "Aurore", "Aurore, claire", true, () => {
+  lin([[0, "#fbfdfe"], [1, "#eef4f8"]]);
+  const rub = [{ y: 900, amp: 160, f: 5, ph: .5, h: 620, a: .6, c0: [70, 190, 200], c1: [90, 205, 190] }, { y: 1350, amp: 120, f: 4, ph: 2.2, h: 520, a: .5, c0: [80, 190, 205], c1: [110, 145, 232] }, { y: 1750, amp: 90, f: 6, ph: 1, h: 380, a: .35, c0: [110, 145, 232], c1: [160, 140, 230] }];
+  aurora({ rubans: rub, blur: 80, alpha: .5, seed: 4, comp: "multiply" }); aurora({ rubans: rub, blur: 4, alpha: .55, seed: 4, comp: "multiply" });
+  grain(3);
+});
+const seedOf = id => [...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7);
+function soften(b, dark){ const c = document.createElement("canvas"); c.width = W; c.height = H; c.getContext("2d").drawImage(C, 0, 0); X.save(); X.setTransform(1, 0, 0, 1, 0, 0); X.filter = `blur(${b * S}px)`; X.drawImage(c, -b * 2, -b * 2, W + b * 4, H + b * 4); X.filter = "none"; X.fillStyle = `rgba(4,10,14,${dark})`; X.fillRect(0, 0, W, H); X.restore(); reset(); grain(5); }
+[["a1", "Nuit de Nestor, adoucie"], ["i3", "Aurore, adoucie"], ["c4", "Orbites, adoucies"]].forEach(([b, nom]) => add(b + "h", "Duos (verrouillage net, accueil adouci)", nom, false, () => { R = rng(seedOf(b)); D.find(d => d.id === b).draw(); soften(14, .18); }));
+/* ---------- la sélection : place pour le widget Nestor (à droite, au milieu de l'écran d'accueil) ---------- */
+const WX = 840, WY = 1100, WR = 180;
+const inClock = (x, y) => x > 170 && x < 510 && y > 520 && y < 1110;
+const inNiche = (x, y, m = 0) => Math.hypot(x - WX, y - WY) < WR + m;
+function niche(a){ radial(WX, WY, WR * 1.55, [[0, `rgba(3,8,11,${a})`], [.62, `rgba(3,8,11,${a * .7})`], [1, "rgba(3,8,11,0)"]]); }
+function ptsAutour(n, rIn, rOut, sz, a){ const P = []; let g = 0; while (P.length < n && g++ < n * 60) { const an = R() * TAU, r = rIn + Math.pow(R(), .85) * (rOut - rIn), x = WX + Math.cos(an) * r, y = WY + Math.sin(an) * r * 1.08; if (x < -10 || x > LW + 10 || y < 70 || y > LH - 70) continue; if (inClock(x, y) && R() > .3) continue; const s0 = .6 + R() * 1.6; P.push({ x, y, s: s0 * sz, big: s0 > 1.6, al: a * (.45 + R() * .55), c: R() < .4 ? TEAL_L : TEAL }); } return P; }
+const OR5 = [[201, 150, 64], [226, 182, 96], [214, 164, 76], [236, 196, 118], [246, 214, 146]];
+function cadreDeco(){ X.strokeStyle = rgba(GOLD_L, .35); X.lineWidth = 1.2; X.strokeRect(54, 114, LW - 108, LH - 168); X.strokeRect(68, 128, LW - 136, LH - 196); }
+add("a1w", "Sélection", "Nuit de Nestor · accueil", false, () => {
+  nuit(); glow(WX - 80, WY, 880, TEAL, .14);
+  nebula(WX - 140, WY + 30, 620, [TEAL, [40, 120, 160], PERI], 28, .33);
+  niche(.55);
+  dust(360, { cols: [TEAL_L, WHITE], a0: .05, a1: .35, skip: (x, y) => inNiche(x, y, 30) });
+  layer(() => { const F = ptsAutour(170, WR + 30, 1000, 1.25, .5); links(F, 62, TEAL, .14, 1); drawPts(F); }, { blur: 1.2 });
+  const P = ptsAutour(150, WR + 40, 840, 2.4, 1); links(P, 92, TEAL, .26, 1.1); drawPts(P);
+  X.strokeStyle = rgba(TEAL_L, .16); X.lineWidth = 1.2; X.beginPath(); X.arc(WX, WY, WR + 6, 0, TAU); X.stroke();
+  X.strokeStyle = rgba(TEAL_L, .12); X.lineWidth = 1.3; X.setLineDash([1.5, 9]); X.beginPath(); X.arc(WX, WY, WR + 26, 0, TAU); X.stroke(); X.setLineDash([]);
+  const g = [[135, 330], [165, 300], [195, 290], [225, 300], [250, 330], [272, 300]].map(([d, r]) => [WX + Math.cos(d * Math.PI / 180) * r, WY + Math.sin(d * Math.PI / 180) * r]);
+  goldPath(g, .32); g.forEach(p => spark(p[0], p[1], 5.2));
+  vignette(.35); grain(6);
+});
+add("f1w", "Sélection", "Art déco · accueil", false, () => {
+  lin([[0, "#0a1418"], [1, "#0f2229"]]); const ox = WX, oy = WY;
+  glow(ox, oy, 950, GOLD, .07);
+  for (let i = 0; i < 112; i++) { const a = TAU * i / 112, long = i % 2 === 0; X.strokeStyle = rgba(GOLD_L, long ? .19 : .095); X.lineWidth = long ? 1.2 : .9; X.beginPath(); X.moveTo(ox + Math.cos(a) * (WR + 44), oy + Math.sin(a) * (WR + 44)); X.lineTo(ox + Math.cos(a) * (long ? 2600 : 1250), oy + Math.sin(a) * (long ? 2600 : 1250)); X.stroke(); }
+  niche(.5);
+  X.strokeStyle = rgba(GOLD_L, .55); X.lineWidth = 1.4; [WR + 8, WR + 22].forEach(r => { X.beginPath(); X.arc(ox, oy, r, 0, TAU); X.stroke(); });
+  X.strokeStyle = rgba(GOLD_L, .28); X.lineWidth = 1.2; X.setLineDash([2, 12]); X.beginPath(); X.arc(ox, oy, 560, 0, TAU); X.stroke(); X.setLineDash([]);
+  X.strokeStyle = rgba(GOLD_L, .14); X.lineWidth = 1; X.beginPath(); X.arc(ox, oy, 900, 0, TAU); X.stroke();
+  [0, 1, 2, 3].forEach(k => { const a = k * Math.PI / 2; spark(ox + Math.cos(a) * (WR + 22), oy + Math.sin(a) * (WR + 22), 3.4); });
+  X.save(); X.beginPath(); X.rect(0, 0, LW, LH); X.arc(WX, WY, WR + 44, 0, TAU); X.clip("evenodd"); cadreDeco(); X.restore();
+  monoN(540, 455, 58, { cols: OR5, sat: false, ga: .8 });
+  grain(6);
+});
+add("a2w", "Sélection", "Voie lactée · accueil", false, () => {
+  R = rng(seedOf("a2"));   // même tirage que la Voie lactée qu'il a choisie : seule la place du widget et les étoiles d'or changent
+  nuit(); const band = { x0: -80, y0: 2050, x1: 1160, y1: 380, w: 170, nx: .8, ny: .6 };
+  layer(() => { X.strokeStyle = rgba(TEAL, .5); X.lineWidth = 260; X.beginPath(); X.moveTo(band.x0, band.y0); X.lineTo(band.x1, band.y1); X.stroke(); X.strokeStyle = rgba(PERI, .35); X.lineWidth = 120; X.beginPath(); X.moveTo(band.x0 + 60, band.y0); X.lineTo(band.x1 + 60, band.y1); X.stroke(); }, { blur: 150, comp: "screen", alpha: .55 });
+  dust(3200, { band, cols: [TEAL_L, PERI_L, WHITE, WHITE], s0: .35, s1: 1.25, a0: .1, a1: .75 });
+  dust(220, { cols: [WHITE, TEAL_L], a0: .05, a1: .3 });
+  const P = []; for (let i = 0; i < 70; i++) { const t = rnd(0, 1), off = gauss() * 120; P.push({ x: band.x0 + (band.x1 - band.x0) * t + off * .8, y: band.y0 + (band.y1 - band.y0) * t + off * .6, s: rnd(1.4, 4.2), big: R() < .3, al: rnd(.5, 1), c: R() < .5 ? TEAL_L : WHITE }); }
+  niche(.45);
+  const Q = P.filter(p => !inNiche(p.x, p.y, 34)); links(Q, 105, TEAL_L, .28, 1); drawPts(Q);
+  [[1005, 430], [690, 905], [560, 1210]].forEach(p => spark(p[0], p[1], 5.6));
+  vignette(.4); grain(6);
+});
+/* ---------- réseau neuronal : la même bande que la Voie lactée, faite de neurones ---------- */
+const BAND = { x0: -80, y0: 2050, x1: 1160, y1: 380 };
+const ORS = [[1005, 430], [690, 905], [560, 1210]];   // les neurones dorés, aux places des étoiles d'or
+function qpt(e, u){ const v = 1 - u; return [v * v * e.a.x + 2 * v * u * e.cx + u * u * e.b.x, v * v * e.a.y + 2 * v * u * e.cy + u * u * e.b.y]; }
+function buildNeural(o){
+  const L = Math.hypot(BAND.x1 - BAND.x0, BAND.y1 - BAND.y0), ux = (BAND.x1 - BAND.x0) / L, uy = (BAND.y1 - BAND.y0) / L, nx = -uy, ny = ux;
+  const N = [];
+  ORS.forEach(([x, y]) => N.push({ x, y, s: 6.5, hub: true, gold: true }));
+  let g = 0;
+  while (N.length < o.n && g++ < o.n * 80) {
+    const t = rnd(-.05, 1.05), off = gauss() * o.w, x = BAND.x0 + (BAND.x1 - BAND.x0) * t + nx * off, y = BAND.y0 + (BAND.y1 - BAND.y0) * t + ny * off;
+    if (x < 20 || x > LW - 20 || y < 120 || y > LH - 120) continue;
+    if (o.niche && inNiche(x, y, 46)) continue;
+    if (inClock(x, y) && R() < .55) continue;
+    if (N.some(m => Math.hypot(m.x - x, m.y - y) < o.dmin)) continue;
+    const hub = R() < .12; N.push({ x, y, s: hub ? rnd(4.6, 6.2) : rnd(1.8, 3.6), hub, gold: false });
+  }
+  N.forEach(m => { m.c = mix(TEAL, PERI, clamp(.5 + .5 * Math.sin((m.x * .004 - m.y * .002)), 0, 1) * .55); });
+  const E = [], seen = new Set();
+  N.forEach((m, i) => {
+    const near = N.map((q, j) => [Math.hypot(q.x - m.x, q.y - m.y), j]).filter(([d, j]) => j !== i && d < o.dmax).sort((a, b) => a[0] - b[0]).slice(0, m.hub ? 5 : 3);
+    near.forEach(([d, j]) => {
+      const k = i < j ? i + "-" + j : j + "-" + i; if (seen.has(k)) return; seen.add(k);
+      const b = N[j], mx = (m.x + b.x) / 2, my = (m.y + b.y) / 2, px = -(b.y - m.y) / d, py = (b.x - m.x) / d, bend = rnd(.05, .17) * d * (R() < .5 ? -1 : 1);
+      const e = { a: m, b, cx: mx + px * bend, cy: my + py * bend, d };
+      if (o.niche) { let bad = false; for (let u = 0; u <= 1; u += .1) { const [x, y] = qpt(e, u); if (inNiche(x, y, 26)) { bad = true; break; } } if (bad) return; }
+      e.w = rnd(.8, 1.4); e.al = rnd(.18, .38); E.push(e);
+    });
+  });
+  N.forEach(m => { m.den = []; const k = m.hub ? 6 : 3 + Math.floor(R() * 3); for (let q = 0; q < k; q++) m.den.push({ ang: rnd(0, TAU), len: (m.hub ? rnd(40, 80) : rnd(18, 46)), seed: Math.floor(R() * 1e9) }); });
+  return { N, E };
+}
+function dendrite(x, y, ang, len, w, c, a, depth, r){
+  let px = x, py = y; const steps = Math.max(3, Math.round(len / 5));
+  for (let k = 0; k < steps; k++) {
+    ang += (r() - .5) * .7; const qx = px + Math.cos(ang) * len / steps, qy = py + Math.sin(ang) * len / steps;
+    X.strokeStyle = rgba(c, a * (1 - k / steps * .6)); X.lineWidth = Math.max(.3, w * (1 - k / steps)); X.beginPath(); X.moveTo(px, py); X.lineTo(qx, qy); X.stroke(); px = qx; py = qy;
+    if (depth < 2 && k === Math.floor(steps * .5) && r() < .6) dendrite(px, py, ang + (.4 + r() * .5) * (r() < .5 ? -1 : 1), len * .55, w * .6, c, a * .85, depth + 1, r);
+  }
+}
+function drawNeural(net, o = {}){
+  const A = o.a || 1, sz = o.sz || 1;
+  // filaments : une lueur large dessous, le fil net dessus
+  net.E.forEach(e => { const gold = e.a.gold || e.b.gold; X.strokeStyle = rgba(gold ? GOLD : TEAL, .05 * A); X.lineWidth = 5 * sz; X.beginPath(); X.moveTo(e.a.x, e.a.y); X.quadraticCurveTo(e.cx, e.cy, e.b.x, e.b.y); X.stroke(); });
+  net.E.forEach(e => { const gold = e.a.gold || e.b.gold, g = X.createLinearGradient(e.a.x, e.a.y, e.b.x, e.b.y); g.addColorStop(0, rgba(e.a.gold ? GOLD_L : mix(e.a.c, WHITE, .25), e.al * A * (gold ? 1.5 : 1))); g.addColorStop(1, rgba(e.b.gold ? GOLD_L : mix(e.b.c, WHITE, .25), e.al * A * (gold ? 1.5 : 1)));
+    X.strokeStyle = g; X.lineWidth = e.w * sz; X.beginPath(); X.moveTo(e.a.x, e.a.y); X.quadraticCurveTo(e.cx, e.cy, e.b.x, e.b.y); X.stroke();
+    const [bx, by] = qpt(e, .97); dot(bx, by, 1.3 * sz, gold ? GOLD_L : TEAL_L, .7 * A); });
+  // dendrites
+  net.N.forEach(m => m.den.forEach(dd => dendrite(m.x, m.y, dd.ang, dd.len * sz, (m.hub ? 1.6 : 1.1) * sz, m.gold ? GOLD_L : mix(m.c, WHITE, .2), (m.gold ? .55 : .42) * A, 0, rng(dd.seed))));
+  // corps des neurones
+  if (!o.noSoma) net.N.forEach(m => { if (m.gold) return; glow(m.x, m.y, m.s * (m.hub ? 6 : 4) * sz, m.c, (m.hub ? .38 : .26) * A); dot(m.x, m.y, m.s * sz, mix(m.c, WHITE, .25), .95 * A); dot(m.x, m.y, m.s * .45 * sz, [235, 252, 255], .9 * A); });
+}
+function goldNeurons(net, k = 1){ net.N.filter(m => m.gold).forEach((m, i) => { glow(m.x, m.y, 60, GOLD, .22 * k); dot(m.x, m.y, m.s, GOLD_L, k); spark(m.x, m.y, 4.4 * (.85 + .15 * k), GOLD, k); }); }
+function pulse(e, u, c, a, rev){ for (let j = 7; j >= 0; j--) { const v = rev ? 1 - (u - j * .018) : u - j * .018; if (v < 0 || v > 1) continue; const [x, y] = qpt(e, v), f = 1 - j / 8; dot(x, y, .8 + 2.2 * f, c, a * f); } const [x, y] = qpt(e, rev ? 1 - u : u); glow(x, y, 16, c, .45 * a); }
+function neuralScene(niche){
+  nuit();
+  layer(() => { X.strokeStyle = rgba(TEAL, .5); X.lineWidth = 260; X.beginPath(); X.moveTo(BAND.x0, BAND.y0); X.lineTo(BAND.x1, BAND.y1); X.stroke(); X.strokeStyle = rgba(PERI, .35); X.lineWidth = 120; X.beginPath(); X.moveTo(BAND.x0 + 60, BAND.y0); X.lineTo(BAND.x1 + 60, BAND.y1); X.stroke(); }, { blur: 150, comp: "screen", alpha: .5 });
+  dust(2000, { band: Object.assign({ w: 230, nx: .8, ny: .6 }, BAND), cols: [TEAL_L, PERI_L, WHITE], s0: .3, s1: 1, a0: .05, a1: .45, skip: niche ? (x, y) => inNiche(x, y, 20) : null });
+  dust(260, { cols: [WHITE, TEAL_L], a0: .04, a1: .25 });
+  const far = buildNeural({ n: 230, w: 300, dmin: 30, dmax: 95, niche });
+  layer(() => drawNeural(far, { a: .6, sz: .5 }), { blur: 1.4 });
+  const net = buildNeural({ n: 120, w: 190, dmin: 58, dmax: 165, niche });
+  if (niche) niche && (() => {})();
+  return net;
+}
+add("n1w", "Sélection", "Réseau neuronal · accueil", false, () => {
+  const net = neuralScene(true);
+  niche(.45);
+  drawNeural(net);
+  // quelques influx figés en route
+  net.E.filter((e, i) => i % 9 === 4).forEach(e => pulse(e, rnd(.3, .85), mix(TEAL_L, WHITE, .4), .9, R() < .5));
+  net.E.filter(e => e.a.gold || e.b.gold).forEach(e => pulse(e, rnd(.35, .7), GOLD_L, .9, e.b.gold));
+  goldNeurons(net);
+  vignette(.4); grain(6);
+});
+/* ---------- les versions animées (écran verrouillé) : boucles sans couture ---------- */
+let AN = null;
+function bgCanvas(draw){ const c = document.createElement("canvas"); c.width = W; c.height = H; const old = X; X = c.getContext("2d"); reset(); draw(); X = old; return c; }
+function blit(c, comp){ X.save(); X.setTransform(1, 0, 0, 1, 0, 0); if (comp) X.globalCompositeOperation = comp; X.drawImage(c, 0, 0); X.restore(); }
+function animSetup(id){
+  const r2 = rng(99);
+  if (id === "a1") {
+    R = rng(seedOf("a1")); const o = { cx: 540, cy: 1180, rIn: 90, rOut: 470, n: 150, c: TEAL, c2: TEAL_L, mixP: .4, sz: 2.4, la: .26, lw: 1.1, link: 1.15 };
+    let P;
+    const BG = bgCanvas(() => {
+      nuit(); glow(540, 1180, 760, TEAL, .16);
+      dust(320, { cols: [TEAL_L, WHITE], a0: .05, a1: .35 });
+      nebula(540, 1180, 520, [TEAL, [40, 120, 160], PERI], 26, .35);
+      layer(() => constel(Object.assign({}, o, { n: Math.round(o.n * 1.3), rIn: o.rIn * .6, rOut: o.rOut * 1.35, sz: o.sz * .5, la: o.la * .6, a: .55 })), { blur: 1.2 });
+      P = constel(Object.assign({}, o, { gen: true }));
+    });
+    const gi = P.map((p, i) => i).filter(i => Math.hypot(P[i].x - 540, P[i].y - 1180) > 220).sort((a, b) => Math.atan2(P[a].y - 1180, P[a].x - 540) - Math.atan2(P[b].y - 1180, P[b].x - 540)).filter((p, k) => k % 19 === 4).slice(0, 6);
+    P.forEach(p => { p.p1 = r2() * TAU; p.p2 = r2() * TAU; p.p3 = r2() * TAU; p.k1 = 1 + Math.floor(r2() * 2); p.k2 = 1 + Math.floor(r2() * 2); p.k3 = 1 + Math.floor(r2() * 3); p.A = 6 + r2() * 9; });
+    const VIG = bgCanvas(() => vignette(.35));
+    AN = { id, BG, VIG, P, gi };
+  }
+  const g2 = () => { let u = 0, v = 0; while (!u) u = r2(); while (!v) v = r2(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * v); };
+  const derive = Q => Q.forEach(p => { p.p1 = r2() * TAU; p.p2 = r2() * TAU; p.p3 = r2() * TAU; p.k1 = 1 + Math.floor(r2() * 2); p.k2 = 1 + Math.floor(r2() * 2); p.k3 = 1 + Math.floor(r2() * 3); p.A = 3 + r2() * 6; });
+  if (id === "a2w") {
+    R = rng(seedOf("a2")); let P; const band = { x0: -80, y0: 2050, x1: 1160, y1: 380, w: 170, nx: .8, ny: .6 };
+    const BG = bgCanvas(() => {
+      nuit();
+      layer(() => { X.strokeStyle = rgba(TEAL, .5); X.lineWidth = 260; X.beginPath(); X.moveTo(band.x0, band.y0); X.lineTo(band.x1, band.y1); X.stroke(); X.strokeStyle = rgba(PERI, .35); X.lineWidth = 120; X.beginPath(); X.moveTo(band.x0 + 60, band.y0); X.lineTo(band.x1 + 60, band.y1); X.stroke(); }, { blur: 150, comp: "screen", alpha: .55 });
+      dust(3200, { band, cols: [TEAL_L, PERI_L, WHITE, WHITE], s0: .35, s1: 1.25, a0: .1, a1: .75 });
+      dust(220, { cols: [WHITE, TEAL_L], a0: .05, a1: .3 });
+      P = []; for (let i = 0; i < 70; i++) { const t = rnd(0, 1), off = gauss() * 120; P.push({ x: band.x0 + (band.x1 - band.x0) * t + off * .8, y: band.y0 + (band.y1 - band.y0) * t + off * .6, s: rnd(1.4, 4.2), big: R() < .3, al: rnd(.5, 1), c: R() < .5 ? TEAL_L : WHITE }); }
+      niche(.45);
+    });
+    const Q = P.filter(p => !inNiche(p.x, p.y, 34)); derive(Q);
+    const TW = []; while (TW.length < 260) { const t = r2() * 1.2 - .1, off = g2() * 170, x = band.x0 + (band.x1 - band.x0) * t + off * .8, y = band.y0 + (band.y1 - band.y0) * t + off * .6; if (x < 0 || x > LW || y < 0 || y > LH || inNiche(x, y, 24)) continue; TW.push({ x, y, s: .7 + r2() * 1.1, ph: r2(), k: 1 + Math.floor(r2() * 3), c: [TEAL_L, PERI_L, WHITE][Math.floor(r2() * 3)] }); }
+    AN = { id, BG, VIG: bgCanvas(() => vignette(.4)), P: Q, TW };
+  }
+  if (id === "a1w") {
+    R = rng(seedOf("a1w")); let P;
+    const BG = bgCanvas(() => {
+      nuit(); glow(WX - 80, WY, 880, TEAL, .14);
+      nebula(WX - 140, WY + 30, 620, [TEAL, [40, 120, 160], PERI], 28, .33);
+      niche(.4);
+      dust(360, { cols: [TEAL_L, WHITE], a0: .05, a1: .35, skip: (x, y) => inNiche(x, y, 30) });
+      layer(() => { const F = ptsAutour(170, WR + 30, 1000, 1.25, .5); links(F, 62, TEAL, .14, 1); drawPts(F); }, { blur: 1.2 });
+      P = ptsAutour(150, WR + 40, 840, 2.4, 1);
+    });
+    derive(P);
+    const g = [[135, 330], [165, 300], [195, 290], [225, 300], [250, 330], [272, 300]].map(([d, r]) => [WX + Math.cos(d * Math.PI / 180) * r, WY + Math.sin(d * Math.PI / 180) * r]);
+    AN = { id, BG, VIG: bgCanvas(() => vignette(.35)), P, g };
+  }
+  if (id === "f1w") {
+    const ox = WX, oy = WY;
+    const BG = bgCanvas(() => {
+      lin([[0, "#0a1418"], [1, "#0f2229"]]); glow(ox, oy, 950, GOLD, .07);
+      for (let i = 0; i < 112; i++) { const a = TAU * i / 112, long = i % 2 === 0; X.strokeStyle = rgba(GOLD_L, long ? .19 : .095); X.lineWidth = long ? 1.2 : .9; X.beginPath(); X.moveTo(ox + Math.cos(a) * (WR + 44), oy + Math.sin(a) * (WR + 44)); X.lineTo(ox + Math.cos(a) * (long ? 2600 : 1250), oy + Math.sin(a) * (long ? 2600 : 1250)); X.stroke(); }
+      niche(.5);
+      X.strokeStyle = rgba(GOLD_L, .28); X.lineWidth = 1.2; X.setLineDash([2, 12]); X.beginPath(); X.arc(ox, oy, 560, 0, TAU); X.stroke(); X.setLineDash([]);
+      X.strokeStyle = rgba(GOLD_L, .14); X.lineWidth = 1; X.beginPath(); X.arc(ox, oy, 900, 0, TAU); X.stroke();
+      X.save(); X.beginPath(); X.rect(0, 0, LW, LH); X.arc(WX, WY, WR + 44, 0, TAU); X.clip("evenodd"); cadreDeco(); X.restore();
+      monoN(540, 455, 58, { cols: OR5, sat: false, ga: .8 });
+    });
+    const tw = []; while (tw.length < 16) { const a = r2() * TAU, r = 380 + r2() * 900, x = ox + Math.cos(a) * r, y = oy + Math.sin(a) * r; if (x < 80 || x > LW - 80 || y < 140 || y > LH - 140) continue; tw.push({ x, y, ph: r2(), k: 1 + Math.floor(r2() * 2) }); }
+    AN = { id, BG, ox, oy, tw };
+  }
+  if (id === "n1") {
+    R = rng(seedOf("n1w")); let net;
+    const BG = bgCanvas(() => { net = neuralScene(true); niche(.45); drawNeural(net); });
+    const VIG = bgCanvas(() => vignette(.4));
+    const P = []; net.E.forEach((e, i) => { if (r2() < .42 || e.a.gold || e.b.gold) { const gold = e.a.gold || e.b.gold; P.push({ e, ph: r2(), d: .1 + r2() * .12, rev: gold ? !!e.b.gold : r2() < .5, gold }); } });
+    AN = { id, BG, VIG, net, P };
+  }
+  if (id === "f1") {
+    const ox = 540, oy = 1340;
+    const BG = bgCanvas(() => {
+      lin([[0, "#0a1418"], [1, "#0f2229"]]); glow(ox, oy, 900, GOLD, .07);
+      for (let i = 0; i <= 64; i++) { const a = Math.PI + Math.PI * i / 64, long = i % 2 === 0; X.strokeStyle = rgba(GOLD_L, long ? .2 : .1); X.lineWidth = long ? 1.2 : .9; X.beginPath(); X.moveTo(ox + Math.cos(a) * 230, oy + Math.sin(a) * 230); X.lineTo(ox + Math.cos(a) * (long ? 1900 : 1100), oy + Math.sin(a) * (long ? 1900 : 1100)); X.stroke(); }
+      X.strokeStyle = rgba(GOLD_L, .55); X.lineWidth = 1.4; [200, 214].forEach(r => { X.beginPath(); X.arc(ox, oy, r, Math.PI, TAU); X.stroke(); });
+      X.strokeStyle = rgba(GOLD_L, .28); X.lineWidth = 1.2; X.setLineDash([2, 12]); X.beginPath(); X.arc(ox, oy, 560, Math.PI, TAU); X.stroke(); X.setLineDash([]);
+      X.strokeStyle = rgba(GOLD_L, .45); X.lineWidth = 1.2; X.beginPath(); X.moveTo(60, oy); X.lineTo(1020, oy); X.stroke(); X.beginPath(); X.moveTo(60, oy + 14); X.lineTo(1020, oy + 14); X.stroke();
+      X.strokeStyle = rgba(GOLD_L, .35); X.lineWidth = 1.2; X.strokeRect(54, 114, LW - 108, LH - 168); X.strokeRect(68, 128, LW - 136, LH - 196);
+    });
+    const tw = []; for (let k = 0; k < 14; k++) tw.push({ a: Math.PI + Math.PI * (k + .5) / 14 + (r2() - .5) * .1, r: [560, 900, 1250][k % 3], ph: r2(), k: 1 + Math.floor(r2() * 2) });
+    AN = { id, BG, ox, oy, tw };
+  }
+}
+const ease = u => u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+function animFrame(t){
+  X.setTransform(1, 0, 0, 1, 0, 0); X.clearRect(0, 0, W, H); blit(AN.BG); reset();
+  const ph = TAU * t;
+  if (AN.id === "a1") {
+    glow(540, 1180, 640, TEAL, .035 * (1 + Math.sin(ph)));
+    const rot = .018 * Math.sin(ph), cr = Math.cos(rot), sr = Math.sin(rot);
+    const Q = AN.P.map(p => { let x = p.x + p.A * Math.sin(ph * p.k1 + p.p1) - 540, y = p.y + p.A * Math.cos(ph * p.k2 + p.p2) - 1180; return { x: 540 + x * cr - y * sr, y: 1180 + x * sr + y * cr, s: p.s, big: p.big, al: p.al * (.72 + .28 * Math.sin(ph * p.k3 + p.p3)), c: p.c }; });
+    links(Q, AN.P.maxD, TEAL, .26, 1.1); drawPts(Q);
+    const g = AN.gi.map(i => [Q[i].x, Q[i].y]); goldPath(g, .32);
+    // une lueur dorée parcourt la semaine
+    const u = t / .8; if (u < 1) { const L = []; let tot = 0; for (let k = 1; k < g.length; k++) { const d = Math.hypot(g[k][0] - g[k - 1][0], g[k][1] - g[k - 1][1]); L.push(d); tot += d; }
+      const at = v => { let rest = clamp(v, 0, 1) * tot, k = 0; while (k < L.length - 1 && rest > L[k]) { rest -= L[k]; k++; } const f = Math.min(1, rest / L[k]); return [g[k][0] + (g[k + 1][0] - g[k][0]) * f, g[k][1] + (g[k + 1][1] - g[k][1]) * f]; };
+      const env = Math.sin(Math.PI * u), v0 = ease(u);
+      X.save(); X.globalCompositeOperation = "screen";
+      for (let j = 14; j >= 0; j--) { const [x, y] = at(v0 - j * .006), f = 1 - j / 15; dot(x, y, 1 + 2.2 * f, GOLD_L, .5 * f * env); }
+      const [x, y] = at(v0); glow(x, y, 26, GOLD_L, .5 * env); dot(x, y, 2.8, [255, 244, 220], env); X.restore(); }
+    g.forEach((p, k) => spark(p[0], p[1], 5.2 * (1 + .14 * Math.sin(ph * 2 + k * 1.7)), GOLD, .8 + .2 * Math.sin(ph * 2 + k * 1.7)));
+    blit(AN.VIG);
+  }
+  const derive2 = (P, cx, cy) => P.map(p => ({ x: p.x + p.A * Math.sin(ph * p.k1 + p.p1), y: p.y + p.A * Math.cos(ph * p.k2 + p.p2), s: p.s, big: p.big, al: p.al * (.72 + .28 * Math.sin(ph * p.k3 + p.p3)), c: p.c }));
+  if (AN.id === "a2w") {
+    for (let k = 0; k < 5; k++) { const u = .1 + k * .2, x = -80 + 1240 * u, y = 2050 - 1670 * u; glow(x, y, 300, TEAL, .03 * (1 + Math.sin(ph + k * 1.3))); }
+    AN.TW.forEach(p => { const v = Math.pow(Math.max(0, Math.sin(ph * p.k + p.ph * TAU)), 2); if (v > .02) dot(p.x, p.y, p.s, p.c, .75 * v); });
+    const Q = derive2(AN.P); links(Q, 105, TEAL_L, .28, 1); drawPts(Q);
+    ORS.forEach((p, k) => spark(p[0], p[1], 5.6 * (1 + .13 * Math.sin(ph * 2 + k * 2.1)), GOLD, .82 + .18 * Math.sin(ph * 2 + k * 2.1)));
+    blit(AN.VIG);
+  }
+  if (AN.id === "a1w") {
+    const Q = derive2(AN.P); links(Q, 92, TEAL, .26, 1.1); drawPts(Q);
+    const g = AN.g; goldPath(g, .32);
+    const u = t / .8; if (u < 1) { const L = []; let tot = 0; for (let k = 1; k < g.length; k++) { const d = Math.hypot(g[k][0] - g[k - 1][0], g[k][1] - g[k - 1][1]); L.push(d); tot += d; }
+      const at = v => { let rest = clamp(v, 0, 1) * tot, k = 0; while (k < L.length - 1 && rest > L[k]) { rest -= L[k]; k++; } const f = Math.min(1, rest / L[k]); return [g[k][0] + (g[k + 1][0] - g[k][0]) * f, g[k][1] + (g[k + 1][1] - g[k][1]) * f]; };
+      const env = Math.sin(Math.PI * u), v0 = ease(u); X.save(); X.globalCompositeOperation = "screen";
+      for (let j = 14; j >= 0; j--) { const [x, y] = at(v0 - j * .006), f = 1 - j / 15; dot(x, y, 1 + 2.2 * f, GOLD_L, .5 * f * env); }
+      const [x, y] = at(v0); glow(x, y, 26, GOLD_L, .5 * env); dot(x, y, 2.8, [255, 244, 220], env); X.restore(); }
+    g.forEach((p, k) => spark(p[0], p[1], 5.2 * (1 + .14 * Math.sin(ph * 2 + k * 1.7)), GOLD, .8 + .2 * Math.sin(ph * 2 + k * 1.7)));
+    blit(AN.VIG);
+  }
+  if (AN.id === "f1w") {
+    const { ox, oy } = AN, th = -Math.PI / 2 + TAU * t, env = .75 + .25 * Math.sin(ph * 2);
+    X.save(); X.globalCompositeOperation = "screen";
+    for (let i = 0; i < 112; i++) { const a = TAU * i / 112, long = i % 2 === 0; let d = Math.abs(((a - th) % TAU + TAU + Math.PI) % TAU - Math.PI); const b = env * Math.exp(-Math.pow(d / .16, 2)); if (b < .01) continue;
+      const r0 = WR + 44, L = long ? 2600 : 1250, gr = X.createLinearGradient(ox + Math.cos(a) * r0, oy + Math.sin(a) * r0, ox + Math.cos(a) * L, oy + Math.sin(a) * L); gr.addColorStop(0, rgba(GOLD_L, .7 * b)); gr.addColorStop(.4, rgba(GOLD_L, .3 * b)); gr.addColorStop(1, rgba(GOLD_L, 0));
+      X.strokeStyle = gr; X.lineWidth = long ? 1.8 : 1.3; X.beginPath(); X.moveTo(ox + Math.cos(a) * r0, oy + Math.sin(a) * r0); X.lineTo(ox + Math.cos(a) * L, oy + Math.sin(a) * L); X.stroke(); }
+    X.save(); X.beginPath(); X.rect(0, 0, LW, LH); X.arc(ox, oy, WR + 44, 0, TAU); X.clip("evenodd");
+    const cg = X.createConicGradient(th - .35, ox, oy); cg.addColorStop(0, rgba(GOLD_L, 0)); cg.addColorStop(.35 / TAU, rgba(GOLD_L, .07 * env)); cg.addColorStop(.7 / TAU, rgba(GOLD_L, 0)); cg.addColorStop(1, rgba(GOLD_L, 0)); X.fillStyle = cg; X.fillRect(0, 0, LW, LH); X.restore();
+    X.strokeStyle = rgba([255, 228, 160], .85 * env); X.lineWidth = 2.2; X.setLineDash([2, 12]); X.beginPath(); X.arc(ox, oy, 560, th - .14, th + .14); X.stroke(); X.setLineDash([]);
+    X.restore();
+    AN.tw.forEach(s => { const v = Math.max(0, Math.sin(ph * s.k + s.ph * TAU)); if (v > .05) spark(s.x, s.y, 3.4 * v, GOLD, v); });
+    monoN(540, 455, 58, { cols: OR5, sat: false, ga: .55 + .45 * (.5 + .5 * Math.sin(ph * 2)) });
+  }
+  if (AN.id === "n1") {
+    const fl = new Map();
+    AN.P.forEach(p => {
+      const g = ((t - p.ph) % 1 + 1) % 1;
+      if (g < p.d) { const u = g / p.d; pulse(p.e, u, p.gold ? GOLD_L : mix(TEAL_L, WHITE, .45), Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.1)), .6), p.rev); }
+      const dt = g - p.d; if (dt >= 0 && dt < .06) { const tgt = p.rev ? p.e.a : p.e.b, v = 1 - dt / .06; fl.set(tgt, Math.max(fl.get(tgt) || 0, v)); }
+    });
+    fl.forEach((v, m) => { if (m.gold) return; glow(m.x, m.y, m.s * 9, mix(m.c, WHITE, .3), .45 * v); dot(m.x, m.y, m.s * (1 + .5 * v), [240, 253, 255], .9 * v); });
+    goldNeurons(AN.net, .7 + .3 * Math.sin(ph * 2));
+    blit(AN.VIG);
+  }
+  if (AN.id === "f1") {
+    const { ox, oy } = AN;
+    // le balayage doré, de gauche à droite, puis repos
+    const u = t / .72;
+    if (u < 1) {
+      const th = Math.PI + Math.PI * ease(u), env = Math.sin(Math.PI * u);
+      X.save(); X.globalCompositeOperation = "screen";
+      for (let i = 0; i <= 64; i++) { const a = Math.PI + Math.PI * i / 64, long = i % 2 === 0, b = env * Math.exp(-Math.pow((a - th) / .13, 2)); if (b < .01) continue;
+        const L = long ? 1900 : 1100, gr = X.createLinearGradient(ox + Math.cos(a) * 230, oy + Math.sin(a) * 230, ox + Math.cos(a) * L, oy + Math.sin(a) * L); gr.addColorStop(0, rgba(GOLD_L, .75 * b)); gr.addColorStop(.5, rgba(GOLD_L, .32 * b)); gr.addColorStop(1, rgba(GOLD_L, 0));
+        X.strokeStyle = gr; X.lineWidth = long ? 1.8 : 1.3; X.beginPath(); X.moveTo(ox + Math.cos(a) * 230, oy + Math.sin(a) * 230); X.lineTo(ox + Math.cos(a) * L, oy + Math.sin(a) * L); X.stroke(); }
+      X.save(); X.beginPath(); X.rect(0, 0, LW, oy); X.arc(ox, oy, 214, 0, TAU); X.clip("evenodd");
+      const cg = X.createConicGradient(th - .3, ox, oy); cg.addColorStop(0, rgba(GOLD_L, 0)); cg.addColorStop(.3 / TAU, rgba(GOLD_L, .09 * env)); cg.addColorStop(.6 / TAU, rgba(GOLD_L, 0)); cg.addColorStop(1, rgba(GOLD_L, 0)); X.fillStyle = cg; X.fillRect(0, 0, LW, oy); X.restore();
+      [200, 214].forEach(r => { X.strokeStyle = rgba(GOLD_L, .7 * env); X.lineWidth = 2; X.beginPath(); X.arc(ox, oy, r, Math.max(Math.PI, th - .16), Math.min(TAU, th + .16)); X.stroke(); });
+      X.strokeStyle = rgba([255, 228, 160], .9 * env); X.lineWidth = 2.2; X.setLineDash([2, 12]); X.beginPath(); X.arc(ox, oy, 560, Math.max(Math.PI, th - .12), Math.min(TAU, th + .12)); X.stroke(); X.setLineDash([]);
+      glow(ox + Math.cos(th) * 214, oy + Math.sin(th) * 214, 40, GOLD_L, .5 * env);
+      X.restore();
+    }
+    AN.tw.forEach(s => { const v = Math.max(0, Math.sin(ph * s.k + s.ph * TAU)); if (v > .05) spark(ox + Math.cos(s.a) * s.r, oy + Math.sin(s.a) * s.r, 3.6 * v, GOLD, v); });
+    monoN(ox, oy - 92, 92, { cols: OR5, sat: false, ga: .65 + .45 * (.5 + .5 * Math.sin(ph * 2)) });
+  }
+  reset(); grain(10);   // en vidéo, un grain un peu plus présent évite les marches dans les dégradés sombres
+  return C.toDataURL("image/jpeg", .97);
+}
+/* ---------- aperçu sur l'écran d'accueil (disposition générique de l'écran d'accueil type) ---------- */
+const M = document.getElementById("m"), MX = M.getContext("2d");
+function rr(x, y, w, h, r){ MX.beginPath(); MX.roundRect(x, y, w, h, r); }
+let WIDGET = false;
+function mock(light){
+  MX.setTransform(1, 0, 0, 1, 0, 0); MX.drawImage(C, 0, 0, 1080, 2340);
+  const fg = light ? "rgba(20,34,40,.92)" : "rgba(255,255,255,.95)", sub = light ? "rgba(20,34,40,.6)" : "rgba(255,255,255,.75)";
+  MX.fillStyle = fg; MX.font = "400 34px Inter"; MX.textAlign = "left"; MX.fillText("13:55", 57, 68);
+  rr(960, 38, 62, 34, 17); MX.fill();
+  rr(266, 212, 552, 178, 89); MX.fillStyle = "rgba(24,24,26,.92)"; MX.fill();
+  rr(304, 248, 104, 104, 16); MX.fillStyle = "rgba(255,255,255,.14)"; MX.fill();
+  MX.fillStyle = "#fff"; MX.beginPath(); MX.moveTo(592, 280); MX.lineTo(642, 308); MX.lineTo(592, 336); MX.fill();
+  [[508, 1], [752, -1]].forEach(([x, s]) => { for (let k = 0; k < 2; k++) { const b = x + k * 30 * s; MX.beginPath(); MX.moveTo(b + 28 * s, 288); MX.lineTo(b, 308); MX.lineTo(b + 28 * s, 328); MX.fill(); } });
+  if (WIDGET) { const r = rng(77), P = []; for (let i = 0; i < 64; i++) { const a = r() * TAU, d = 20 + Math.sqrt(r()) * 120; P.push([840 + Math.cos(a) * d, 1100 + Math.sin(a) * d, r() < .55, .8 + r() * 2.4]); }
+    MX.lineWidth = 1; for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) { const d = Math.hypot(P[i][0] - P[j][0], P[i][1] - P[j][1]); if (d < 34) { MX.strokeStyle = `rgba(255,255,255,${.35 * (1 - d / 34)})`; MX.beginPath(); MX.moveTo(P[i][0], P[i][1]); MX.lineTo(P[j][0], P[j][1]); MX.stroke(); } }
+    P.forEach(([x, y, g, s]) => { MX.fillStyle = g ? `rgba(240,170,70,.95)` : `rgba(255,255,255,.85)`; MX.beginPath(); MX.arc(x, y, s, 0, TAU); MX.fill(); });
+    const gg = MX.createRadialGradient(840, 1100, 0, 840, 1100, 30); gg.addColorStop(0, "rgba(255,255,255,.5)"); gg.addColorStop(1, "rgba(255,255,255,0)"); MX.fillStyle = gg; MX.beginPath(); MX.arc(840, 1100, 30, 0, TAU); MX.fill(); MX.fillStyle = "#fff"; MX.beginPath(); MX.arc(840, 1100, 6, 0, TAU); MX.fill(); }
+  MX.fillStyle = fg; MX.font = "400 42px Inter"; MX.fillText("sam. 28 nov.", 220, 582);
+  MX.font = "200 270px Inter"; MX.fillText("13", 196, 836); MX.fillText("55", 196, 1088);
+  MX.font = "300 64px Inter"; MX.fillText("2°", 704, 650); MX.fillStyle = sub; MX.font = "400 33px Inter"; MX.fillText("Pluie assez", 704, 706); MX.fillText("probable demain", 704, 750);
+  const hues = [190, 330, 215, 50, 140, 210, 5, 0, 20, 185, 140, 210, 145, 250, 15];
+  const icon = (cx, cy, h, lab) => { MX.save(); MX.shadowColor = "rgba(0,0,0,.18)"; MX.shadowBlur = 18; MX.shadowOffsetY = 6; rr(cx - 58, cy - 58, 116, 116, 36); const g = MX.createLinearGradient(cx - 58, cy - 58, cx + 58, cy + 58); g.addColorStop(0, `hsl(${h},62%,${h === 0 ? 96 : 62}%)`); g.addColorStop(1, `hsl(${h + 18},66%,${h === 0 ? 90 : 50}%)`); MX.fillStyle = g; MX.fill(); MX.restore(); if (lab) { rr(cx - 46, cy + 78, 92, 14, 7); MX.fillStyle = sub; MX.fill(); } };
+  let k = 0; [1417, 1645].forEach(y => [141, 341, 541, 741, 941].forEach(x => icon(x, y, hues[k++], true)));
+  [141, 341, 541, 741, 941].forEach(x => icon(x, 2055, hues[k++], false));
+  MX.fillStyle = fg; MX.beginPath(); MX.arc(490, 1853, 9, 0, TAU); MX.fill(); MX.fillStyle = sub; [540, 590].forEach(x => { MX.beginPath(); MX.arc(x, 1853, 9, 0, TAU); MX.fill(); });
+  MX.strokeStyle = sub; MX.lineWidth = 5; [[212, 222], [232, 242], [252, 262]].forEach(([a]) => { MX.beginPath(); MX.moveTo(a, 2245); MX.lineTo(a, 2290); MX.stroke(); });
+  rr(512, 2245, 44, 44, 14); MX.stroke(); MX.beginPath(); MX.moveTo(850, 2245); MX.lineTo(826, 2267); MX.lineTo(850, 2289); MX.stroke();
+}
+async function render(id){
+  await document.fonts.load("200 46px Inter"); await document.fonts.load("300 25px Inter");
+  const d = D.find(x => x.id === id); R = rng(seedOf(id)); X = C.getContext("2d"); X.setTransform(1, 0, 0, 1, 0, 0); X.clearRect(0, 0, W, H); reset(); d.draw(); reset();
+  const full = C.toDataURL(window.PNG ? "image/png" : "image/jpeg", .95); WIDGET = !!window.WIDGET_ON; mock(d.light); const pv = M.toDataURL("image/jpeg", .9);
+  return { full, pv, nom: d.nom, serie: d.serie, light: d.light };
+}
+window.LISTE = D.map(d => d.id);
+</script><script src="scene.js"></script></body></html>
