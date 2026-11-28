@@ -534,7 +534,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <div class="foot" style="flex-wrap:wrap;gap:16px"><div class="l" style="flex-wrap:wrap"><button id="sExp">sauvegarder</button><button id="sImp">restaurer</button><button id="sForget">oublier mes corrections</button></div></div>
   <input type="file" id="sFile" accept=".json" hidden>
   </div>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v69 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v70 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -724,7 +724,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 69;
+const TEMPO_BUILD = 70;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -7613,7 +7613,7 @@ async function paintFond(){
   $("fdList").querySelectorAll("[data-fd]").forEach(b => b.onclick = () => { FD_SEL = b.dataset.fd; paintFond(); });
   const enPlace = st && st.actif && st.fichier ? FD_LISTE.find(f => f.id === st.nom) : null;
   if (!FD_OCC) $("fdSt").textContent = nv < 18 ? "Il faut la nouvelle appli Android (0.5.0) : elle se propose à l'ouverture, ou « mettre à jour » ci-dessus."
-    : enPlace ? `En place : ${enPlace.nom}. Choisissez-en un autre pour le remplacer.` : nv >= 19 ? "Il vit et réagit à Nestor : une étoile d'or par chose réglée aujourd'hui, une lueur avant un rappel, des influx pour les messages en attente. En pause dès que l'écran d'accueil n'est plus visible." : "Une boucle de 12 secondes, en pause dès que l'écran d'accueil n'est plus visible.";
+    : enPlace ? `En place : ${enPlace.nom}. Choisissez-en un autre pour le remplacer.` : nv >= 19 ? "Il vit et réagit à Nestor : une étoile d'or par chose réglée aujourd'hui, une lueur avant un rappel, des influx pour les messages en attente. En pause dès que l'écran d'accueil n'est plus visible. Pour l'avoir aussi sur l'écran verrouillé, choisissez « accueil et verrouillage » en l'appliquant." : "Une boucle de 12 secondes, en pause dès que l'écran d'accueil n'est plus visible.";
   $("fdGo").disabled = nv < 18 || FD_OCC;
   $("fdGo").textContent = enPlace && enPlace.id === FD_SEL ? "remettre ce fond" : "mettre en fond d'écran";
 }
@@ -7629,7 +7629,7 @@ async function fondPoser(){
     CFG.fondNom = f.id; saveCfg();
     const st = await tn("fondEtat");
     if (st && st.actif) $("fdSt").textContent = `C'est fait : « ${f.nom} » prend place dès votre retour sur l'écran d'accueil.`;
-    else if (await tnOk("fondChoisir")) $("fdSt").textContent = `« ${f.nom} » est prêt. Dans l'écran qui s'ouvre, touchez « Appliquer » (écran d'accueil).`;
+    else if (await tnOk("fondChoisir")) $("fdSt").textContent = `« ${f.nom} » est prêt. Dans l'écran qui s'ouvre, touchez « Appliquer », puis « écran d'accueil et écran de verrouillage ».`;
     else $("fdSt").textContent = `« ${f.nom} » est prêt. Choisissez « Nestor » dans les fonds d'écran animés du téléphone.`;
   } catch (e) { $("fdSt").textContent = "Raté : " + String((e && e.message) || e).slice(0, 140); }
   FD_OCC = false; $("fdGo").disabled = false;
