@@ -29,24 +29,31 @@ async def main():
         r = {}
         S = await pg.evaluate("jvVeilleurSignaux()")
         r["signaux"] = [s["k"] for s in S]
+        r["anniv"] = await pg.evaluate("(() => { const d = new Date(Date.now() + 2 * 864e5); window.jvAnnivs = () => [{ nom: 'Léo', j: d.getDate(), m: d.getMonth() + 1 }]; return null; })()")
         r["rythme"] = next((s["t"] for s in S if s["k"] == "rythme"), None)
+        await pg.evaluate("hide()"); await pg.wait_for_timeout(300)
         n0 = len(calls)
         h = await pg.evaluate("jvVeilleurNuit(true)")
         r["une_requete"] = len(calls) - n0
+        r["anniv"] = "anniversaire de Léo dans 2 jours" in calls[-1]["messages"][0]["content"] if r["une_requete"] else None
         v = calls[-1]
         r["requete"] = {"model": v["model"], "petite": v["max_tokens"] <= 250, "pas_d_outils": "tools" not in v, "signaux_envoyes": "[report]" in v["messages"][0]["content"] and "[habitude]" in v["messages"][0]["content"]}
         r["pressentiment"] = {"k": h["k"], "t": h["t"][:40]}
         r["pas_deux_fois"] = await pg.evaluate("(async () => { const n = (await jvVeilleurNuit()) === null; return n; })()")
-        r["livre"] = await pg.evaluate("jvVeilleurLivre(true)")
+        r["livre_deja"] = await pg.evaluate("!!jvVeilJour().livre")
+        r["livre_force_sans_doublon"] = await pg.evaluate("jvVeilleurLivre(true)")
+        await pg.wait_for_timeout(3500)
         r["carte"] = await pg.evaluate("JV.view.filter(v => v.k === 'pressent').map(v => v.t.slice(0, 30))")
-        r["bulle"] = await pg.evaluate("document.body.classList.contains('jv-bulle') && $('jvBulleAct').textContent")
+        r["bulle"] = await pg.evaluate("document.body.classList.contains('jv-bulle') && $('jvBulleAct').textContent + ' | ' + $('jvBulleTxt').textContent.slice(0, 50)")
         await pg.screenshot(path="/tmp/nt/veilleur_bulle.png")
         # « bien vu » au bouton
         await pg.evaluate("cvDecide(JV.view.findIndex(v => v.k === 'pressent'), true)"); await pg.wait_for_timeout(300)
         r["avis_bouton"] = await pg.evaluate("[jvVeilJour().avis, jvVeil().w.habitude, JV.view.find(v => v.k === 'pressent').st]")
         # puis il se ravise à la voix : « à côté » (sans le nom, juste après)
         await pg.evaluate("(() => { const v = jvVeil(); v.hist.slice(-1)[0].avis = null; LS.set('copilote_veilleur', v); })()")
-        await pg.evaluate("try{jvBulleFerme(true)}catch(e){} capture('c\\'est à côté', 'voix')"); await pg.wait_for_timeout(600)
+        await pg.evaluate("try{jvBulleFerme(true)}catch(e){} capture('exactement', 'voix')"); await pg.wait_for_timeout(400)
+        r["exactement_passe"] = await pg.evaluate("jvVeilJour().avis === null")
+        await pg.evaluate("try{jvBulleFerme(true)}catch(e){} capture('Nestor, c\\'est à côté', 'voix')"); await pg.wait_for_timeout(600)
         r["avis_voix"] = await pg.evaluate("[jvVeilJour().avis, jvVeil().w.habitude]")
         r["pas_un_rate"] = await pg.evaluate("!LS.get('copilote_bn', []).some(e => e.k === 'raté')")
         # Nestor sait ce qu'il a pressenti

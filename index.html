@@ -343,7 +343,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button id="regClose" style="font-size:14px;color:var(--mut)">fermer</button>
   </div>
   <div class="menu" id="regHome">
-    <button data-p="nestor">Nestor<span class="regSub" id="regSub-nestor">son caractère, ce qu'il a appris, la bêta, le carnet</span></button>
+    <button data-p="nestor">Nestor<span class="regSub" id="regSub-nestor">son caractère, le veilleur, ce qu'il a appris, la bêta, le carnet</span></button>
     <button data-p="voix">Voix et dictée<span class="regSub" id="regSub-voix">sa voix, quand il parle, la dictée</span></button>
     <button data-p="memoire">Mémoire et journal<span class="regSub" id="regSub-memoire">vos lieux, vos proches, vos souvenirs, le journal de bord</span></button>
     <button data-p="journee">Ma journée<span class="regSub" id="regSub-journee">briefs, rituels, relances, focus, rappels</span></button>
@@ -360,6 +360,10 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:4px"><input type="checkbox" id="cvUniqueChk" style="width:auto"> tout ce que je dis au rond passe par lui : il range, répond ou me pose une question (décoché : le tri rapide d'avant)</label>
     <div class="lab">Ce qu'il a appris de vous</div>
     <div id="cvApprend" style="margin-top:4px"></div>
+    <div class="lab">Le veilleur</div>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:4px"><input type="checkbox" id="cvVeilChk" style="width:auto"> chaque matin, un pressentiment : ce à quoi je n'ai pas pensé (« bien vu » ou « à côté » : il apprend)</label>
+    <p class="small" id="cvVeilSt" style="margin-top:6px"></p>
+    <div class="foot" style="margin-top:8px"><div class="l"><button id="cvVeilGo">un pressentiment maintenant</button></div></div>
     <div class="lab">Bêta</div>
     <p class="small" style="margin-top:4px">Des essais : décochez ce qui vous encombre. Si vous n'en voulez plus, je les retire.</p>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvBetaMatchChk" style="width:auto"> Cote &amp; Match : votre sélection le jeudi soir et le vendredi matin</label>
@@ -552,7 +556,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <div class="foot" style="flex-wrap:wrap;gap:16px"><div class="l" style="flex-wrap:wrap"><button id="sExp">sauvegarder</button><button id="sImp">restaurer</button><button id="sForget">oublier mes corrections</button></div></div>
   <input type="file" id="sFile" accept=".json" hidden>
   </div>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v75 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v76 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -742,7 +746,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 75;
+const TEMPO_BUILD = 76;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4904,7 +4908,7 @@ async function cvCallFlux(extras, surTexte, effort){
   if (!r.ok) {
     let j = null; try { j = await r.json(); } catch (e) {}
     if (niv > 0 && r.status === 400 && /cache_control|output_config|effort|ttl/i.test(JSON.stringify(j || ""))) { if (R) { JV_CACHE_R = cvNivSuivant(niv, j); return cvCallFlux(JV_CACHE_R, surTexte, effort); } JV_CACHE = cvNivSuivant(niv, j); return cvCallFlux(JV_CACHE, surTexte, effort); }
-    if (R && r.status !== 401) { try { jvBN("erreur", "réflexion", `${R.nom} ${r.status} → majordome`); } catch (e) {} JV_ROUTE = jvAgent("majordome", "repli"); if (JV_CHRONO) { JV_CHRONO.ag = "majordome"; JV_CHRONO.mo = jvModeleCourt(CV_MODEL); } return cvCallFlux(extras, surTexte, effort); }   // le spécialiste ne répond pas : le majordome reprend
+    if (R && r.status !== 401) { try { jvBN("erreur", "réflexion", `${R.nom} ${r.status} → majordome`); } catch (e) {} JV_ROUTE = jvAgent("majordome", "repli"); JV_ROUTE_DER = { ag: "majordome", at: Date.now() }; if (JV_CHRONO) { JV_CHRONO.ag = "majordome"; JV_CHRONO.mo = jvModeleCourt(CV_MODEL); } return cvCallFlux(extras, surTexte, effort); }   // le spécialiste ne répond pas : le majordome reprend
     throw { status: r.status, j };
   }
   // pas de flux (réglage, ou réponse déjà entière) : comme avant
@@ -5180,7 +5184,7 @@ async function cvSend(text, opt){
       const results = [];
       for (const t of uses) {
         let out;
-        if (JV_LOCAL[t.name]) { cvStatus(JV_ATTENTE[t.name] || "je regarde…"); const o0 = jvNow(); try { out = await JV_LOCAL[t.name](t.input || {}); } catch (e) { out = { erreur: "indisponible pour l'instant" }; } if (JV_CHRONO) JV_CHRONO.ou = (JV_CHRONO.ou || 0) + jvNow() - o0; if (out && out.erreur) { try { jvBN("erreur", "outil", t.name + " : " + out.erreur); } catch (e) {} } }
+        if (JV_LOCAL[t.name]) { cvStatus(JV_ATTENTE[t.name] || "je regarde…"); const o0 = jvNow(); try { out = await JV_LOCAL[t.name](t.input || {}); } catch (e) { out = { erreur: "indisponible pour l'instant" }; } if (JV_CHRONO) JV_CHRONO.ou = (JV_CHRONO.ou || 0) + jvNow() - o0; if (out && out.erreur) { try { jvBN("erreur", "outil", t.name, { x: String(out.erreur).slice(0, 160) }); } catch (e) {} } }
         else out = /^(proposer_(rappel|rappel_lieu|courses)|noter)$/.test(t.name) ? { ok: "ajouté tout de suite (il peut annuler)" } : /^(regler_curseur|partager|noter_evolution|regle_tri|retenir_mot|fiche_proche|gout_humour|fin_entretien)$/.test(t.name) ? { ok: "fait" } : { ok: "proposé à l'utilisateur : il validera lui-même" };
         results.push({ type: "tool_result", tool_use_id: t.id, content: JSON.stringify(out).slice(0, 8000) });
       }
@@ -8013,21 +8017,21 @@ function jvBulleLigne(v, i){
   const q = v.date && v.heure ? jvBulleJour(v.date) + " · " + jvBulleHeure(v.heure) : "";
   const chip = (t, non) => `<span class="b-chip${non ? " non" : ""}">${non ? "" : JV_BULLE_COCHE}${esc(t)}</span>`;
   const annule = cvUndoBtn(v, i) ? `<button data-bundo="${i}">annuler</button>` : "";
-  if (v.st === "non") return `<div class="b-l">${chip(v.auto ? "annulé" : "laissé de côté", true)}</div>`;
+  if (v.st === "non") return `<div class="b-l">${chip(v.k === "pressent" ? "à côté · noté" : v.auto ? "annulé" : "laissé de côté", true)}</div>`;
   if (v.st) {
     const lab = v.k === "rappel" ? (v.rdv ? "Rendez-vous ajouté" : "Rappel posé") + (q ? " · " + q : "")
       : v.k === "courses" ? "Liste de courses créée" + (v.t ? " · " + v.t : "")
       : v.k === "ici" ? "En passant · " + v.lieu
       : v.k === "modif" ? (v.act === "supprimer" ? "Supprimé" : v.act === "deplacer" ? "Déplacé" : "Corrigé") + " · " + v.t
-      : v.k === "retenir" ? "Retenu" : v.k === "oublier" ? "Effacé" : v.k === "lieu" ? "Lieu ajouté · " + v.t : v.k === "vtc" ? v.st + " ouvert" : "C'est fait";
+      : v.k === "pressent" ? "Bien vu · noté" : v.k === "retenir" ? "Retenu" : v.k === "oublier" ? "Effacé" : v.k === "lieu" ? "Lieu ajouté · " + v.t : v.k === "vtc" ? v.st + " ouvert" : "C'est fait";
     return `<div class="b-l">${chip(lab)}${v.k === "rappel" && v.lieu ? `<button data-bwaze="${i}">Waze</button>` : ""}${annule}</div>`;
   }
-  const P = v.k === "retenir" ? ["Je retiens", v.t, "Retenir"] : v.k === "oublier" ? ["J'efface de votre mémoire", v.t, "Effacer"]
+  const P = v.k === "pressent" ? ["Le veilleur · pressentiment du jour", "", "Bien vu"] : v.k === "retenir" ? ["Je retiens", v.t, "Retenir"] : v.k === "oublier" ? ["J'efface de votre mémoire", v.t, "Effacer"]
     : v.k === "lieu" ? ["Lieu habituel", v.t + " · " + v.adresse, "Ajouter"] : v.k === "rappel" ? [v.rdv ? "Rendez-vous" : "Rappel", v.t + (q ? " · " + q : ""), "Ajouter"]
     : v.k === "courses" ? ["Courses", v.art.length + " article" + (v.art.length > 1 ? "s" : "") + (v.t ? " · " + v.t : ""), "Créer"]
     : v.k === "ici" ? ["En passant · " + v.lieu, v.t, "Ajouter"] : v.k === "vtc" ? ["VTC", v.t, null] : [null, v.t || "", null];
   const btn = v.k === "vtc" ? `<button class="y" data-bvtc="${i}" data-app="Uber">Uber</button><button class="y" data-bvtc="${i}" data-app="Bolt">Bolt</button>` : P[2] ? `<button class="y" data-bok="${i}">${P[2]}</button>` : `<button class="g" data-bvoir="1">voir</button>`;
-  return `<div class="b-l"><div class="b-prop">${P[0] ? `<small>${esc(P[0])}</small>` : ""}${esc(String(P[1]).slice(0, 220))}</div>${btn}<button class="g" data-bno="${i}">${v.k === "retenir" ? "Non merci" : "Non"}</button></div>`;
+  return `<div class="b-l"><div class="b-prop">${P[0] ? `<small>${esc(P[0])}</small>` : ""}${esc(String(P[1]).slice(0, 220))}</div>${btn}<button class="g" data-bno="${i}">${v.k === "retenir" ? "Non merci" : v.k === "pressent" ? "À côté" : "Non"}</button></div>`;
 }
 function jvBulleActions(B){
   if (!B || JV_BULLE !== B) return;
@@ -8156,6 +8160,10 @@ function cvPaint(){
     if (v.r === "u") return `<div class="cv-m u">${esc(v.t)}</div>`;
     if (v.r === "a") return `<div class="cv-m a">${cvHtml(jvSansEmo(v.t))}</div>`;
     if (v.r === "e") return `<div class="cv-m a cv-e">${esc(v.t)}${v.retry ? ` <button data-retry="${i}">réessayer</button>` : ""}</div>`;
+    if (v.k === "pressent") {   // lot 36 : le pressentiment du veilleur
+      const act = v.st === "ok" ? `<div class="act">bien vu, noté ✓</div>` : v.st === "non" ? `<div class="act">à côté, noté</div>` : `<div class="act"><button data-no="${i}">à côté</button><button class="y" data-ok="${i}">bien vu</button></div>`;
+      return `<div class="cv-p"><div class="sub" style="margin:0 0 4px">Le veilleur · pressentiment du jour</div><div>${esc(jvSansEmo(v.t))}</div>${act}</div>`;
+    }
     if (v.k === "rappel") {
       const quand = new Date(v.date + "T12:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + " à " + v.heure.replace(":", "h");
       const wz = v.lieu ? `<button class="y" data-waze="${esc(v.lieu)}">Waze</button>` : "";
@@ -9036,10 +9044,10 @@ function jvTriLocal(text){
   let q = 0, s = 0; const sig = [];
   if (/\?\s*$/.test(brut)) { q += 3; sig.push("?"); }
   if (JV_TRI.q.test(n)) { q += 3; sig.push("question"); }
+  const qq = q;   // le « ? » et la tournure de question, rien d'autre
   if (JV_TRI.emo.test(n)) { q += 4; sig.push("émotion"); }
   if (JV_TRI.salut.test(n) && mots <= 6) { q += 2; sig.push("politesse"); }
   if (JV_TRI.act.test(n)) { q += 2; sig.push("action"); }
-  const qq = q;   // le « ? » et la tournure de question
   if (JV_TRI.conseil.test(n)) { q += 5; sig.push("conseil"); }
   if (JV_TRI.agenda.test(n)) { s += 6; q -= qq; sig.push("agenda"); }   // « qu'est-ce que j'ai demain ? » : une question pour le secrétaire
   const n2 = n.replace(/^(?:(?:bon|alors|euh|ok|et|donc|puis|ensuite|aussi|demain|apres demain|ce soir|ce matin|aujourd hui|tout a l heure|cet apres midi|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|matin|soir) )+/, "");   // « bon alors demain, il faut que… »
@@ -9159,6 +9167,8 @@ function jvRateDemande(text, cercle){
   n = n.replace(new RegExp("^(?:dis |eh |he |hey |bon |alors )?(?:" + noms + ") "), () => { nom = true; return ""; }).replace(new RegExp(" (?:" + noms + ")$"), () => { nom = true; return ""; }).trim();
   const rx = /^(?:(?:et|bon|alors|non|mais|eh bien|bah|ben) )*(?:(?:ca|ca la|la|cela|ce coup ci|cette fois) )?(?:c est|c est|c etait|t as|t as|tu as) (?:(?:completement|encore|vraiment|franchement|un peu|tout) )?(?:rate|faux|nul|a cote(?: de la plaque)?|pas ca|pas bon)(?: (?:la|ca|ce coup ci|cette fois|monsieur))?$|^(?:ca |ca c est |c est )?rate$|^mauvaise reponse$|^tu t es (?:plante|trompe)$|^tu (?:n as pas|as mal) compris$|^(?:note|signale|enregistre) (?:un|ce|le) rate$/;
   if (!rx.test(n)) return false;
+  const fort = /(?:^| )rate$|^(?:note|signale|enregistre) (?:un|ce|le) rate$/.test(n);   // le mot « raté » lui-même
+  if (!nom && !fort) return false;   // « c'est faux », « à côté »… sans son nom : une phrase ordinaire
   return nom || !cercle || !!(JV.at && Date.now() - JV.at < 3 * 60000);
 }
 const jvRateAttOn = () => !!JV_RATE_ATT && Date.now() < JV_RATE_ATT.until;
@@ -9201,18 +9211,26 @@ function jvRateAttendu(text, src){
   jvNestorDit(t, "Bien noté, monsieur. J'en tiendrai compte à la prochaine séance de réglages.", src);
   return true;
 }
-{ const f = jvCommandeVoix; jvCommandeVoix = function(text){ if (jvRateDemande(text, true)) { jvRate(JV_SRC34 || "voix", text); return true; } return f.apply(this, arguments); }; }
+function jvConteste(text){   // « c'est faux », « tu as mal compris »… sans son nom : la phrase passe, la boîte noire le note
+  try { if (jvFcOn() || !JV.at || Date.now() - JV.at > 5 * 60000) return; const n = jvNorm34(text); if (n.length < 60 && /^(?:(?:non|mais|bah|ben) )*(?:c est (?:faux|pas ca|pas bon|nul)|tu (?:as mal|n as pas) compris|tu t es (?:trompe|plante)|mauvaise reponse|t as tout faux)\b/.test(n)) jvBN("correction", "réponse", "réponse contestée", { x: String(text).slice(0, 160) }); } catch (e) {}
+}
+{ const f = jvCommandeVoix; jvCommandeVoix = function(text){ if (!jvFcOn() && jvRateDemande(text, true)) { jvRate(JV_SRC34 || "voix", text); return true; } jvConteste(text); return f.apply(this, arguments); }; }
 { const f = capture; capture = async function(text, src, kind, ctx){
   JV_SRC34 = src || "";
   if (src === "voix") jvEcoutePrete();
-  if (!kind && !(ctx && ctx.cr) && (src === "voix" || src === "texte") && String(text || "").trim() && jvRateAttOn() && typeof jvSuiteOn === "function" && jvSuiteOn()) { JV_SUITE = null; return jvRateAttendu(text, src); }
+  if (!kind && !(ctx && ctx.cr) && (src === "voix" || src === "texte") && String(text || "").trim() && jvRateAttOn() && !jvFcOn() && typeof jvSuiteOn === "function" && jvSuiteOn()) { JV_SUITE = null; return jvRateAttendu(text, src); }
   return f.apply(this, arguments);
 }; }
 { const f = cvSend; cvSend = async function(text, opt){
   const t = String(text || "").trim(), conv = !(opt && (opt.cercle || opt.phrase));
-  if (t && conv && !JV.busy && !/^(?:Mon brief du jour|Faisons connaissance)/i.test(t)) {
-    if (jvRateAttOn() && cvVisible()) return jvRateAttendu(t, opt && opt.voix ? "voix" : "texte");
+  if (t && conv && !JV.busy && !jvFcOn() && !/^(?:Mon brief du jour|Faisons connaissance)/i.test(t)) {
+    if (jvRateAttOn() && cvVisible()) {
+      const T = jvTriLocal(t);
+      if (T.s >= 3 || T.q >= 3) JV_RATE_ATT = null;   // une nouvelle demande, pas ce qu'il attendait
+      else return jvRateAttendu(t, opt && opt.voix ? "voix" : "texte");
+    }
     if (jvRateDemande(t, false)) return jvRate(opt && opt.voix ? "voix" : "texte", t);
+    jvConteste(t);
   }
   return f.apply(this, arguments);
 }; }
@@ -9352,13 +9370,18 @@ Object.assign(JV_AGENTS, {
 JV_AGENTS.majordome.role = "conversation, conseils, décisions, messages, tout le reste";
 Object.assign(JV_TRI_PLUS, {
   documentaliste: { lettre: "D", poids: 3, sys: "une recherche d'information du monde extérieur (actualité, résultat sportif, horaires ou prix d'un lieu, documentation technique, comparatif)",
-    rx: /\b(?:cherche (?:sur |dans )?(?:internet|le web|google|en ligne)|recherche (?:sur|moi)|fais une recherche|trouve moi (?:des infos|la doc|un comparatif)|sur internet|sur le web|actualite|actus|les infos du jour|qui a gagne|resultat du match|resultats? de|score du|horaires? d ouverture|est ce que .{2,40} est ouvert|ouvert (?:le dimanche|aujourd hui|ce soir)|combien coute|prix (?:d un|d une|du|de la)|fiche technique|datasheet|documentation (?:de|du|technique)|compatible avec|avis sur|comparatif|derniere version|sortie de)\b/ },
+    rx: /\b(?:cherche (?:sur |dans )?(?:internet|le web|google|en ligne)|recherche (?:sur|moi)|fais une recherche|trouve moi (?:des infos|la doc|un comparatif)|sur internet|sur le web|actualite|actus|les infos du jour|qui a gagne|resultats? du match|resultats? (?:des|du) (?:elections?|course|tirage|loto|grand prix)|score du|horaires? d ouverture|est ce que .{2,40} est ouvert|ouvert (?:le dimanche|aujourd hui|ce soir)|combien coute|fiche technique|datasheet|documentation (?:de|du|technique)|compatible avec|comparatif|derniere version)\b/ },
   intendant: { lettre: "I", poids: 3, sys: "la maison et les déplacements : chauffage, température chez lui, colis et livraisons, bus, trajets, heure de départ, météo",
     rx: /\b(?:chauffage|thermostat|radiateurs?|chaudiere|netatmo|temperature (?:a la maison|de la maison|du salon|chez moi|dans la maison)|il fait (?:froid|chaud) (?:a la maison|chez moi|dans la maison)|mode (?:absent|eco|hors gel)|colis|livraison|livre (?:quand|aujourd hui)|point relais|relais colis|mondial relay|chronopost|colissimo|prochain bus|horaires? du bus|mon bus|trajet|itineraire|bouchons|trafic|combien de temps (?:pour aller|de route|en voiture|pour rentrer)|a quelle heure (?:je dois|dois je|faut il|il faut) partir|heure de depart|meteo|quel temps|va t il pleuvoir|il va pleuvoir|pluie|parapluie|neige)\b/ }
 });
 /* l'aiguilleur : une tâche explicite reste au secrétaire, même si elle parle de colis ou de bus */
 { const f = jvTriDecide; jvTriDecide = function(T){
   if (T.spe) {
+    if (T.sig.includes("émotion") || T.sig.includes("conseil")) return { ag: "majordome", sur: .9 };
+    if (T.sig.includes("action")) {   // une action reste au majordome, sauf celles du spécialiste (régler le chauffage, chercher sur le web)
+      const sienne = T.spe === "intendant" ? /\b(?:chauffage|thermostat|radiateurs?|temperature)\b/ : /^(?:cherche|trouve|recherche)\b/;
+      return { ag: sienne.test(T.n || "") ? T.spe : "majordome", sur: .9 };
+    }
     if (T.s >= 3 && T.q === 0 && !/^(?:chauffage|thermostat|mets le chauffage|regle le chauffage)/.test(T.n || "")) return { ag: "secretaire", sur: .9 };
     if (T.s < 3) return { ag: T.spe, sur: .9 };
     return { ag: null, sur: 0 };
@@ -9372,6 +9395,184 @@ const JV_FOND_RX = /\b(?:reflechis bien|reflechis y|prends? (?:ton|le) temps|ana
   const R = await f.apply(this, arguments);
   try { if (R && R.ag === "majordome") { const n = jvNorm34(text); if (JV_FOND_RX.test(n)) { R.effort = "high"; R.pq += " · à fond"; } else if (JV_TRI.conseil.test(n) || JV_TRI.emo.test(n)) R.effort = "medium"; } } catch (e) {}
   return R;
+}; }
+
+/* ======================================================================
+   lot 36 · le veilleur : la nuit, il relit ses tâches (faites, repoussées, en retard), ses habitudes, ses lieux, son agenda, son sommeil ;
+   le matin, il propose UN seul pressentiment. « Bien vu » ou « à côté » : il apprend ce qui sert.
+   Tout se calcule sur le téléphone ; une seule petite requête par jour, et aucune s'il n'y a rien qui vaille.
+   ====================================================================== */
+const JV_VEIL_LS = "copilote_veilleur", JV_VEIL_MODELE = CV_MODEL;
+const JV_VEIL_KINDS = { report: "tâche repoussée", retard: "en retard", habitude: "habitude", rythme: "rythme", charge: "journée chargée", agenda: "agenda", sommeil: "sommeil", lieux: "lieux", anniv: "anniversaire" };
+const jvVeilOn = () => CFG.jvVeilleur !== false && !!CFG.key;
+function jvVeil(){ const v = LS.get(JV_VEIL_LS, null) || {}; v.w = v.w || {}; v.hist = Array.isArray(v.hist) ? v.hist : []; return v; }
+const jvVeilJour = () => { const v = jvVeil(), j = ymd(new Date()); return v.hist.slice().reverse().find(h => h.j === j) || null; };
+const jvVeilCle = t => jvNorm34(t).split(" ").filter(w => w.length > 2 && !/^(?:les|des|une|pour|avec|dans|sur|chez|aux|est|pas)$/.test(w)).slice(0, 3).join(" ");
+const jvVeilH = t => { const d = new Date(t); return d.getHours() + " h" + (d.getMinutes() ? " " + pad(d.getMinutes()) : ""); };
+async function jvVeilleurSignaux(){
+  const now = new Date(), auj = ymd(now), wd = now.getDay(), S = [], j7 = Date.now() - 7 * 864e5, j14 = Date.now() - 14 * 864e5;
+  const items = ["perso", "pro"].flatMap(sp => (spaceState(sp).items || []).filter(i => !isMemo(i)).map(i => Object.assign({ sp }, i)));
+  const ouv = items.filter(i => !i.done);
+  // tâches repoussées, en retard
+  ouv.filter(i => (i.ppN || 0) >= 2).sort((a, b) => (b.ppN || 0) - (a.ppN || 0)).slice(0, 3)
+    .forEach(i => S.push({ k: "report", p: 1 + Math.min(5, i.ppN), t: `« ${i.title} » (${i.sp}) repoussée ${i.ppN} fois${i.due ? ", prévue le " + i.due : ""}` }));
+  const ret = ouv.filter(i => i.due && i.due < auj);
+  if (ret.length) S.push({ k: "retard", p: 2 + Math.min(3, ret.length / 2), t: `${ret.length} tâche${ret.length > 1 ? "s" : ""} en retard, dont ${ret.slice(0, 3).map(i => "« " + i.title + " »").join(", ")}` });
+  // ses habitudes du jour de la semaine (5 dernières semaines), absentes cette semaine
+  const faits = items.filter(i => i.done && i.doneAt && Date.now() - i.doneAt < 36 * 864e5), lundi = jvSemaineCle(now), hab = new Map();
+  faits.forEach(i => { const d = new Date(i.doneAt); if (d.getDay() !== wd || ymd(d) >= lundi) return; const k = jvVeilCle(i.title); if (!k) return; const h = hab.get(k) || { t: i.title, sem: new Set() }; h.sem.add(jvSemaineCle(d)); hab.set(k, h); });
+  for (const [k, h] of hab) if (h.sem.size >= 3 && !items.some(i => jvVeilCle(i.title) === k && (!i.done || (i.doneAt && ymd(new Date(i.doneAt)) >= lundi))))
+    S.push({ k: "habitude", p: 2 + h.sem.size / 2, t: `le ${WD[wd]}, il fait souvent « ${h.t} » (${h.sem.size} des 5 dernières semaines) ; rien de tel cette semaine` });
+  // son rythme : tâches faites ces 7 jours contre les 7 d'avant
+  const a = faits.filter(i => i.doneAt >= j7).length, b = faits.filter(i => i.doneAt >= j14 && i.doneAt < j7).length;
+  if (b >= 6 && a < b * .5) S.push({ k: "rythme", p: 3, t: `rythme en baisse : ${a} tâches faites ces 7 derniers jours, contre ${b} la semaine d'avant` });
+  else if (a >= 8 && a > b * 1.5) S.push({ k: "rythme", p: 1, t: `belle semaine : ${a} tâches faites, contre ${b} la semaine d'avant` });
+  const duJour = ouv.filter(i => i.due === auj);
+  // l'agenda d'aujourd'hui et de demain
+  let ev = [];
+  try { if (typeof gOn === "function" && gOn()) { const r = await jvAuPlus(toolAgenda({ du: auj, au: jvAjoute(auj, 1) }), 8000); ev = (r && r.evenements) || []; } } catch (e) {}
+  if (ev.length) S.push({ k: "agenda", p: 2, t: "agenda : " + ev.slice(0, 8).join(" ; ") });
+  if (duJour.length + ev.filter(e => /aujourd/i.test(e)).length >= 6) S.push({ k: "charge", p: 2.5, t: `journée chargée : ${duJour.length} tâches prévues aujourd'hui et ${ev.filter(e => /aujourd/i.test(e)).length} rendez-vous` });
+  else if (duJour.length) S.push({ k: "charge", p: .8, t: `prévu aujourd'hui : ${duJour.slice(0, 4).map(i => "« " + i.title + " »" + (i.time ? " à " + i.time : "")).join(", ")}` });
+  // son sommeil (seulement s'il a branché sa montre)
+  try {
+    if (typeof jvSanteOn === "function" && jvSanteOn() && JV_SANTE_MEM && JV_SANTE_MEM.d) {
+      const N = jvSanteNuits(JV_SANTE_MEM.d), n = N.find(x => x.jour === auj), med = jvQuant(N.filter(x => x.jour !== auj).slice(-14).map(x => x.dort), .5);
+      const hm = m => Math.floor(m / 60) + " h " + pad(Math.round(m % 60));
+      if (n && med && n.dort < med - 60) S.push({ k: "sommeil", p: 3, t: `nuit courte : ${hm(n.dort)} de sommeil (d'habitude ${hm(med)})` });
+      else if (n && med && n.dort > med + 60) S.push({ k: "sommeil", p: 1, t: `longue nuit : ${hm(n.dort)} (d'habitude ${hm(med)})` });
+    }
+  } catch (e) {}
+  // ses lieux du jour de la semaine (journal de bord, lieux connus seulement)
+  try {
+    if (MEM.key && CFG.jvJournal !== false && typeof jrPeriode === "function") {
+      const { V } = await jvAuPlus(jrPeriode(jvAjoute(auj, -35), jvAjoute(auj, -1)), 8000) || { V: [] }, L = new Map();
+      (V || []).forEach(v => { const d = new Date(v[0]); if (d.getDay() !== wd) return; const nom = jrConnu(v); if (!nom || /chez vous/.test(nom)) return; const x = L.get(nom) || { j: new Set(), h: [] }; x.j.add(ymd(d)); x.h.push(d.getHours() * 60 + d.getMinutes()); L.set(nom, x); });
+      for (const [nom, x] of L) if (x.j.size >= 3) { const m = jvQuant(x.h, .5); S.push({ k: "lieux", p: 1.5 + x.j.size / 3, t: `le ${WD[wd]}, il est souvent ${/^(?:au|à|a|chez|en)\b/i.test(nom) ? nom : "à " + nom} vers ${Math.floor(m / 60)} h${m % 60 ? " " + pad(m % 60) : ""} (${x.j.size} des 5 derniers)` }); }
+    }
+  } catch (e) {}
+  // les anniversaires de la semaine
+  try { (jvAnnivs() || []).forEach(an => { const d = jvProchain(an, auj), e = d ? jvEcart(auj, d) : 99; if (e >= 0 && e <= 6) S.push({ k: "anniv", p: 2 + (jvIdeesPour(an.nom).length ? 0 : 1), t: `anniversaire de ${an.nom} ${e === 0 ? "aujourd'hui" : e === 1 ? "demain" : "dans " + e + " jours"} (${jvQuand(an)})${jvIdeesPour(an.nom).length ? "" : ", aucune idée de cadeau notée"}` }); }); } catch (e) {}
+  const w = jvVeil().w;
+  return S.map(s => Object.assign(s, { sc: s.p * (w[s.k] || 1) })).sort((x, y) => y.sc - x.sc).slice(0, 8);
+}
+const JV_VEIL_SYS = () => `Tu es le veilleur de ${jvNom()}, le majordome personnel de ${(typeof myName === "function" && myName()) || "son maître"}. Chaque matin, tu lui offres UN seul pressentiment : une chose à laquelle il n'a pas pensé, utile aujourd'hui (ou demain), pour son temps ou sa motivation, déduite des signaux que son téléphone a relevés cette nuit.
+- Croise les signaux plutôt que d'en répéter un (une habitude absente + une journée libre ; une nuit courte + un rendez-vous tôt + une tâche repoussée…). Le plus utile, pas le plus évident.
+- Une ou deux phrases, 40 mots au plus. Il te vouvoie et tu l'appelles « monsieur ». Ton de majordome anglais ; une ironie à froid est permise, jamais sur la santé, la fatigue, la famille ou l'argent : là, tu es sobre.
+- Concret : quoi, quand. Une proposition, pas un sermon.
+- N'invente aucun fait absent des signaux. Ne répète pas un pressentiment récent.
+- Tiens compte de ses avis : il apprécie ce qu'il a trouvé « bien vu », évite ce qu'il a jugé « à côté ».
+- S'il n'y a rien qui vaille la peine ce matin, réponds exactement : RIEN
+Réponds sur une seule ligne : le code du signal principal entre crochets, puis le pressentiment. Exemple : [report] Monsieur, …`;
+async function jvVeilleurNuit(force){
+  if (!jvVeilOn() && !force) return null;
+  const now = new Date(), j = ymd(now);
+  if (!force && now.getHours() < 3) return null;
+  const v = jvVeil(); if (!force && v.hist.some(h => h.j === j)) return null;
+  const essai = LS.get("copilote_veil_essai", null) || {}; if (!force && essai.j === j && (essai.n >= 3 || Date.now() - essai.at < 25 * 60000)) return null;
+  if (navigator.onLine === false || cvMonth().usd >= cvCap()) return null;
+  LS.set("copilote_veil_essai", { j, n: (essai.j === j ? essai.n || 0 : 0) + 1, at: Date.now() });
+  const S = await jvVeilleurSignaux();
+  if (!S.length) { v.hist.push({ j, k: "", t: "", rien: 1 }); v.hist = v.hist.slice(-40); LS.set(JV_VEIL_LS, v); return null; }
+  const recents = v.hist.filter(h => h.t).slice(-7).map(h => `- ${h.j} [${h.k}] ${h.t}${h.avis ? " → " + (h.avis === "bien" ? "bien vu" : "à côté") : ""}`).join("\n");
+  const av = {}; v.hist.slice(-30).forEach(h => { if (h.avis && h.k) { av[h.k] = av[h.k] || { bien: 0, cote: 0 }; av[h.k][h.avis]++; } });
+  const avis = Object.entries(av).map(([k, x]) => `${k} : bien vu ${x.bien}, à côté ${x.cote}`).join(" · ");
+  const user = `Aujourd'hui : ${now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}.\nSignaux de la nuit (du plus fort au plus faible) :\n${S.map((s, i) => `${i + 1}. [${s.k}] ${s.t}`).join("\n")}`
+    + `\n\nSes avis sur tes pressentiments (30 jours) : ${avis || "aucun encore"}` + (recents ? `\nTes pressentiments récents (ne les répète pas) :\n${recents}` : "");
+  let txt = "";
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      body: JSON.stringify({ model: JV_VEIL_MODELE, max_tokens: 220, system: JV_VEIL_SYS(), messages: [{ role: "user", content: user }] }) });
+    const jj = await r.json().catch(() => ({}));
+    if (!r.ok) { jvBN("erreur", "veilleur", "erreur " + r.status, { ag: "veilleur" }); return null; }
+    try { cvCount(jj.usage, "veilleur"); } catch (e) {}
+    txt = (jj.content || []).filter(b => b.type === "text").map(b => b.text).join(" ").replace(/\s+/g, " ").trim();
+  } catch (e) { jvBN("erreur", "veilleur", "pas de réseau", { ag: "veilleur" }); return null; }
+  const m = /^\[([a-z]+)\]\s*(.+)$/i.exec(txt);
+  const h = /^RIEN\b/i.test(txt) || !m ? { j, k: "", t: "", rien: 1, sig: S.map(s => s.k).join(" ") } : { j, k: JV_VEIL_KINDS[m[1].toLowerCase()] ? m[1].toLowerCase() : S[0].k, t: m[2].trim().slice(0, 400), avis: null, livre: 0, sig: S.map(s => s.k).join(" ") };
+  const v2 = jvVeil(); v2.hist = v2.hist.filter(x => x.j !== j || x.avis);   // un pressentiment déjà jugé reste dans son histoire
+  v2.hist.push(h); v2.hist = v2.hist.slice(-40); LS.set(JV_VEIL_LS, v2);
+  try { jvVeilleurLivre(); } catch (e) {}
+  return h;
+}
+/* le matin, une fois : une carte dans la conversation et la bulle au rond, avec « bien vu » et « à côté » */
+function jvVeilleurLivre(force){
+  const h = jvVeilJour(); if (!h || !h.t || h.livre) return false;   // une seule fois par pressentiment
+  const n = new Date(); if (!force && n.getHours() < 6) return false;
+  if (!force && (document.hidden || JV.busy || JV_BULLE || document.querySelector(".sheet.show") || (typeof listening !== "undefined" && listening))) return false;   // pas par-dessus un écran ouvert
+  if (!force && typeof jvBriefOn === "function" && jvBriefOn() && LS.get("copilote_brief", "") !== ymd(n) && n.getHours() < 10) return false;   // après le brief du matin, s'il y en a un
+  const v = jvVeil(), x = v.hist.slice().reverse().find(e => e.j === h.j && e.t === h.t); if (x) { x.livre = Date.now(); LS.set(JV_VEIL_LS, v); }
+  const card = { r: "p", k: "pressent", t: h.t, st: "", j: h.j };
+  if (cvVisible()) { JV.view.push(card); try { cvSave(); } catch (e) {} try { cvPaint(); } catch (e) {} return true; }
+  let B = null; try { B = jvBulle(""); } catch (e) {}   // la bulle d'abord : ses boutons sont ceux des cartes ajoutées après elle
+  JV.view.push(card); try { cvSave(); } catch (e) {}
+  if (B && B.fin) { B.suite = true; B.dire(h.t); B.fin([card]); }   // il répond aux boutons, le micro reste fermé else toast("Un pressentiment, monsieur", "voir", () => openConv(), 12000);
+  return true;
+}
+function jvVeilleurAvis(avis, j){
+  const v = jvVeil(), h = v.hist.slice().reverse().find(e => e.t && e.j === (j || ymd(new Date()))) || (!j && v.hist.slice().reverse().find(e => e.t && !e.avis));
+  if (!h || !h.t) return false;
+  const avant = h.avis; h.avis = avis;
+  const F = { bien: 1.3, cote: .7 };
+  if (h.k && avant !== avis) { let w = v.w[h.k] || 1; if (avant && F[avant]) w /= F[avant]; w *= F[avis] || 1; v.w[h.k] = Math.round(Math.max(.25, Math.min(3, w)) * 100) / 100; }
+  LS.set(JV_VEIL_LS, v);
+  JV.view.forEach(c => { if (c.r === "p" && c.k === "pressent" && c.j === h.j) c.st = avis === "bien" ? "ok" : "non"; });
+  try { cvSave(); } catch (e) {}
+  return true;
+}
+/* « bien vu » / « à côté », à la voix ou tapé, juste après le pressentiment */
+function jvAvisDemande(text){
+  const h = jvVeilJour(); if (!h || !h.t || !h.livre || h.avis) return null;
+  let n = jvNorm34(text), nom = false; if (!n || n.length > 60) return null;
+  const noms = [...new Set([jvNom(), "nestor", "jarvis"].map(jvNorm34).filter(Boolean))].join("|");
+  n = n.replace(new RegExp("^(?:dis |eh |bon |alors )?(?:" + noms + ") "), () => { nom = true; return ""; }).replace(new RegExp(" (?:" + noms + ")$"), () => { nom = true; return ""; }).trim();
+  const der = JV.view[JV.view.length - 1], juste = !!(der && der.k === "pressent" && !der.st);
+  if (!nom && (!juste || Date.now() - h.livre > 30 * 60000)) return null;   // sinon « exactement » répondrait à autre chose
+  const B = nom ? /^(?:(?:c est |ca c est |t as |tu as |alors la |la )?(?:bien vu|vu juste|bien joue|exact|exactement|pas faux|tout a fait|excellent|pile poil))(?: monsieur)?$/ : /^(?:(?:c est |ca c est |t as |tu as |la )?(?:bien vu|vu juste))(?: monsieur)?$/;
+  const C = nom ? /^(?:(?:c est |t es |tu es |t as |tu as |la )?(?:tout )?(?:a cote|a cote de la plaque|rien a voir|pas du tout|non pas vraiment|faux|bof))(?: monsieur)?$/ : /^(?:(?:c est |t es |tu es |t as |tu as |la )?(?:tout )?(?:a cote|a cote de la plaque))(?: monsieur)?$/;
+  if (B.test(n)) return "bien";
+  if (C.test(n)) return "cote";
+  return null;
+}
+function jvAvisRepond(avis, text, src){
+  jvVeilleurAvis(avis);
+  jvNestorDit(text, avis === "bien" ? "Je le note, monsieur. J'aurai l'œil sur ce genre de choses." : "Noté, monsieur. Je viserai mieux demain.", src);
+  return true;
+}
+{ const f = jvCommandeVoix; jvCommandeVoix = function(text){ const a = jvFcOn() ? null : jvAvisDemande(text); if (a) return jvAvisRepond(a, text, JV_SRC34 || "voix"); return f.apply(this, arguments); }; }
+{ const f = cvSend; cvSend = async function(text, opt){ const conv = !(opt && (opt.cercle || opt.phrase)), a = conv && !JV.busy && !jvFcOn() ? jvAvisDemande(text) : null; if (a) return jvAvisRepond(a, String(text || "").trim(), opt && opt.voix ? "voix" : "texte"); return f.apply(this, arguments); }; }
+{ const f = cvDecide; cvDecide = async function(i, ok){
+  const p = JV.view[i];
+  if (p && p.r === "p" && p.k === "pressent") { if (!p.st) { jvVeilleurAvis(ok ? "bien" : "cote", p.j); p.st = ok ? "ok" : "non"; try { await cvSave(); } catch (e) {} } try { cvPaint(); } catch (e) {} try { if (JV_BULLE) jvBulleActions(JV_BULLE); } catch (e) {} return; }
+  return f.apply(this, arguments);
+}; }
+/* Nestor sait ce qu'il a pressenti ce matin (s'il en parle) */
+{ const f = cvContexte; cvContexte = async function(){
+  const c = await f.apply(this, arguments);
+  try { const h = jvVeilJour(); if (h && h.t && h.livre) return c + `\nTon pressentiment de ce matin (le veilleur, n'y reviens que s'il en parle) : « ${h.t} »${h.avis ? " — son avis : " + (h.avis === "bien" ? "bien vu" : "à côté") : ""}`; } catch (e) {}
+  return c;
+}; }
+const jvVeilTic = () => { try { jvVeilleurNuit().then(() => jvVeilleurLivre()).catch(() => {}); } catch (e) {} };
+setInterval(jvVeilTic, 20 * 60000); setTimeout(jvVeilTic, 30000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(jvVeilTic, 6000); });
+/* réglages (page Nestor) et rapport technique */
+function jvVeilleurPeins(){
+  if (!$("cvVeilChk")) return;
+  $("cvVeilChk").checked = CFG.jvVeilleur !== false;
+  const v = jvVeil(), H = v.hist.filter(h => h.t), b = H.filter(h => h.avis === "bien").length, c = H.filter(h => h.avis === "cote").length, d = H[H.length - 1];
+  $("cvVeilSt").innerHTML = (d ? `Dernier (${esc(d.j)}) : « ${esc(d.t)} »${d.avis ? " · " + (d.avis === "bien" ? "bien vu" : "à côté") : ""}` : "Pas encore de pressentiment.") + (b + c ? `<br>Vos avis : bien vu ${b}, à côté ${c}` : "")
+    + (Object.keys(v.w).length ? `<br>Ce qu'il a appris : ${esc(Object.entries(v.w).sort((x, y) => y[1] - x[1]).map(([k, w]) => `${JV_VEIL_KINDS[k] || k} ${w >= 1.2 ? "↑" : w <= .8 ? "↓" : "="}`).join(", "))}` : "");
+}
+{ const f = paintMem; paintMem = function(){ const r = f.apply(this, arguments); try { if (REG_CUR === "nestor") jvVeilleurPeins(); } catch (e) {} return r; }; }
+$("cvVeilChk").onchange = () => { CFG.jvVeilleur = $("cvVeilChk").checked; saveCfg(); };
+$("cvVeilGo").onclick = async () => { const b = $("cvVeilGo"); b.textContent = "il réfléchit…"; try { const h = await jvVeilleurNuit(true); if (h && h.t) { try { hide(); } catch (e) {} setTimeout(() => jvVeilleurLivre(true), 350); } else toast("rien qui vaille un pressentiment pour l'instant, monsieur"); } catch (e) {} b.textContent = "un pressentiment maintenant"; jvVeilleurPeins(); };
+{ const f = jvRapportTech; jvRapportTech = async function(){
+  const t = await f.apply(this, arguments), v = jvVeil(), dep = ymd(new Date(Date.now() - 7 * 864e5)), H = v.hist.filter(h => h.j >= dep);
+  const L = ["", "6. LE VEILLEUR", `- ${H.filter(h => h.t).length} pressentiment(s), ${H.filter(h => h.rien).length} matin(s) sans · bien vu ${H.filter(h => h.avis === "bien").length} · à côté ${H.filter(h => h.avis === "cote").length} · sans avis ${H.filter(h => h.t && !h.avis).length}`,
+    `- poids appris : ${Object.entries(v.w).map(([k, w]) => `${k} ${String(w).replace(".", ",")}`).join(" · ") || "aucun"}`];
+  H.forEach(h => L.push(`  ${h.j} · ${h.t ? "[" + h.k + "]" : "rien"} · signaux : ${h.sig || "-"}${h.avis ? " · " + (h.avis === "bien" ? "bien vu" : "à côté") : ""}${CFG.jvRapportExtraits === true && h.t ? "\n      « " + h.t + " »" : ""}`));
+  return t.replace("\n\n5. POUR LA SÉANCE", L.join("\n") + "\n\n5. POUR LA SÉANCE");
 }; }
 </script>
 </body>

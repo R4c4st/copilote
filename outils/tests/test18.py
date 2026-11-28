@@ -73,7 +73,7 @@ async def main():
         r["vue_fin"] = await pg.evaluate("JV.view.slice(-3).map(v => v.r + ':' + String(v.t).slice(0, 60))")
         r["bn"] = await pg.evaluate("LS.get('copilote_bn', []).map(e => e.k + '/' + e.e + (e.d ? '/' + e.d : ''))")
         # 8. « Nestor, ça c'est raté » au rond, puis ce qu'il attendait
-        r["rate_cmd"] = await pg.evaluate("[jvRateDemande('Nestor, ça c\\'est raté', true), jvRateDemande('Nestor, t\\'as tout faux', true), jvRateDemande('le gâteau c\\'est raté', true), jvRateDemande('ça c\\'est raté', false)]")
+        r["rate_cmd"] = await pg.evaluate("[jvRateDemande('Nestor, ça c\\'est raté', true), jvRateDemande('Nestor, t\\'as tout faux', true), jvRateDemande('le gâteau c\\'est raté', true), jvRateDemande('ça c\\'est raté', false), jvRateDemande('c\\'est faux', false), jvRateDemande('non, c\\'est pas ça', false), jvRateDemande('Nestor, c\\'est faux', false)]")
         await pg.evaluate("hide(); capture('Nestor, ça c\\'est raté', 'voix')"); await pg.wait_for_timeout(800)
         r["rate"] = await pg.evaluate("(() => { const e = LS.get('copilote_bn', []).filter(x => x.k === 'raté').slice(-1)[0]; return e ? { e: e.e, d: e.d, q: !!e.q } : null; })()")
         r["rate_attente"] = await pg.evaluate("jvRateAttOn()")

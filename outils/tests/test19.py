@@ -28,7 +28,9 @@ async def main():
         r = {"web": await pg.evaluate("jvWebOn()")}
         r["tri"] = await pg.evaluate("""[['qui a gagné le match hier ?','documentaliste'],['cherche sur internet la fiche technique du 2N Verso','documentaliste'],['mets le chauffage à 20','intendant'],
           ['va-t-il pleuvoir demain ?','intendant'],['quand arrive mon colis ?','intendant'],['rappelle-moi de récupérer le colis demain','secretaire'],
-          ['à quelle heure dois-je partir pour mon rendez-vous ?','intendant'],['acheter du pain','secretaire'],['tu penses que je devrais changer de voiture ?','majordome']]
+          ['à quelle heure dois-je partir pour mon rendez-vous ?','intendant'],['acheter du pain','secretaire'],['tu penses que je devrais changer de voiture ?','majordome'],
+          ['Lis-moi le mail de Chronopost','majordome'],['Prépare-moi un mail à Paul pour la livraison','majordome'],['Tu penses que je devrais accepter le prix du devis ?','majordome'],
+          ['Quels sont les résultats de ma semaine ?','majordome'],['Je suis épuisé, le trajet m a tué','majordome'],['baisse le chauffage du salon','intendant']]
           .map(([t,a]) => { const d = jvTriDecide(jvTriLocal(t)); return d.ag === a ? 'ok' : t + ' → ' + d.ag; })""")
         async def envoi(t):
             n0 = len(calls); await pg.evaluate("t => cvSend(t, {})", t); await pg.wait_for_timeout(900)

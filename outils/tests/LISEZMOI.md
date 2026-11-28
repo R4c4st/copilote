@@ -9,3 +9,4 @@ Aucune clé, aucune donnée personnelle : les noms sont fictifs.
 - `test17.py` couvre le fond d'écran animé (lots 29 à 33).
 - `test18.py` couvre les coulisses (lot 34) : aiguilleur, secrétaire, boîte noire, chrono, rapport technique, « ça c'est raté ».
 - `test19.py` couvre les spécialistes (lot 35) : documentaliste, intendant, majordome qui réfléchit plus, une seule voix.
+- `test20.py` couvre le veilleur (lot 36) : signaux de la nuit, une requête par jour, pressentiment, « bien vu » / « à côté ».
