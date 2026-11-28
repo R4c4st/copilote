@@ -1,8 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-// Jarvis — sa voix en ligne (Google Cloud Text-to-Speech).
-// « hd » = voix Chirp 3 HD ; « style » = Gemini-TTS, la même voix dirigée par une consigne de style.
+// Nestor — sa voix en ligne.
+// Google Cloud Text-to-Speech : « hd » = voix Chirp 3 HD ; « style » = Gemini-TTS, la même voix dirigée par une consigne de style.
+// Mistral Voxtral TTS 3 (« mistral ») : une voix toute faite (ex. David, anglais britannique) qui lit le français, avec ses balises d'émotion.
+//   La clé Mistral vient du téléphone à chaque phrase (comme pour la dictée) et n'est jamais gardée ici.
 // Seul son téléphone peut s'en servir : même jeton que la mémoire chiffrée (on n'en garde ici que l'empreinte).
 // La clé Google (compte de service) est dans les secrets Supabase : GOOGLE_TTS_SA. Jamais dans le code.
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -27,6 +29,9 @@ function same(a: string, b: string) {
 }
 const okTok = (t: unknown) => typeof t === "string" && /^[A-Za-z0-9_-]{40,64}$/.test(t);
 const okVoix = (s: unknown) => typeof s === "string" && /^fr-FR-Chirp3-HD-[A-Za-z]{2,20}$/.test(s);
+const okVoixM = (s: unknown) => typeof s === "string" && /^voice_\d{2,7}$/.test(s);
+const okCleM = (s: unknown) => typeof s === "string" && /^[A-Za-z0-9_-]{20,128}$/.test(s);
+const MISTRAL_TTS = "https://api.mistral.ai/v1/audio/speech";
 const mois = () => new Date().toISOString().slice(0, 7);
 
 /* ---------- jeton d'accès Google à partir du compte de service (gardé en mémoire ~55 min) ---------- */
@@ -96,6 +101,22 @@ Deno.serve(async (req: Request) => {
     if (!same(await sha(b.jeton), c.jeton_hash)) { await allow("mem:fail:" + ip, 10, 3600); return json({ error: "jeton" }, 403); }
 
     if (b.action === "etat") return json({ ok: true, pret: !!sa(), mois: await usage(), plafond: PLAFOND });
+
+    // une phrase lue par Voxtral (Mistral) : format WAV, le plus rapide à démarrer ; MP3 en secours
+    if (b.action === "mistral") {
+      const texte = String(b.texte ?? "").trim().slice(0, MAX_TEXTE);
+      if (!texte || !okVoixM(b.voix) || !okCleM(b.cle)) return json({ error: "bad_request" }, 400);
+      const expr = Math.min(5, Math.max(1, Math.round((+b.expr || 3.5) * 10) / 10));
+      const essai = (fmt: string) => fetch(MISTRAL_TTS, { method: "POST", headers: { Authorization: "Bearer " + b.cle, "content-type": "application/json" },
+        body: JSON.stringify({ model: "voxtral-mini-tts-3-0", input: texte, voice_id: b.voix, response_format: fmt, expressiveness: expr }) });
+      let r = await essai("wav"), mime = "audio/wav";
+      if (r.status === 400 || r.status === 422) { const d = (await r.text()).slice(0, 200); console.log("copilote-voix: mistral wav " + r.status + " " + d); r = await essai("mp3"); mime = "audio/mpeg"; }
+      if (r.status === 401 || r.status === 403) return json({ error: "cle_mistral" }, 401);
+      if (r.status === 429) return json({ error: "mistral_limit" }, 429);
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.audio_data) { console.log("copilote-voix: mistral " + r.status + " " + JSON.stringify(j).slice(0, 200)); return json({ error: "mistral", status: r.status }, 502); }
+      return json({ ok: true, audio: j.audio_data, mime, n: texte.length });
+    }
 
     if (!sa()) return json({ error: "config" }, 503);
 

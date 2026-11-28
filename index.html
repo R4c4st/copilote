@@ -426,7 +426,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v55 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v56 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -551,6 +551,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     </div>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px">grave <input type="range" id="cvPitch" min="0.6" max="1.3" step="0.05" style="flex:1"> aigu</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:6px">posé <input type="range" id="cvRate" min="0.75" max="1.3" step="0.05" style="flex:1"> rapide</label>
+    <label class="small" id="cvExprBox" style="display:none;gap:10px;align-items:center;margin-top:6px">sobre <input type="range" id="cvExpr" min="1" max="5" step="0.1" style="flex:1"> expressif</label>
     <div class="foot" style="margin-top:10px"><p class="small" id="cvVoixSt" style="margin:0;flex:1;min-width:0;overflow-wrap:anywhere"></p><button class="ok" id="cvVoixTest">écouter</button></div>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvParleChk" style="width:auto"> il me répond à voix haute quand je lui parle</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvDiscretChk" style="width:auto"> mode discret : il ne parle plus du tout (ou dites-lui « mode discret » / « tu peux parler »)</label>
@@ -690,7 +691,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 55;
+const TEMPO_BUILD = 56;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4785,6 +4786,7 @@ const jvSys = () => CV_SYS.replace(/\{WEB\}/g, jvWebOn() ? " ; pour le monde ext
   + (jvWebOn() ? "\n\nLe web (recherche_web)\n- Pour une information du monde extérieur qui peut changer ou que tu ne connais pas avec certitude (horaires, prix, actualité, résultats, doc technique, démarche, renseignement), cherche avec recherche_web au lieu de répondre de mémoire. Pas pour ce qui est dans ses souvenirs, ses tâches ou tes autres outils (bus, météo, trajet, agenda).\n- Une recherche suffit le plus souvent, deux au plus. approfondi seulement pour une question pointue ou technique.\n- Avant recherche_web, écris une seule phrase d'attente très courte (« Je consulte mes sources, monsieur. »). Ensuite, va droit au fait : la réponse d'abord, avec le chiffre, l'horaire ou le nom exact, en une à trois phrases. Ne répète pas la phrase d'attente, ne dis ni « d'après mes recherches » ni « selon Perplexity », pas d'hésitation inutile.\n- recherche_web te renvoie le plus souvent une réponse déjà rédigée par Perplexity (reponse), sinon des extraits. Réponds uniquement d'après ce qu'il renvoie. S'il ne répond pas vraiment, dis-le en une phrase. Pour un horaire, un prix ou une règle, signale si la source date.\n- La requête part sur Internet : jamais le nom de ses proches, son adresse ni un détail personnel. Seulement l'objet de la recherche (le commerce, le produit, la ville).\n- Pas de lien ni de source, sauf s'il les demande : ils sont alors dans <contexte>." : "")
   + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Quand il te dit qu'il part ou qu'il est parti de chez lui (« je pars », « je suis parti », « je m'en vais », « je pars au boulot ») : mets la maison en absent (chauffage_mode), sans rien demander. Quand il dit qu'il rentre ou qu'il est rentré : remets le planning. Il te l'a délégué.\n- S'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets la maison en absent jusqu'à son retour, et dis-le.\n- En dehors de ça, ne touche jamais au chauffage de ta propre initiative.\n- Si Netatmo ne répond pas, dis-le en une phrase et propose de réessayer : ne fais pas d'hypothèse sur ce qu'il voulait.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "")
   + jvSysCurseurs() + jvSysUnique()
+  + (jvVoixMistral() && CFG.jvParle !== false ? "\n\nTa voix lit des balises d'émotion\n- Au début d'une phrase, tu peux placer une balise qui règle le ton de ta voix : [emotion=calm], [emotion=confident], [emotion=amused], [emotion=sarcastic], [emotion=warm], [emotion=urgent], [emotion=apologetic], [emotion=somber], [emotion=playful], et [pace=fast] ou [pace=slow]. Elles ne s'affichent pas et ne se prononcent pas.\n- Une ou deux par réponse au plus, seulement quand le ton change vraiment : sarcastic ou amused pour l'ironie à froid, calm pour une mauvaise nouvelle, urgent pour un départ imminent, warm quand il est fatigué ou que le sujet est sensible.\n- Jamais dans ce que tu ranges avec noter, ni dans un mail, un texto, une liste ou un souvenir." : "")
   + "\n\nQuand tu ne sais pas faire\n- Si aucun de tes outils ne permet ce qu'il demande, dis-le franchement en une phrase, propose ce que tu peux faire à la place, et note la demande avec noter_evolution : Claude la lira à la prochaine session de développement. Ne prétends jamais avoir fait ce que tu n'as pas pu faire.\n- Pour envoyer, copier ou exporter une liste ou un texte (mail, fichier texte, partage), utilise partager. Pour sa liste de courses en cours, source courses."
   + (jvSanteOn() ? "\n\nSa santé (sa montre et sa balance)\n- Pour un bilan santé, son sommeil, son poids, son pouls ou son activité, appelle sante_bilan (jours : 7 par défaut, 30 pour le mois, davantage pour suivre le poids).\n- Le bilan : court et parlé, quelques chiffres seulement. Compare sa période à ses propres habitudes (la référence), pas à des normes générales. Termine par un point positif et un point à surveiller.\n- Tu commentes des tendances, jamais de diagnostic. Si un signal dure (pouls au repos haut plusieurs jours, poids qui baisse sans qu'il le cherche, nuits très courtes en série), conseille-lui simplement d'en parler à son médecin.\n- N'en parle jamais de toi-même : seulement quand il le demande." : "");
 /* début de la fenêtre envoyée à Claude, fixé pour toute une réponse : si on le décale pendant qu'il utilise ses outils,
@@ -4883,7 +4885,7 @@ function jvDecoupe(){
 /* la voix phrase par phrase : chaque phrase est demandée tout de suite, et jouée à son tour */
 const JV_VQ = { gen: 0, file: [], joue: false, ok: null, t0: 0, nq: 0, muet: false };
 function jvVoixDebut(){
-  JV_VQ.gen++; JV_VQ.file = []; JV_VQ.joue = false; JV_VQ.ok = null; JV_VQ.t0 = 0; JV_VQ.nq = 0; JV_VQ.muet = false; JV_VQ.chaud = false;
+  JV_VQ.gen++; JV_VQ.emo = ""; JV_VQ.file = []; JV_VQ.joue = false; JV_VQ.ok = null; JV_VQ.t0 = 0; JV_VQ.nq = 0; JV_VQ.muet = false; JV_VQ.chaud = false;
   try { if (JV_AUDIO) { JV_AUDIO.pause(); JV_AUDIO = null; } } catch (e) {}
 }
 async function jvVoixPermise(){
@@ -4892,6 +4894,18 @@ async function jvVoixPermise(){
   return true;
 }
 async function jvVoixAudio(t){
+  if (jvVoixMistral()) {
+    const voix = CFG.jvVoix.slice(2), ex = jvExpr(), k = ["m", voix, ex, t].join("|");
+    if (JV_SONS.has(k)) return JV_SONS.get(k);
+    if (!CFG.mkey) return null;
+    const r = await vFn({ action: "mistral", texte: t, voix, expr: ex, cle: CFG.mkey });
+    if (!r || !r.ok || !r.audio) { jvVoixMErreur(r); return null; }
+    jvVoixMCompte(+r.n || t.length);
+    const src = "data:" + (r.mime || "audio/wav") + ";base64," + r.audio;
+    JV_SONS.set(k, src); if (JV_SONS.size > 24) JV_SONS.delete(JV_SONS.keys().next().value);
+    return src;
+  }
+  t = jvSansEmo(t);
   const voix = CFG.jvVoix.slice(2), mode = CFG.jvStyle ? "style" : "hd", style = mode === "style" ? (CFG.jvStyleTxt || JV_STYLE_DEF) : "";
   const k = [mode, voix, style, t].join("|");
   if (JV_SONS.has(k)) return JV_SONS.get(k);
@@ -4903,9 +4917,14 @@ async function jvVoixAudio(t){
   return src;
 }
 function jvVoixPhrase(t){
-  t = jvPourVoix(t).trim(); if (!t || JV_VQ.muet) return;
-  const g = JV_VQ.gen;
-  JV_VQ.file.push({ t, i: JV_VQ.nq++, src: jvVoixGoogle() && MEM.tok && navigator.onLine !== false ? jvVoixAudio(t).catch(() => null) : null });
+  const brut = String(t || "");
+  t = jvPourVoix(brut).trim(); if (!t || JV_VQ.muet) return;
+  const g = JV_VQ.gen; let tm = jvVoixMistral() ? jvPourVoixEmo(brut) : t;
+  if (jvVoixMistral()) {   // chaque phrase est lue à part : l'émotion choisie vaut jusqu'à la suivante, comme dans un seul texte
+    const e = tm.match(/\[emotion=[a-z-]+\]/gi);
+    if (e) JV_VQ.emo = e[e.length - 1]; else if (JV_VQ.emo) tm = JV_VQ.emo + " " + tm;
+  }
+  JV_VQ.file.push({ t, i: JV_VQ.nq++, src: jvVoixEnLigne() && MEM.tok && navigator.onLine !== false ? jvVoixAudio(tm).catch(() => null) : null });
   if (!JV_VQ.joue) { JV_VQ.joue = true; jvVoixSuite(g); }
 }
 async function jvVoixSuite(g){
@@ -7457,7 +7476,10 @@ function jvBulleFerme(stop){
   if (jvBulleAttend(B)) { try { toast("une proposition vous attend", "voir", () => openConv(), 9000); } catch (e) {} }
 }
 /* la mise en forme Markdown ne se lit pas : *mot*, **mot**, _mot_, `mot`, titres # (sinon la voix dit « astérisque ») */
-const jvSansMd = t => String(t || "").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/__([^_\n]+)__/g, "$1")
+/* lot 25 · balises d'émotion de la voix Mistral ([emotion=…], [pace=…]) : jamais affichées, jamais lues par une autre voix */
+function jvSansEmo(t){ return String(t || "").replace(/\[(?:emotion|pace)=[a-z-]+\]\s*/gi, "").replace(/\[(?:e|em|emo|emot|emoti|emotio|emotion|p|pa|pac|pace)(?:=[a-z-]*)?$/i, ""); }
+function jvPourVoixEmo(t){ return jvPourVoix(String(t || "").replace(/\[(emotion|pace)=([a-z-]+)\]/gi, "⟦$1=$2⟧")).replace(/⟦(emotion|pace)=([a-z-]+)⟧/g, "[$1=$2]").trim(); }
+const jvSansMd = t => jvSansEmo(t).replace(/\*\*([^*]+)\*\*/g, "$1").replace(/__([^_\n]+)__/g, "$1")
   .replace(/(^|[\s(«"'’\-])[*_]([^*_\n]+)[*_](?=[\s).,;:!?»"'’\-]|$)/g, "$1$2").replace(/`([^`\n]*)`/g, "$1").replace(/^\s*#{1,6}\s+/gm, "").replace(/\*/g, "");
 const jvPourVoix = t => jvSansMd(t).replace(/\b(?:[A-Z]\.\s?){3,}[A-Z]?\.?/g, m => m.replace(/[.\s]/g, "").toLowerCase() === cvNorm(jvNom()) ? jvNom() + (/\s$/.test(m) ? " " : "") : m).replace(/^\s*[-•]\s*/gm, "").replace(/https?:\/\/\S+/g, "").replace(/\s*\n+\s*/g, " ").trim().slice(0, 900);
 const _jvVoxBias = voxBias;
@@ -7485,7 +7507,7 @@ function cvPaint(){
   if (!JV.view.length) L.innerHTML = (JV.prev && Date.now() - JV.prev.at < CV_GARDE && (JV.prev.view || []).length ? `<button class="cv-new" id="cvReprendre" style="align-self:flex-start;margin:0 0 12px">reprendre la conversation précédente</button>` : "") + `<p class="small" style="margin:0">Parlez-moi de ce que vous voulez : une idée à creuser, une décision, votre journée… Je m'appuie sur votre mémoire et je vous dis franchement ce que j'en pense. Touchez le rond pour dicter.</p>`;
   else L.innerHTML = JV.view.map((v, i) => {
     if (v.r === "u") return `<div class="cv-m u">${esc(v.t)}</div>`;
-    if (v.r === "a") return `<div class="cv-m a">${cvHtml(v.t)}</div>`;
+    if (v.r === "a") return `<div class="cv-m a">${cvHtml(jvSansEmo(v.t))}</div>`;
     if (v.r === "e") return `<div class="cv-m a cv-e">${esc(v.t)}${v.retry ? ` <button data-retry="${i}">réessayer</button>` : ""}</div>`;
     if (v.k === "rappel") {
       const quand = new Date(v.date + "T12:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + " à " + v.heure.replace(":", "h");
@@ -8011,10 +8033,29 @@ async function vFn(body){
   catch (e) { return { error: "reseau" }; } finally { clearTimeout(to); }
 }
 const jvVoixGoogle = () => /^g:fr-FR-Chirp3-HD-/.test(CFG.jvVoix || "");
+/* lot 25 · la voix Mistral (Voxtral TTS 3) : une voix britannique qui lit le français, avec ses émotions */
+const JV_VOIX_M = [["voice_1788", "David"], ["voice_3147", "Howard"], ["voice_3149", "Hugo"], ["voice_591", "Fred"], ["voice_3150", "James (américain)"], ["voice_485", "Rob (américain)"]];
+const JV_PRIX_VM = 0.016 / 1000;   // $ par caractère (Voxtral TTS)
+function jvVoixMistral(){ return /^m:voice_\d+$/.test(CFG.jvVoix || ""); }
+function jvVoixEnLigne(){ return jvVoixGoogle() || (jvVoixMistral() && !!CFG.mkey); }
+function jvExpr(){ return Math.min(5, Math.max(1, Math.round((+CFG.jvExpr || 3.9) * 10) / 10)); }
+function jvVoixMCompte(n){
+  try {
+    const u = LS.get("copilote_mvoix", null), cur = u && u.m === curMonth() ? u.n : 0; LS.set("copilote_mvoix", { m: curMonth(), n: cur + n });
+    const m = cvMonth(), usd = n * JV_PRIX_VM; m.usd += usd; m.par = m.par || {}; m.par["voix Mistral"] = (m.par["voix Mistral"] || 0) + usd; LS.set("copilote_conso", m);
+  } catch (e) {}
+}
+function jvVoixMErreur(r){
+  const e = r && r.error; if (!e || LS.get("copilote_mverr", "") === ymd(new Date()) + e) return;
+  LS.set("copilote_mverr", ymd(new Date()) + e);
+  const why = e === "cle_mistral" ? "clé Mistral refusée" : e === "mistral_limit" ? "Mistral saturé" : e === "reseau" ? "pas de réseau" : "Mistral ne répond pas";
+  try { toast(`voix Mistral : ${why}, je prends la voix du téléphone`, "", null, 6000); } catch (x) {}
+}
+if (!CFG.jvVoix56) { if (CFG.mkey) { CFG.jvVoix = "m:voice_1788"; CFG.jvParle = true; } CFG.jvVoix56 = 1; try { saveCfg(); } catch (e) {} }   // v56 : David par défaut
 function jvDire(t, then){
-  if (!jvVoixGoogle() || !MEM.tok || navigator.onLine === false) return _jvSpeak(t, then);
+  if (!jvVoixEnLigne() || !MEM.tok || navigator.onLine === false) return _jvSpeak(jvSansEmo(t), then);
   let fini = false; const done = () => { if (fini) return; fini = true; if (then) then(); };
-  const repli = () => { if (fini) return; fini = true; _jvSpeak(t, then); };
+  const repli = () => { if (fini) return; fini = true; _jvSpeak(jvSansEmo(t), then); };
   const voix = CFG.jvVoix.slice(2), mode = CFG.jvStyle ? "style" : "hd", style = mode === "style" ? (CFG.jvStyleTxt || JV_STYLE_DEF) : "";
   const k = [mode, voix, style, t].join("|");
   const joue = src => jvChauffe().then(() => {
@@ -8027,6 +8068,7 @@ function jvDire(t, then){
       setTimeout(done, 6000 + t.length * 110);
     } catch (e) { repli(); }
   });
+  if (jvVoixMistral()) { jvVoixAudio(t).then(src => src ? joue(src) : repli(), repli); return; }
   if (JV_SONS.has(k)) { joue(JV_SONS.get(k)); return; }
   vFn({ action: "dire", texte: t, voix, mode, style }).then(r => {
     if (r && r.mois) LS.set("copilote_vmois", { m: curMonth(), u: r.mois });
@@ -8109,22 +8151,27 @@ async function jvVoixListe(){
   }
   const gOpts = GV.slice().sort((a, b) => (a.genre === "homme" ? 0 : 1) - (b.genre === "homme" ? 0 : 1) || a.nom.localeCompare(b.nom))
     .map(v => `<option value="g:${esc(v.nom)}">${esc(v.nom.replace(/^fr-FR-Chirp3-HD-/, ""))} · ${v.genre} · Google</option>`).join("");
+  const mOpts = CFG.mkey ? JV_VOIX_M.map(([id, n]) => `<option value="m:${id}">${esc(n)} · Mistral</option>`).join("") : "";
   sel.innerHTML = `<option value="">voix par défaut du téléphone</option>`
+    + (mOpts ? `<optgroup label="Voix Mistral (accent anglais, elles lisent le français)">${mOpts}</optgroup>` : "")
     + (gOpts ? `<optgroup label="Voix Google (en ligne, naturelles)">${gOpts}</optgroup>` : "")
     + (L.length ? `<optgroup label="Voix du téléphone">` + L.map((v, k) => `<option value="${esc(v.id)}">voix ${k + 1} (${esc(court(v.id))})${v.net ? " · en ligne" : ""}${v.off ? " · à télécharger" : ""}</option>`).join("") + `</optgroup>` : "");
   sel.value = CFG.jvVoix || "";
   const u = LS.get("copilote_vmois", null), um = u && u.m === curMonth() ? u.u : null;
+  const mv = LS.get("copilote_mvoix", null), mn = mv && mv.m === curMonth() ? mv.n : 0;
+  if (jvVoixMistral()) { st.textContent = CFG.mkey ? `voix Mistral ce mois : ${mn.toLocaleString("fr-FR")} caractères (≈ ${cvMoney(mn * JV_PRIX_VM)})` : "les voix Mistral ont besoin de votre clé Mistral (réglages → dictée)"; return; }
   st.textContent = gInfo || (jvVoixGoogle() && um ? `voix Google ce mois : ${(um.hd || 0).toLocaleString("fr-FR")} caractères${um.style ? " + " + um.style.toLocaleString("fr-FR") + " en style Jarvis" : ""}` : (GV.length || L.length) && !CFG.jvVoix ? "écoutez-les une par une et gardez la voix d'homme qui vous plaît" : "");
 }
-function jvVoixSave(){ CFG.jvVoix = $("cvVoix").value; CFG.jvPitch = +$("cvPitch").value || 1; CFG.jvRate = +$("cvRate").value || 1.05; CFG.jvStyle = $("cvStyleChk").checked; CFG.jvStyleTxt = $("cvStyleTxt").value.trim() || JV_STYLE_DEF; saveCfg(); $("cvStyleBox").style.display = jvVoixGoogle() ? "" : "none"; }
+function jvVoixSave(){ CFG.jvVoix = $("cvVoix").value; CFG.jvPitch = +$("cvPitch").value || 1; CFG.jvRate = +$("cvRate").value || 1.05; CFG.jvExpr = +$("cvExpr").value || 3.9; CFG.jvStyle = $("cvStyleChk").checked; CFG.jvStyleTxt = $("cvStyleTxt").value.trim() || JV_STYLE_DEF; saveCfg(); $("cvStyleBox").style.display = jvVoixGoogle() ? "" : "none"; $("cvExprBox").style.display = jvVoixMistral() ? "flex" : "none"; try { jvVoixListe(); } catch (e) {} }
 function paintVoix(){
   $("cvNom").value = jvNom(); $("cvPitch").value = CFG.jvPitch || 1; $("cvRate").value = CFG.jvRate || 1.05; $("cvParleChk").checked = CFG.jvParle !== false;
   $("cvDiscretChk").checked = !!CFG.jvDiscret; $("cvDiscretAutoChk").checked = CFG.jvDiscretAuto !== false;
   $("cvStyleChk").checked = !!CFG.jvStyle; $("cvStyleTxt").value = CFG.jvStyleTxt || JV_STYLE_DEF; $("cvStyleBox").style.display = jvVoixGoogle() ? "" : "none";
+  $("cvExpr").value = jvExpr(); $("cvExprBox").style.display = jvVoixMistral() ? "flex" : "none";
   jvVoixListe();
 }
 $("cvNom").onchange = () => { CFG.jvNom = $("cvNom").value.trim() || "Nestor"; saveCfg(); jvNomDom(); toast(`désormais, je m'appelle ${jvNom()}`); };
-["cvVoix", "cvPitch", "cvRate", "cvStyleChk", "cvStyleTxt"].forEach(id => $(id).onchange = jvVoixSave);
+["cvVoix", "cvPitch", "cvRate", "cvExpr", "cvStyleChk", "cvStyleTxt"].forEach(id => $(id).onchange = jvVoixSave);
 $("cvParleChk").onchange = () => { CFG.jvParle = $("cvParleChk").checked; saveCfg(); };
 $("cvVoixTest").onclick = () => { jvVoixSave(); try { hush(); } catch (e) {} jvDire(`Bonsoir monsieur. Ici ${jvNom()}. Votre bus passe à 18 heures 45 : je vous laisse le temps de retrouver vos clés.`); };
 const _jvOpenEdit = openEdit;
