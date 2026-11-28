@@ -521,7 +521,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   </div>
   <div class="regP" id="regP-coulisses" style="display:none">
     <div class="lab">Ses spécialistes</div>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:4px"><input type="checkbox" id="couAigChk" style="width:auto"> l'aiguilleur confie tâches, rappels et agenda au secrétaire (plus vif, bien moins cher) et le reste au majordome · même voix, mêmes souvenirs</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:4px"><input type="checkbox" id="couAigChk" style="width:auto"> l'aiguilleur confie tâches, rappels et agenda au secrétaire, les recherches au documentaliste, la maison et les trajets à l'intendant, le reste au majordome · même voix, mêmes souvenirs</label>
     <p class="small" id="couAigSt" style="margin-top:6px"></p>
     <div class="lab">Le chrono</div>
     <div id="couChrono"></div>
@@ -552,7 +552,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <div class="foot" style="flex-wrap:wrap;gap:16px"><div class="l" style="flex-wrap:wrap"><button id="sExp">sauvegarder</button><button id="sImp">restaurer</button><button id="sForget">oublier mes corrections</button></div></div>
   <input type="file" id="sFile" accept=".json" hidden>
   </div>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v74 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v75 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -742,7 +742,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 74;
+const TEMPO_BUILD = 75;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4896,7 +4896,7 @@ async function cvCallFlux(extras, surTexte, effort){
   const fc = jvFcOn();
   const body = fc ? { model: JV_FC_MODEL, max_tokens: 900, system: niv >= 1 ? [{ type: "text", text: JV_FC_SYS, cache_control: { type: "ephemeral" } }] : JV_FC_SYS, tools: JV_FC_TOOLS, messages: c.messages, stream: CFG.cvFlux !== false }
     : { model: R ? R.model : CV_MODEL, max_tokens: R ? 2000 : 4000, system: c.system, tools: jvOutilsRoute(), messages: c.messages, stream: CFG.cvFlux !== false };
-  if (niv >= 1 && !fc && !R) body.output_config = { effort: effort || "low" };
+  if (niv >= 1 && !fc && !R) body.output_config = { effort: jvEffortMax(JV_ROUTE && JV_ROUTE.effort, effort) };   // lot 35 : le majordome réfléchit plus quand on le lui demande
   if (niv >= 2) body.cache_control = { type: "ephemeral" };
   const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
     headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
@@ -9022,7 +9022,7 @@ const JV_TRI = {
   q: /^(?:(?:et|mais|alors|au fait|dis moi|dis|bon|ok|euh) )*(?:est ce qu|qu est ce|qu est ce|comment|pourquoi|combien|quel|quelle|quels|quelles|qui |ou est|ou sont|ou en|quand est ce|a quelle heure|c est quoi|c est qui|tu (?:penses|crois|sais|connais|peux me dire|pourrais|as vu|en penses|me conseilles|ferais|preferes)|que (?:penses|ferais|dois je|faire|me conseilles)|explique|raconte|conseille|aide moi a|ton avis|j aimerais savoir|je me demande|y a t il|est il|est elle|il fait|ca va)/,
   emo: /\b(?:je suis (?:fatigue|creve|epuise|stresse|deprime|triste|en colere|perdu|demotive|deborde|a bout|las)|j en ai marre|j ai pas le moral|je n ai pas le moral|je n en peux plus|j ai besoin de parler|motive moi|je procrastine|je n y arrive pas|j y arrive pas|je galere|ca me saoule|je doute|je stresse)\b/,
   salut: /^(?:bonjour|salut|bonsoir|coucou|merci|bonne nuit|bonne journee|hello|hey|ok merci|super merci|parfait|top|genial|bravo)\b/,
-  act: /^(?:appelle|rappelle (?!moi|toi|nous)|telephone a|envoie|ecris|lis|lance|ouvre|cherche|trouve|montre|donne moi|fais moi|prepare moi|redige|allume|eteins|baisse|monte|traduis|resume|calcule|joue|regle le chauffage|mets le chauffage)/,
+  act: /^(?:appelle|rappelle (?!moi|toi|nous)|telephone a|envoie|ecris|lis|lance|ouvre|cherche|trouve|montre|donne moi|fais moi|prepare moi|redige|allume|eteins|baisse|monte|traduis|resume|calcule|joue|regle le chauffage|mets le chauffage|ignore|retiens|souviens toi|oublie (?!pas)|apprends|augmente ton|diminue ton|baisse ton|sois plus|sois moins|arrete de|ne me (?:parle|dis))/,
   conseil: /\b(?:tu (?:penses|crois|me conseilles|ferais quoi)|ton avis|je devrais|vaut il mieux|vaut mieux|qu en penses tu)\b/,
   agenda: /\b(?:qu est ce que j ai|j ai quoi|j ai quelque chose|mon agenda|mes rendez vous|mes rdv|mes taches|ma liste|mes rappels|qu est ce qui m attend|suis je libre|je suis libre|mon programme)\b/,
   s: [/^(?:rappelle moi|rappelle toi|rappelle nous|pense a|pensez a|penser a|n oublie pas|noublie pas|faut pas oublier|il ne faut pas oublier|note|notes|note moi|ajoute|rajoute|inscris|programme|planifie|prends note|prend note|il faut que je|il faut que j |je dois|faut que je|faut que j |a faire|tache|memo|idee|depense|reveille moi|minuteur|mets (?:moi )?(?:un |une )?(?:rappel|rdv|rendez vous|tache|alarme|reveil)|mets .{1,40} (?:sur|dans) (?:la|ma) liste)\b/,
@@ -9081,7 +9081,7 @@ async function jvTriModele(text){
     if (!r.ok) { jvBN("erreur", "tri", "petit modèle " + r.status, { ag: "aiguilleur" }); return null; }
     const j = await r.json();
     try { cvCount(j.usage, "aiguilleur", CV_PRIX_HAIKU); } catch (e) {}
-    const c = (String(((j.content || []).find(b => b.type === "text") || {}).text || "").trim().toUpperCase().match(/[A-Z]/) || [])[0];
+    const c = ((/^\W*([SMDI])\b/i.exec(String(((j.content || []).find(b => b.type === "text") || {}).text || "")) || [])[1] || "").toUpperCase();   // une lettre, rien d'autre
     if (c === "S") return "secretaire";
     if (c === "M") return "majordome";
     return Object.keys(JV_TRI_PLUS).find(k => JV_TRI_PLUS[k].lettre === c) || null;
@@ -9336,6 +9336,43 @@ $("couRapChk").onchange = () => { CFG.jvRapport = $("couRapChk").checked; saveCf
 $("couExtChk").onchange = () => { CFG.jvRapportExtraits = $("couExtChk").checked; saveCfg(); };
 $("couRapGo").onclick = () => jvRapportEnvoi(7);
 $("couBNVide").onclick = () => { const b = $("couBNVide"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touchez encore"; return; } delete b.dataset.sure; b.textContent = "vider la boîte noire"; LS.set(JV_BN_LS, []); jvCoulissesPeins(); };
+
+/* ======================================================================
+   lot 35 · le majordome, le documentaliste, l'intendant — et une seule voix par-dessus
+   Le majordome garde la conversation et les conseils (modèle fort, réflexion poussée quand il le demande).
+   Le documentaliste cherche (Perplexity, déjà branché côté serveur) ; l'intendant tient la maison et les trajets.
+   Tous lisent les mêmes consignes, les mêmes souvenirs, le même fil : c'est toujours Nestor qui parle.
+   ====================================================================== */
+Object.assign(JV_AGENTS, {
+  documentaliste: { nom: "documentaliste", model: JV_HAIKU, role: "recherches sur le web", actif: () => typeof jvWebOn === "function" && jvWebOn(),
+    outils: ["recherche_web", "chercher_souvenirs", "agenda", "noter", "proposer_souvenir", "proposer_rappel", "noter_evolution"] },
+  intendant: { nom: "intendant", model: JV_HAIKU, role: "chauffage, colis, trajets, météo",
+    outils: ["chauffage", "chauffage_regler", "chauffage_mode", "chauffage_planning", "meteo", "horaires_bus", "trajet_voiture", "proposer_vtc", "proposer_rappel", "proposer_rappel_lieu", "proposer_lieu", "agenda", "taches", "chercher_souvenirs", "noter", "telephone", "noter_evolution"] }
+});
+JV_AGENTS.majordome.role = "conversation, conseils, décisions, messages, tout le reste";
+Object.assign(JV_TRI_PLUS, {
+  documentaliste: { lettre: "D", poids: 3, sys: "une recherche d'information du monde extérieur (actualité, résultat sportif, horaires ou prix d'un lieu, documentation technique, comparatif)",
+    rx: /\b(?:cherche (?:sur |dans )?(?:internet|le web|google|en ligne)|recherche (?:sur|moi)|fais une recherche|trouve moi (?:des infos|la doc|un comparatif)|sur internet|sur le web|actualite|actus|les infos du jour|qui a gagne|resultat du match|resultats? de|score du|horaires? d ouverture|est ce que .{2,40} est ouvert|ouvert (?:le dimanche|aujourd hui|ce soir)|combien coute|prix (?:d un|d une|du|de la)|fiche technique|datasheet|documentation (?:de|du|technique)|compatible avec|avis sur|comparatif|derniere version|sortie de)\b/ },
+  intendant: { lettre: "I", poids: 3, sys: "la maison et les déplacements : chauffage, température chez lui, colis et livraisons, bus, trajets, heure de départ, météo",
+    rx: /\b(?:chauffage|thermostat|radiateurs?|chaudiere|netatmo|temperature (?:a la maison|de la maison|du salon|chez moi|dans la maison)|il fait (?:froid|chaud) (?:a la maison|chez moi|dans la maison)|mode (?:absent|eco|hors gel)|colis|livraison|livre (?:quand|aujourd hui)|point relais|relais colis|mondial relay|chronopost|colissimo|prochain bus|horaires? du bus|mon bus|trajet|itineraire|bouchons|trafic|combien de temps (?:pour aller|de route|en voiture|pour rentrer)|a quelle heure (?:je dois|dois je|faut il|il faut) partir|heure de depart|meteo|quel temps|va t il pleuvoir|il va pleuvoir|pluie|parapluie|neige)\b/ }
+});
+/* l'aiguilleur : une tâche explicite reste au secrétaire, même si elle parle de colis ou de bus */
+{ const f = jvTriDecide; jvTriDecide = function(T){
+  if (T.spe) {
+    if (T.s >= 3 && T.q === 0 && !/^(?:chauffage|thermostat|mets le chauffage|regle le chauffage)/.test(T.n || "")) return { ag: "secretaire", sur: .9 };
+    if (T.s < 3) return { ag: T.spe, sur: .9 };
+    return { ag: null, sur: 0 };
+  }
+  return f.apply(this, arguments);
+}; }
+const jvEffortMax = (a, b) => { const o = ["low", "medium", "high"]; return o[Math.max(o.indexOf(a || "low"), o.indexOf(b || "low"), 0)]; };
+/* le majordome : il réfléchit davantage quand on lui demande conseil, à fond quand on le lui demande */
+const JV_FOND_RX = /\b(?:reflechis bien|reflechis y|prends? (?:ton|le) temps|analyse (?:bien|en profondeur|serieusement)|reflexion approfondie|pese le pour et le contre|aide moi a (?:decider|choisir|trancher)|fais le tour de la question|qu en penses tu vraiment)\b/;
+{ const f = jvAiguillage; jvAiguillage = async function(text, opt){
+  const R = await f.apply(this, arguments);
+  try { if (R && R.ag === "majordome") { const n = jvNorm34(text); if (JV_FOND_RX.test(n)) { R.effort = "high"; R.pq += " · à fond"; } else if (JV_TRI.conseil.test(n) || JV_TRI.emo.test(n)) R.effort = "medium"; } } catch (e) {}
+  return R;
+}; }
 </script>
 </body>
 </html>

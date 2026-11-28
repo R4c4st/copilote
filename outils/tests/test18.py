@@ -42,7 +42,7 @@ async def main():
         r["tri"] = await pg.evaluate("""[
           ['Acheter du pain demain', 'secretaire'], ['rappelle-moi d\\'appeler le garage jeudi à 9 h', 'secretaire'], ['Il faut que j\\'envoie le devis', 'secretaire'],
           ["qu'est-ce que j'ai demain ?", 'secretaire'], ['dentiste jeudi', 'secretaire'], ['c\\'est fait pour le garage', 'secretaire'],
-          ['Quel temps fera-t-il demain ?', 'majordome'], ['je suis crevé', 'majordome'], ['merci', 'majordome'], ['appelle Paul', 'majordome'],
+          ['Quel temps fera-t-il demain ?', 'intendant'], ['je suis crevé', 'majordome'], ['merci', 'majordome'], ['appelle Paul', 'majordome'],
           ['Tu penses que je devrais changer de voiture ?', 'majordome'], ['rappelle Paul', 'majordome']
         ].map(([t, a]) => { const d = jvTriDecide(jvTriLocal(t)); return d.ag === a ? 'ok' : t + ' → ' + d.ag; })""")
         # 2. une tâche : le secrétaire (Haiku), outils réduits, même consigne que Nestor
@@ -54,7 +54,7 @@ async def main():
         r["tache_rangee"] = await pg.evaluate("S.items.some(i => i.title === 'Acheter du pain')")
         r["chrono1"] = await pg.evaluate("(() => { const e = LS.get('copilote_chrono', []).slice(-1)[0]; return { ag: e.ag, mo: e.mo, pq: e.pq, ec: e.ec, pe_ok: e.pe != null && e.pe >= e.ec, on: e.on }; })()")
         # 3. une question : le majordome (Sonnet, tous les outils)
-        n0 = len(calls); await pg.evaluate("cvSend('Quel temps fera-t-il demain ?', {})"); await pg.wait_for_timeout(1200)
+        n0 = len(calls); await pg.evaluate("cvSend('Tu penses que je devrais changer de voiture ?', {})"); await pg.wait_for_timeout(1200)
         r["appels_question"] = [(c["model"], c["max_tokens"], "tools" in c) for c in calls[n0:]]
         c = [c for c in calls[n0:] if "tools" in c][0]; r["majordome"] = {"model": c["model"], "meteo": "meteo" in [t["name"] for t in c["tools"]], "effort": "output_config" in c}
         # 4. un doute : le petit modèle tranche
