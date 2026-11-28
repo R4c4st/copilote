@@ -529,16 +529,12 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <div id="fdList" class="fdList"></div>
     <p class="small" id="fdSt"></p>
     <div class="foot" style="margin-top:10px"><div class="l"><button id="fdGo" style="color:var(--fg)">mettre en fond d'écran</button></div></div>
-    <div id="fdVBox" style="display:none">
-      <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" id="fdVerrou" style="width:auto"> aussi sur l'écran verrouillé</label>
-      <p class="small" id="fdVSt"></p>
-    </div>
   </div>
   <p class="small" id="sLearn"></p>
   <div class="foot" style="flex-wrap:wrap;gap:16px"><div class="l" style="flex-wrap:wrap"><button id="sExp">sauvegarder</button><button id="sImp">restaurer</button><button id="sForget">oublier mes corrections</button></div></div>
   <input type="file" id="sFile" accept=".json" hidden>
   </div>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v71 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v72 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -728,7 +724,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 71;
+const TEMPO_BUILD = 72;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -7619,10 +7615,6 @@ async function paintFond(){
   if (!FD_OCC) $("fdSt").textContent = nv < 18 ? "Il faut la nouvelle appli Android (0.5.0) : elle se propose à l'ouverture, ou « mettre à jour » ci-dessus."
     : enPlace ? `En place : ${enPlace.nom}. Choisissez-en un autre pour le remplacer.` : nv >= 19 ? "Il vit et réagit à Nestor : une étoile d'or par chose réglée aujourd'hui, une lueur avant un rappel, des influx pour les messages en attente. En pause dès que l'écran d'accueil n'est plus visible." : "Une boucle de 12 secondes, en pause dès que l'écran d'accueil n'est plus visible.";
   $("fdGo").disabled = nv < 18 || FD_OCC;
-  // lot 32 : l'écran verrouillé, en image tenue à jour par Nestor (Samsung n'y permet pas le fond animé)
-  $("fdVBox").style.display = nv >= 21 ? "" : "none";
-  if (nv >= 21) { const on = !!(st && st.verrou); $("fdVerrou").checked = on;
-    $("fdVSt").textContent = on ? "Nestor refait l'image de l'écran verrouillé à chaque changement : le cœur au centre, l'or de la journée, la lueur des rappels. Image fixe : le téléphone n'y permet pas l'animation." : "Remplace l'image actuelle de l'écran verrouillé par la mise en scène de Nestor, tenue à jour (image fixe)."; }
   $("fdGo").textContent = enPlace && enPlace.id === FD_SEL ? "remettre ce fond" : "mettre en fond d'écran";
 }
 async function fondPoser(){
@@ -7643,7 +7635,6 @@ async function fondPoser(){
   FD_OCC = false; $("fdGo").disabled = false;
 }
 $("fdGo").onclick = fondPoser;
-$("fdVerrou").onchange = async () => { await tnOk("fondVerrou", { on: $("fdVerrou").checked }); setTimeout(paintFond, 300); };
 /* lot 30 : ce que le fond montre de Nestor. Les dates des choses réglées (le fond compte celles du jour, même après minuit)
    et les rappels du moment (passés depuis moins de 6 h ou à venir dans les 48 h) ; le fond calcule seul « proche » et « en retard ». */
 var FD_SIG = "";   // var : render() peut l'appeler avant que cette ligne soit lue

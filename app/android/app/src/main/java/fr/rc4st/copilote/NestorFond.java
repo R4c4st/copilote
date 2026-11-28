@@ -1,11 +1,6 @@
 package fr.rc4st.copilote;
 
-import android.app.KeyguardManager;
-import android.app.WallpaperManager;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -48,10 +43,8 @@ import org.json.JSONObject;
  * les messages en attente (des influx vers le cœur), les teintes selon l'heure, une onde au toucher.
  * Le cœur de Nestor (la constellation qui remplace le widget) n'apparaît que sur la première page d'accueil
  * quand le téléphone dit quelle page est affichée. En mode économie d'énergie, le fond se fige.
- * Lot 31 : sur l'écran verrouillé, le cœur passe au centre, plus grand, avec l'or de la journée en couronne ;
- * au déverrouillage, il glisse jusqu'à sa place de l'écran d'accueil.
- * Lot 32 : quand le téléphone ne permet pas le fond animé sur l'écran verrouillé (Samsung), Nestor y pose une image
- * fixe de cette mise en scène et la refait dès que l'état change (écran éteint ou rallumé, tâche cochée, rappel, message).
+ * Lot 33 : plus de mouvement (étoiles qui flottent davantage, une étoile filante de temps en temps, une vague de pensée
+ * qui traverse le réseau, plus d'influx, un cœur plus vivant) ; le cœur reste à sa place (plus de mise en scène verrouillée).
  * Sans scène, il rejoue l'ancienne boucle vidéo (lot 29).
  */
 public class NestorFond extends WallpaperService {
@@ -96,24 +89,6 @@ public class NestorFond extends WallpaperService {
         private final List<float[]> ondes = new ArrayList<>();
         private float downX, downY;
         private long downT;
-        // lot 31 : l'écran verrouillé
-        private KeyguardManager km;
-        private boolean verrouille = false, recepteur = false;
-        private float verrou = 0f;
-        private long verrouT = 0;
-        // lot 32 : l'image de l'écran verrouillé, refaite par Nestor
-        private boolean verrouAuto = false, pourVerrou = false;
-        private String sigVerrou = "";
-        private final BroadcastReceiver ecran = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context ctx, Intent i) {
-                String a = i.getAction();
-                if (Intent.ACTION_USER_PRESENT.equals(a)) verrouille = false;   // déverrouillé : le cœur rejoint sa place
-                else if (Intent.ACTION_SCREEN_ON.equals(a)) { verrouille = estVerrouille(); if (verrouille) verrou = 1f; majVerrou(false); }
-                else if (Intent.ACTION_SCREEN_OFF.equals(a)) majVerrou(false);   // écran éteint : l'image du prochain réveil est prête
-                if (sc != null && visible) relance();
-            }
-        };
         // pinceaux
         private final Paint plein = new Paint(Paint.ANTI_ALIAS_FLAG), trait = new Paint(Paint.ANTI_ALIAS_FLAG), image_ = new Paint(Paint.FILTER_BITMAP_FLAG);
         private final Map<Integer, Paint> lueurs = new HashMap<>();
@@ -134,19 +109,6 @@ public class NestorFond extends WallpaperService {
             preparePinceaux();
             prefs().registerOnSharedPreferenceChangeListener(this);
             litEtat();
-            try {
-                km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
-                IntentFilter f = new IntentFilter();
-                f.addAction(Intent.ACTION_USER_PRESENT);
-                f.addAction(Intent.ACTION_SCREEN_ON);
-                f.addAction(Intent.ACTION_SCREEN_OFF);
-                if (Build.VERSION.SDK_INT >= 33) registerReceiver(ecran, f, Context.RECEIVER_EXPORTED); else registerReceiver(ecran, f);
-                recepteur = true;
-            } catch (Exception ignored) {}
-        }
-
-        private boolean estVerrouille() {
-            try { return km != null && km.isKeyguardLocked(); } catch (Exception e) { return false; }
         }
 
         private SharedPreferences prefs() { return getSharedPreferences(TempoNativePlugin.PREFS, Context.MODE_PRIVATE); }
@@ -156,7 +118,6 @@ public class NestorFond extends WallpaperService {
             if (cle != null && cle.startsWith("fond_")) {
                 litEtat();
                 if (visible && !enCours) h.post(image);
-                h.postDelayed(() -> majVerrou("fond_verrou".equals(cle)), 400);
             }
         }
 
@@ -187,8 +148,6 @@ public class NestorFond extends WallpaperService {
             visible = v;
             if (v) {
                 if (temps() > 3600) { t0 = SystemClock.uptimeMillis(); ondes.clear(); }   // le temps reste petit : les mouvements restent fluides
-                verrouille = estVerrouille();
-                if (verrouille) verrou = 1f;   // on arrive sur l'écran verrouillé : le cœur y est déjà au centre
                 litEtat();
                 File s = scene(NestorFond.this);
                 // une autre scène (ou la première) a été rangée : on la prend en revenant sur l'accueil
@@ -239,7 +198,6 @@ public class NestorFond extends WallpaperService {
             arrete();
             libereVideo();
             try { prefs().unregisterOnSharedPreferenceChangeListener(this); } catch (Exception ignored) {}
-            if (recepteur) try { unregisterReceiver(ecran); } catch (Exception ignored) {}
             super.onDestroy();
         }
 
@@ -247,7 +205,6 @@ public class NestorFond extends WallpaperService {
 
         private void litEtat() {
             SharedPreferences p = prefs();
-            verrouAuto = p.getBoolean("fond_verrou", false);
             faits = tableau(p.getString("fond_or", "[]"));
             rappels = tableau(p.getString("fond_rappels", "[]"));
             calculeEtat(true);
@@ -301,7 +258,6 @@ public class NestorFond extends WallpaperService {
                 sc = o;
                 sceneCharge = s.lastModified();
                 tireParametres();
-                h.postDelayed(() -> majVerrou(true), 800);
                 return true;
             } catch (Throwable e) {
                 sc = null;
@@ -317,7 +273,7 @@ public class NestorFond extends WallpaperService {
             twP = new float[tw == null ? 0 : tw.length()][];
             for (int i = 0; i < twP.length; i++) twP[i] = new float[]{1 + r.nextInt(3), r.nextFloat() * 6.2832f};
             arcP = new float[arcs == null ? 0 : arcs.length()][];
-            for (int i = 0; i < arcP.length; i++) arcP[i] = new float[]{r.nextFloat() < .42f ? 1 : 0, r.nextFloat(), .1f + r.nextFloat() * .12f, r.nextFloat() < .5f ? 1 : 0};
+            for (int i = 0; i < arcP.length; i++) arcP[i] = new float[]{r.nextFloat() < .62f ? 1 : 0, r.nextFloat(), .1f + r.nextFloat() * .12f, r.nextFloat() < .5f ? 1 : 0};
             Random c = new Random(424242);
             coeurP = new float[84][];
             for (int i = 0; i < 84; i++) coeurP[i] = new float[]{c.nextFloat() * 6.2832f, 34 + (float) Math.pow(c.nextFloat(), .8) * 108, .6f + c.nextFloat() * 1.6f, c.nextFloat() * 6.2832f, (c.nextFloat() - .5f) * .13f};
@@ -340,7 +296,6 @@ public class NestorFond extends WallpaperService {
             h.removeCallbacks(image);
             if (sc == null || sw == 0) { enCours = false; return; }
             calculeEtat(false);
-            if (SystemClock.uptimeMillis() - verrouT > 250) { verrouT = SystemClock.uptimeMillis(); verrouille = estVerrouille(); }
             SurfaceHolder holder = getSurfaceHolder();
             Canvas c = null;
             try {
@@ -352,7 +307,7 @@ public class NestorFond extends WallpaperService {
             }
             int heure = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
             enCours = visible && !economie();
-            if (enCours) h.postDelayed(image, (heure >= 23 || heure < 6) ? 50 : verrouille ? 42 : 33);
+            if (enCours) h.postDelayed(image, (heure >= 23 || heure < 6) ? 50 : 33);
         }
 
         /* ------------------------------------------------------------ dessin (suit le rendu de référence) */
@@ -376,11 +331,16 @@ public class NestorFond extends WallpaperService {
                 double v = Math.pow(Math.max(0, Math.sin(t * .52 * twP[i][0] + twP[i][1])), 2);
                 if (v > .02) point(c, (float) p.optDouble(0), (float) p.optDouble(1), (float) p.optDouble(2), PAL[p.optInt(3)], (float) (.75 * v), 0);
             }
+            JSONObject C0 = sc.optJSONObject("coeur");
+            float chx = C0 == null ? 840 : (float) C0.optDouble("x"), chy = C0 == null ? 1100 : (float) C0.optDouble("y"), chr = C0 == null ? 150 : (float) C0.optDouble("r", 150);
+            // lot 33 : une lueur lente qui remonte la voie lactée, et une étoile filante de temps en temps
+            if ("voie-lactee".equals(style)) { float s = (t / 26f) % 1, q = s * 1.3f - .15f; lueur(c, -80 + 1240 * q, 2050 - 1670 * q, 460, PAL[1], .085f * (float) Math.sin(Math.PI * s)); }
+            if ("voie-lactee".equals(style) || "nuit".equals(style)) filantes(c, t, chx, chy);
             // étoiles reliées
             JSONArray pts = sc.optJSONArray("pts");
             if (pts != null) {
                 JSONObject l = sc.optJSONObject("lien");
-                int n = pts.length(); float A = (float) sc.optDouble("drift", 6);
+                int n = pts.length(); float A = (float) sc.optDouble("drift", 6) * 2.3f;   // lot 33 : elles flottent davantage
                 float[] x = new float[n], y = new float[n];
                 for (int i = 0; i < n; i++) { JSONArray p = pts.optJSONArray(i); float[] q = ptsP[i];
                     x[i] = (float) (p.optDouble(0) + A * q[6] * Math.sin(t * .52 * q[0] + q[3])); y[i] = (float) (p.optDouble(1) + A * q[6] * Math.cos(t * .52 * q[1] + q[4])); }
@@ -396,10 +356,15 @@ public class NestorFond extends WallpaperService {
                 for (int i = 0; i < arcs.length(); i++) {
                     if (arcP[i][0] == 0) continue;
                     JSONArray e = arcs.optJSONArray(i); JSONArray a = neur.optJSONArray(e.optInt(0)), b = neur.optJSONArray(e.optInt(1));
-                    float g = (float) (((t / 12f - arcP[i][1]) % 1 + 1) % 1), d = arcP[i][2]; boolean rev = arcP[i][3] == 1;
+                    float g = (float) (((t / 9f - arcP[i][1]) % 1 + 1) % 1), d = arcP[i][2]; boolean rev = arcP[i][3] == 1;
                     if (g < d) { float u = g / d; influx(c, (float) a.optDouble(0), (float) a.optDouble(1), (float) e.optDouble(2), (float) e.optDouble(3), (float) b.optDouble(0), (float) b.optDouble(1), u, melange(PAL[1], PAL[2], .45f), (float) Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.1)), .6), rev, 1); }
                     float dt = g - d; if (dt >= 0 && dt < .06f) { int kk = rev ? e.optInt(0) : e.optInt(1); flash[kk] = Math.max(flash[kk], 1 - dt / .06f); }
                 }
+                // lot 33 : une vague de pensée traverse le réseau de bas en haut
+                float fy = LH * (1.12f - 1.3f * ((t / 15f) % 1));
+                for (int i = 0; i < neur.length(); i++) { JSONArray m = neur.optJSONArray(i); float my = (float) m.optDouble(1), dd = Math.abs(my - fy); if (dd > 170) continue;
+                    float v = (float) Math.pow(1 - dd / 170, 1.6), s = (float) m.optDouble(2), mx = (float) m.optDouble(0); int[] col = {m.optInt(3), m.optInt(4), m.optInt(5)};
+                    lueur(c, mx, my, s * 8, melange(col, PAL[2], .3f), .3f * v); point(c, mx, my, s * (1 + .35f * v), new int[]{235, 250, 255}, .65f * v, 0); }
                 for (int i = 0; i < flash.length; i++) if (flash[i] > 0) { JSONArray m = neur.optJSONArray(i); int[] col = {m.optInt(3), m.optInt(4), m.optInt(5)}; float s = (float) m.optDouble(2);
                     lueur(c, (float) m.optDouble(0), (float) m.optDouble(1), s * 9, melange(col, PAL[2], .3f), .45f * flash[i]);
                     point(c, (float) m.optDouble(0), (float) m.optDouble(1), s * (1 + .5f * flash[i]), new int[]{240, 253, 255}, .9f * flash[i], 0); }
@@ -409,7 +374,7 @@ public class NestorFond extends WallpaperService {
             if (rays != null) {
                 float ox = (float) rays.optDouble("x"), oy = (float) rays.optDouble("y"), r0 = (float) rays.optDouble("r0"), cercle = (float) rays.optDouble("cercle");
                 int n = rays.optInt("n", 112);
-                double th = -Math.PI / 2 + 2 * Math.PI * ((t / 24f) % 1), env = .75 + .25 * Math.sin(t * 1.04);
+                double th = -Math.PI / 2 + 2 * Math.PI * ((t / 15f) % 1), env = .75 + .25 * Math.sin(t * 1.04);
                 for (int i = 0; i < n; i++) {
                     double a = 2 * Math.PI * i / n; boolean lg = i % 2 == 0;
                     double d = Math.abs(((a - th) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI), bb = env * Math.exp(-Math.pow(d / .16, 2));
@@ -426,68 +391,48 @@ public class NestorFond extends WallpaperService {
                     float v = (float) Math.max(0, Math.sin(t * .52 * (1 + (int) twP[i][0] % 2) + twP[i][1]));
                     if (v > .05f) etincelle(c, (float) p.optDouble(0), (float) p.optDouble(1), (float) p.optDouble(2) * v, v); }
             }
-            // lot 31 : verrouillé, le cœur passe au centre avec l'or de la journée en couronne
-            if (pourVerrou) verrou = 1f; else verrou += ((visible && verrouille ? 1f : 0f) - verrou) * .1f;
-            float e = verrou * verrou * (3 - 2 * verrou);
-            JSONObject C0 = sc.optJSONObject("coeur");
-            boolean deco = "art-deco".equals(style);
-            float chx = C0 == null ? 840 : (float) C0.optDouble("x"), chy = C0 == null ? 1100 : (float) C0.optDouble("y"), chr = C0 == null ? 150 : (float) C0.optDouble("r", 150);
-            float vx = deco ? chx : 540, vy = deco ? chy : 1300, vr = deco ? chr * 1.15f : 190;
-            if (e > .01f) c.drawColor(Color.argb(Math.round(46 * e), 0, 0, 0));
             // la journée en or
             JSONObject o = sc.optJSONObject("or");
             if (o != null) {
                 JSONArray slots = o.optJSONArray("slots");
                 int n = Math.min(or, slots == null ? 0 : slots.length());
                 float age = (SystemClock.uptimeMillis() - naissanceT) / 1000f;
-                float[][] anneau = new float[n][];
-                { float R0 = vr * 1.7f, pas = 360f / Math.max(n, 5); int kk = 0;
-                  for (float d = -90; kk < n && d < 630; d += pas) { double a = Math.toRadians(d); float x = (float) (vx + Math.cos(a) * R0), y = (float) (vy + Math.sin(a) * R0);
-                    if (x > 60 && x < LW - 60 && y > 160 && y < LH - 200) anneau[kk++] = new float[]{x, y}; } }
                 if ("neurone".equals(o.optString("mode")) && neur != null && arcs != null) {
                     JSONArray noeuds = o.optJSONArray("noeuds");
-                    if (e > .01f) for (int kk = 0; kk < n; kk++) if (anneau[kk] != null) { float w = (float) Math.sin(t * 1.04 + kk * 1.7); etincelle(c, anneau[kk][0], anneau[kk][1], 5.2f * (1 + .13f * w), (.84f + .16f * w) * e); }
-                    if (e < .99f) for (int kk = 0; kk < n; kk++) {
+                    for (int kk = 0; kk < n; kk++) {
                         int ni = noeuds.optInt(kk); JSONArray m = neur.optJSONArray(ni); float mx = (float) m.optDouble(0), my = (float) m.optDouble(1);
                         float bb = kk == naissance && age < 1.8f ? 1 - age / 1.8f : 0;
-                        float ae = 1 - e;
-                        lueur(c, mx, my, 60 * (1 + bb), PAL[5], (.22f + .3f * bb) * ae);
-                        point(c, mx, my, 6.5f, PAL[6], ae, 0);
-                        etincelle(c, mx, my, 4.4f * (1 + bb), .9f * ae);
+                        lueur(c, mx, my, 60 * (1 + bb), PAL[5], .22f + .3f * bb);
+                        point(c, mx, my, 6.5f, PAL[6], 1, 0);
+                        etincelle(c, mx, my, 4.4f * (1 + bb), .9f);
                         for (int i = 0; i < arcs.length(); i++) { JSONArray e2 = arcs.optJSONArray(i); if (e2.optInt(0) != ni && e2.optInt(1) != ni) continue;
                             JSONArray a = neur.optJSONArray(e2.optInt(0)), b = neur.optJSONArray(e2.optInt(1)); float u = (float) ((t / 3f + kk * .27f + e2.optDouble(2) * .001) % 1);
-                            influx(c, (float) a.optDouble(0), (float) a.optDouble(1), (float) e2.optDouble(2), (float) e2.optDouble(3), (float) b.optDouble(0), (float) b.optDouble(1), u, PAL[6], (float) (.9 * Math.sin(Math.PI * u)) * ae, e2.optInt(1) == ni, 1); }
+                            influx(c, (float) a.optDouble(0), (float) a.optDouble(1), (float) e2.optDouble(2), (float) e2.optDouble(3), (float) b.optDouble(0), (float) b.optDouble(1), u, PAL[6], (float) (.9 * Math.sin(Math.PI * u)), e2.optInt(1) == ni, 1); }
                     }
                 } else if (slots != null) {
                     float taille = (float) o.optDouble("taille", 5);
-                    float[][] pos = new float[slots.length()][];
-                    for (int i = 0; i < pos.length; i++) { JSONArray p = slots.optJSONArray(i); float px = (float) p.optDouble(0), py = (float) p.optDouble(1);
-                        float[] q = i < n && anneau[i] != null ? anneau[i] : new float[]{px, py};
-                        pos[i] = new float[]{px + (q[0] - px) * e, py + (q[1] - py) * e}; }
-                    if (o.optBoolean("lien")) for (int i = 1; i < n; i++) {
-                        trait.setColor(couleur(PAL[5], .34f)); trait.setStrokeWidth(1.2f); c.drawLine(pos[i - 1][0], pos[i - 1][1], pos[i][0], pos[i][1], trait); }
-                    for (int i = 0; i < slots.length(); i++) { float px = pos[i][0], py = pos[i][1];
-                        if (i >= n) { if (e < .99f) point(c, px, py, 1.6f, PAL[6], .32f * (1 - e), 0); continue; }
+                    if (o.optBoolean("lien")) for (int i = 1; i < n; i++) { JSONArray a = slots.optJSONArray(i - 1), b = slots.optJSONArray(i);
+                        trait.setColor(couleur(PAL[5], .34f)); trait.setStrokeWidth(1.2f); c.drawLine((float) a.optDouble(0), (float) a.optDouble(1), (float) b.optDouble(0), (float) b.optDouble(1), trait); }
+                    for (int i = 0; i < slots.length(); i++) { JSONArray p = slots.optJSONArray(i); float px = (float) p.optDouble(0), py = (float) p.optDouble(1);
+                        if (i >= n) { point(c, px, py, 1.6f, PAL[6], .32f, 0); continue; }
                         float w = (float) Math.sin(t * 1.04 + i * 1.7), bb = i == naissance && age < 1.8f ? 1 - age / 1.8f : 0;
-                        etincelle(c, px, py, taille * (1 + .13f * w) * (1 + bb * 1.6f) * (1 + .15f * e), .84f + .16f * w);
+                        etincelle(c, px, py, taille * (1 + .13f * w) * (1 + bb * 1.6f), .84f + .16f * w);
                         if (bb > 0) lueur(c, px, py, 90, PAL[6], .45f * bb); }
                 }
             }
             // le cœur de Nestor (à la place du widget), seulement sur la première page quand le téléphone le dit
             float cible = decalagesVus && xPas > 0 && xPas < 1 ? Math.max(0, Math.min(1, 1 - xOff / xPas)) : 1;
-            if (!pourVerrou) coeur += (cible - coeur) * .25f;
-            JSONObject C = C0;
-            if (C != null && Math.max(coeur, e) > .01f) {
-                float cx = chx + (vx - chx) * e, cy = chy + (vy - chy) * e, kc = (chr + (vr - chr) * e) / 142f;
-                int[] col = PAL[C.optInt("ci")], lcol = PAL[C.optInt("lci")];
-                float ka = Math.max(coeur, e);
+            coeur += (cible - coeur) * .25f;
+            if (C0 != null && coeur > .01f) {
+                float cx = chx, cy = chy, kc = chr / 142f, ka = coeur;
+                int[] col = PAL[C0.optInt("ci")], lcol = PAL[C0.optInt("lci")];
                 String rp = rappel();
                 if (rp != null) { int[] rc = "retard".equals(rp) ? PAL[8] : PAL[7]; float v = (float) (.55 + .45 * Math.sin(t * Math.PI));
                     lueur(c, cx, cy, 250 * kc, rc, .4f * v * ka);
                     trait.setColor(couleur(rc, .55f * v * ka)); trait.setStrokeWidth(2.4f); c.drawCircle(cx, cy, (158 + 8 * v) * kc, trait); }
                 lueur(c, cx, cy, 115 * kc, col, .2f * ka);
                 float[] x = new float[84], y = new float[84];
-                for (int i = 0; i < 84; i++) { float[] p = coeurP[i]; double a = p[0] + p[4] * t, rr = (p[1] + Math.sin(t / 1.9 + p[3]) * 12) * kc;
+                for (int i = 0; i < 84; i++) { float[] p = coeurP[i]; double a = p[0] + p[4] * t * 1.8, rr = (p[1] + Math.sin(t / 1.5 + p[3]) * 17) * kc;   // lot 33 : il tourne et respire un peu plus
                     x[i] = (float) (cx + Math.cos(a) * rr); y[i] = (float) (cy + Math.sin(a) * rr); }
                 liens(c, x, y, 36 * kc, lcol, .34f * ka, 1);
                 for (int i = 0; i < 84; i++) { float[] p = coeurP[i];
@@ -501,37 +446,38 @@ public class NestorFond extends WallpaperService {
                 }
             }
             // les ondes du toucher
-            if (!pourVerrou) for (int i = ondes.size() - 1; i >= 0; i--) { float[] w = ondes.get(i); float age = t - w[2];
+            for (int i = ondes.size() - 1; i >= 0; i--) { float[] w = ondes.get(i); float age = t - w[2];
                 if (age > 1.4f) { ondes.remove(i); continue; }
                 float f = age / 1.4f; trait.setColor(couleur(PAL[1], .55f * (1 - f))); trait.setStrokeWidth(2);
                 c.drawCircle(w[0], w[1], 20 + 260 * (float) Math.sqrt(f), trait); lueur(c, w[0], w[1], 120, PAL[1], .25f * (1 - f)); }
             c.restore();
         }
 
-        /* ------------------------------------------------------------ lot 32 : l'image de l'écran verrouillé */
+        /* ------------------------------------------------------------ lot 33 : les étoiles filantes */
 
-        private String etatVerrou() {
-            calculeEtat(true);
-            return or + "|" + rappel() + "|" + msgs + "|" + sceneCharge + "|" + sw + "x" + sh;
+        /** le même tirage que le rendu de référence (mulberry32), pour que l'aperçu et le téléphone se ressemblent */
+        private float[] tirage(int graine, int n) {
+            int a = graine; float[] out = new float[n];
+            for (int i = 0; i < n; i++) { a += 0x6D2B79F5; int t = (a ^ (a >>> 15)) * (1 | a); t = (t + ((t ^ (t >>> 7)) * (61 | t))) ^ t; out[i] = (float) (((t ^ (t >>> 14)) & 0xffffffffL) / 4294967296.0); }
+            return out;
         }
 
-        /** Refait l'image de l'écran verrouillé si quelque chose a changé (ou tout de suite si force) */
-        private void majVerrou(boolean force) {
-            try {
-                if (isPreview() || !verrouAuto || sc == null || decorBmp == null || sw == 0 || sh == 0) return;
-                String sig = etatVerrou();
-                if (!force && sig.equals(sigVerrou)) return;
-                sigVerrou = sig;
-                final Bitmap b = Bitmap.createBitmap(sw, sh, Bitmap.Config.ARGB_8888);
-                float v0 = verrou, c0 = coeur;
-                pourVerrou = true;
-                try { dessine(new Canvas(b), 8.3f); } finally { pourVerrou = false; verrou = v0; coeur = c0; }
-                new Thread(() -> {
-                    try { WallpaperManager.getInstance(NestorFond.this).setBitmap(b, null, true, WallpaperManager.FLAG_LOCK); }
-                    catch (Throwable ignored) {}
-                    finally { b.recycle(); }
-                }).start();
-            } catch (Throwable ignored) {}
+        private void filantes(Canvas c, float t, float chx, float chy) {
+            float per = 6.5f; int s0 = (int) Math.floor(t / per);
+            for (int s = s0 - 1; s <= s0; s++) {
+                float[] r = tirage(9000 + s * 7919, 24); int k2 = 0;
+                if (r[k2++] > .72f) continue;
+                float t0 = s * per + r[k2++] * (per - 1.4f), dur = .9f + r[k2++] * .5f, u = (t - t0) / dur;
+                if (u < 0 || u > 1) continue;
+                int sens = r[k2++] < .5f ? 1 : -1; double an = Math.PI / 2 + sens * (.55 + r[k2++] * .4);
+                float D = 480 + r[k2++] * 260, L = 230 + r[k2++] * 170, ux = (float) Math.cos(an), uy = (float) Math.sin(an), x0 = 0, y0 = 0;
+                for (int j = 0; j < 8; j++) { x0 = 90 + r[k2++] * 900; y0 = 170 + r[k2++] * 1500; float mx = x0 + ux * D / 2, my = y0 + uy * D / 2;
+                    if (Math.hypot(mx - chx, my - chy) > 330 && Math.hypot(x0 + ux * D - chx, y0 + uy * D - chy) > 260) break; }
+                float e = 1 - (1 - u) * (1 - u), hx = x0 + ux * D * e, hy = y0 + uy * D * e, l = L * Math.min(1, u * 2.5f), a = (float) Math.pow(Math.sin(Math.PI * u), .7);
+                trait.setShader(new LinearGradient(hx, hy, hx - ux * l, hy - uy * l, new int[]{couleur(new int[]{235, 250, 255}, .85f * a), couleur(PAL[1], .35f * a), couleur(PAL[1], 0)}, new float[]{0, .25f, 1}, Shader.TileMode.CLAMP));
+                trait.setStrokeWidth(2.2f); c.drawLine(hx, hy, hx - ux * l, hy - uy * l, trait); trait.setShader(null);
+                lueur(c, hx, hy, 26, PAL[1], .4f * a); point(c, hx, hy, 2.1f, new int[]{245, 253, 255}, a, 0);
+            }
         }
 
         /* ------------------------------------------------------------ petits outils de dessin */
