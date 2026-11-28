@@ -76,7 +76,7 @@ async function repondre(q: string, o: { recence?: string; approfondi?: boolean; 
     if (avecFiltres) body.tools = [{ type: "web_search", filters: filtres }];
     let r = await appel(body), j = await r.json().catch(() => ({}));
     if (!r.ok && avecFiltres && r.status === 400) { delete body.tools; r = await appel(body); j = await r.json().catch(() => ({})); }
-    if (!r.ok) return { erreur: "perplexity " + r.status, detail: net(j?.error?.message ?? j?.detail ?? "", 160) };
+    if (!r.ok) { console.log("agent : refus " + r.status + " " + JSON.stringify(j).slice(0, 400)); return { erreur: "perplexity " + r.status, detail: net(j?.error?.message ?? j?.detail ?? JSON.stringify(j), 160) }; }
     let txt = typeof j.output_text === "string" ? j.output_text : "";
     const sources: Src[] = [];
     for (const it of Array.isArray(j.output) ? j.output : []) {
