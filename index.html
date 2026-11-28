@@ -534,7 +534,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <div class="foot" style="flex-wrap:wrap;gap:16px"><div class="l" style="flex-wrap:wrap"><button id="sExp">sauvegarder</button><button id="sImp">restaurer</button><button id="sForget">oublier mes corrections</button></div></div>
   <input type="file" id="sFile" accept=".json" hidden>
   </div>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v65 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v66 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -724,7 +724,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 65;
+const TEMPO_BUILD = 66;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -8691,19 +8691,62 @@ function jvBip(){
     o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.2);
   } catch (e) {}
 }
-/* écran verrouillé : rien de sa liste ne s'affiche, seulement Nestor qui écoute */
+/* écran verrouillé : rien de sa liste ne s'affiche, seulement Nestor et son cercle vivant (v66) —
+   le même anneau de points que l'accueil : il bat avec votre voix, tourne quand il réfléchit, suit sa voix quand il répond. Aucun texte lisible. */
+let JV_VOILE_RAF = 0, JV_VOILE_NIV = 0, JV_VOILE_MIC = 0;
 function jvVoile(on){
   let v = $("jvVoile");
   if (on && !v) {
     const st = document.createElement("style");
-    st.textContent = "#jvVoile{position:fixed;inset:0;z-index:2147483000;background:#0b0f14;color:#cfd6dd;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-size:15px;letter-spacing:.08em}#jvVoile .n{font-size:22px;letter-spacing:.32em;color:#d69e3a}";
+    st.textContent = "#jvVoile{position:fixed;inset:0;z-index:2147483000;background:#0b0f14;color:#cfd6dd;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-size:15px;letter-spacing:.08em}#jvVoile>*{transition:opacity .6s}#jvVoile.fondu>*{opacity:0}#jvVoile .n{font-size:22px;letter-spacing:.32em;color:#d69e3a}#jvVoileAn{position:relative;width:min(82vw,360px);height:min(82vw,360px)}#jvVoileCv{position:absolute;inset:0;width:100%;height:100%}#jvVoileAn .h-svg{position:absolute;inset:0;width:100%;height:100%}#jvVoileAn .h-svg .g{transform-box:fill-box;transform-origin:center}#jvVoileAn.const .h-svg,#jvVoileAn:not(.const) #jvVoileCv{display:none}#jvVoileS{min-height:1.4em;color:#8fa3ad}";
     document.head.appendChild(st);
-    v = document.createElement("div"); v.id = "jvVoile"; v.innerHTML = `<div class="n">N.E.S.T.O.R.</div><div id="jvVoileS">je vous écoute…</div>`;
+    v = document.createElement("div"); v.id = "jvVoile"; v.innerHTML = `<div class="n">N.E.S.T.O.R.</div><div id="jvVoileAn" aria-hidden="true"><canvas id="jvVoileCv"></canvas>${jvHaloSvg()}</div><div id="jvVoileS">je vous écoute…</div>`;
     document.body.appendChild(v);
+    // le niveau du micro fait battre les points (déjà branché si le halo a servi ; sans danger en double)
+    try { if (!jvVoile.mic && typeof TN !== "undefined" && TN && TN.addListener) { jvVoile.mic = true; TN.addListener("srNiveau", e => jvHaloMic(e && e.rms)); } } catch (e) {}
   }
-  if (v) v.style.display = on ? "flex" : "none";
+  if (v) { v.classList.remove("fondu"); v.style.display = on ? "flex" : "none"; if (on) jvVoileAnime(); }
   document.body.classList.toggle("verrou", !!on);
 }
+function jvVoileAnime(){
+  if (JV_VOILE_RAF) return;
+  const N = [...document.querySelectorAll("#jvVoileAn .n .g")], lv = N.map(() => 0), t0 = performance.now();
+  const tour = now => {
+    const v = $("jvVoile"), an = $("jvVoileAn"), cv = $("jvVoileCv");
+    if (!v || !an || v.style.display === "none") { JV_VOILE_RAF = 0; if (!JV_BULLE) { window.JV_NIV = 0; try { $("ring").classList.remove("parle"); } catch (e) {} } return; }
+    const t = now - t0, audio = !!(JV_AUDIO && !JV_AUDIO.paused && !JV_AUDIO.ended);
+    const parle = audio || !!JV_VQ.joue || JV_PARLE > 0, ecoute = typeof listening !== "undefined" && listening;
+    let niv = 0;
+    if (parle && !ecoute) { const e = audio && JV_AUDIO._env; niv = e ? (e[Math.min(e.length - 1, Math.max(0, Math.floor((JV_AUDIO.currentTime || 0) / 0.04)))] || 0) : Math.max(0, 0.35 + 0.32 * Math.sin(t / 110) * Math.sin(t / 370)); }
+    JV_VOILE_NIV = JV_VOILE_NIV * 0.7 + niv * 0.3;
+    if (!JV_BULLE) { window.JV_NIV = JV_VOILE_NIV; try { $("ring").classList.toggle("parle", parle && !ecoute); } catch (e) {} }   // la constellation de l'accueil suit sa voix
+    const cst = isConst(); an.classList.toggle("const", cst);
+    if (cst) {
+      try {
+        const dpr = Math.min(3, window.devicePixelRatio || 1), W = Math.round((an.clientWidth || 340) * dpr);
+        if (cv.width !== W) { cv.width = W; cv.height = W; }
+        const c = cv.getContext("2d"); c.clearRect(0, 0, W, W); c.drawImage(CV, 0, 0, CV.width, CV.height, 0, 0, W, W);
+      } catch (e) {}
+    } else {
+      const m = ecoute ? Math.max(now - JV_HALO_MIC.t < 260 ? JV_HALO_MIC.v : 0, typeof kickT !== "undefined" ? Math.max(0, 1 - (now - kickT) / 320) * 0.8 : 0) : 0;
+      JV_VOILE_MIC = JV_VOILE_MIC * 0.75 + m * 0.25;
+      const pense = !ecoute && !parle && ($("ring").classList.contains("think") || !!(JV && JV.busy)), tete = ((t / 1500) * 360) % 360, n = N.length;
+      for (let i = 0; i < n; i++) {
+        let x = 0;
+        if (pense) { const d = (tete - i * 360 / n + 720) % 360; x = d < 100 ? 1 - d / 100 : 0; }
+        else if (parle) x = JV_VOILE_NIV * (0.6 + 0.4 * Math.sin(t / 120 + i * 1.3));
+        else if (ecoute) x = JV_VOILE_MIC * (0.65 + 0.35 * Math.sin(t / 140 + i * 0.8));
+        else x = 0.15 + 0.1 * Math.sin(t / 900 + i);
+        lv[i] = lv[i] * 0.6 + x * 0.4; const s2 = N[i].style; s2.transform = `scale(${(1 + lv[i] * 1.9).toFixed(3)})`; s2.opacity = (0.35 + lv[i] * 0.65).toFixed(3);
+      }
+    }
+    JV_VOILE_RAF = requestAnimationFrame(tour);
+  };
+  JV_VOILE_RAF = requestAnimationFrame(tour);
+}
+document.addEventListener("visibilitychange", () => { try { if (document.visibilityState === "visible" && !JV_ASSIST) { const v = $("jvVoile"); if (v && v.style.display !== "none") jvVoile(false); } } catch (e) {} });   // voile oublié après une séance : il tombe au retour
+/* la sortie douce : le cercle et son nom s'éteignent, le fond reste noir, puis l'écran retourne au verrouillage */
+async function jvVoileFondu(){ const v = $("jvVoile"); if (!v || v.style.display === "none") return; v.classList.add("fondu"); await new Promise(r => setTimeout(r, 650)); }
 const jvAssistOccupe = () => listening || typing || $("ring").classList.contains("think") || !!(JV && JV.busy) || JV_PARLE > 0 || !!JV_VQ.joue || !!(JV_AUDIO && !JV_AUDIO.paused && !JV_AUDIO.ended);
 async function jvAssistant(d){
   d = d || {};
@@ -8744,8 +8787,9 @@ async function jvAssistFin(a){
       await new Promise(r => { try { speak("Une proposition vous attend, monsieur. Déverrouillez pour la valider.", r); } catch (e) { r(); } setTimeout(r, 8000); });
       try { const u = await tn("deverrouiller"); if (u && u.ok) { JV_ASSIST = null; jvVoile(false); try { await tn("finVerrou", { fond: false }); } catch (e) {} try { openConv(); } catch (e) {} return; } } catch (e) {}
     }
-    jvVoile(false);
+    await jvVoileFondu();
     try { await tn("finVerrou", { fond: true }); } catch (e) {}
+    jvVoile(false);   // une fois l'appli repartie derrière le verrouillage : rien de la liste n'a pu apparaître
   }
   JV_ASSIST = null;
 }
