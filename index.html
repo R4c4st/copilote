@@ -426,7 +426,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v61 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v62 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -563,6 +563,9 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <div class="foot" style="margin-top:8px"><p class="small" style="margin:0;flex:1;min-width:0">ou dites-lui « augmente ton humour de 10 % »</p><button id="cvCursDef">par défaut</button></div>
     <div class="lab">Ce qu'il a appris de vous</div>
     <div id="cvApprend" style="margin-top:4px"></div>
+    <div class="lab">Journal de bord</div>
+    <div id="cvJournal"></div>
+    <input type="file" id="cvJrIn" accept=".json,application/json" multiple hidden>
     <div class="lab">Carnet d'évolutions</div>
     <p class="small" style="margin:4px 0 6px">Ce qu'il ne sait pas encore faire : Claude le lit à chaque session de développement.</p>
     <div id="cvCarnet"></div>
@@ -693,7 +696,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 61;
+const TEMPO_BUILD = 62;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1016,7 +1019,7 @@ ${jvTriEspaces()}
 Maintenant : ${WD[d.getDay()]} ${ymd(d)}, ${nowHM()}.
 ${learn ? "\nSES CORRECTIONS PASSÉES (respecte sa façon de classer) :\n" + learn : ""}
 ${open ? "\nDÉJÀ DANS SA LISTE (avec leur id) :\n" + open : ""}
-${last.length ? "\nCE QU'IL VIENT DE NOTER (il y a moins de 3 min) :\n" + last.map(i => `- id=${i.id} : ${i.title}${i.ch ? " [" + i.ch + "]" : ""}${i.due ? " (" + i.due + (i.time ? " " + i.time : "") + ")" : ""}`).join("\n") + "\nS'il commence par « non », « plutôt », « en fait », « attends », « corrige », « change », ou s'il ne donne qu'un moment ou une précision (« jeudi », « à 14h », « c'est pour Siebert », « mets-le en urgent »), c'est une CORRECTION de ces éléments : mets-la dans \"updates\" et ne crée rien de nouveau." : ""}
+${last.length ? "\nCE QU'IL VIENT DE NOTER (il y a moins de 3 min) :\n" + last.map(i => `- id=${i.id} : ${i.title}${i.ch ? " [" + i.ch + "]" : ""}${i.due ? " (" + i.due + (i.time ? " " + i.time : "") + ")" : ""}`).join("\n") + "\nS'il commence par « non », « plutôt », « en fait », « attends », « corrige », « change », ou s'il ne donne qu'un moment ou une précision (« jeudi », « à 14h », « c'est pour le client Dupont », « mets-le en urgent »), c'est une CORRECTION de ces éléments : mets-la dans \"updates\" et ne crée rien de nouveau." : ""}
 
 CONTACTS CLÉS À QUI IL ÉCRIT :
 ${ctc || "(aucun)"}
@@ -5579,7 +5582,7 @@ const JV_BETA_TOOLS = [
   { name: "cote_match_choix", description: "Note le pari qu'il a choisi cette semaine pour Cote & Match (ça coupe la relance de 11h du vendredi).",
     input_schema: { type: "object", properties: { pari: { type: "string", description: "match et pari, ex. « Lens - Brest, victoire de Lens »" } }, required: ["pari"] } }
 ];
-const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS, JV_HORLOGE_TOOLS, JV_MEM_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); if (jvWebOn()) t = t.concat(JV_WEB_TOOLS); t = t.concat(JV_CURSEUR_TOOLS, JV_PARTAGE_TOOLS, JV_EVOL_TOOLS, JV_REGLE_TOOLS); if (jvUniqueOn()) t = t.concat(jvNoterTool()); return t; };
+const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS, JV_HORLOGE_TOOLS, JV_MEM_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); if (jvWebOn()) t = t.concat(JV_WEB_TOOLS); t = t.concat(JV_CURSEUR_TOOLS, JV_PARTAGE_TOOLS, JV_EVOL_TOOLS, JV_REGLE_TOOLS, JV_JOURNAL_TOOLS); if (jvUniqueOn()) t = t.concat(jvNoterTool()); return t; };
 /* zones de la maison pour le chauffage selon la présence (l'appli Android les déclenche, même fermée) */
 const jvMaisonLieu = () => jvLieux().find(l => l.g.type === "maison");
 const jvChauffeAuto = () => jvNetOn() && CFG.jvChauffe !== false && !!jvMaisonLieu();
@@ -6684,7 +6687,7 @@ function paintLieux(){
   $("cvBriefChk").checked = CFG.jvBrief !== false;
   $("cvBnChk").checked = CFG.jvBriefAuto !== false; $("cvMeteoChk").checked = !!CFG.jvMeteo;
   $("cvEchChk").checked = CFG.jvEch !== false; $("cvRelChk").checked = CFG.jvRel !== false; $("cvEspChk").checked = CFG.jvEsp !== false;
-  $("cvUniqueChk").checked = CFG.jvUnique !== false; try { paintCurseurs(); } catch (e) {} try { paintCarnet(); } catch (e) {} try { paintApprend(); } catch (e) {}
+  $("cvUniqueChk").checked = CFG.jvUnique !== false; try { paintCurseurs(); } catch (e) {} try { paintCarnet(); } catch (e) {} try { paintApprend(); } catch (e) {} try { paintJournal(); } catch (e) {}
   try { paintVoix(); } catch (e) {}
   $("cvAlChk").checked = !!CFG.jvAlertes;
   jvAlertesState().then(s => { const e = $("cvAlSt"); if (e) e.textContent = s.txt; });
@@ -7018,7 +7021,7 @@ Règles de rangement (outil noter)
 - Mémo (info à retenir, idée, dépense payée de sa poche) : cat "memo" avec rb "info", "idee" ou "depense" ; pour une dépense, amount en euros et due = le jour de la dépense.
 - Courses : un item par article, cat "courses", sp "perso", title = l'article avec la quantité, sans verbe.
 - Répétitif : rec "jour", "ouvre" (lundi-vendredi), "semaine", "mois" ou "an", et la prochaine occurrence dans due.
-- C'est fait, j'y suis, c'est réglé : ne crée rien, mets l'élément de sa liste (id dans <contexte>) dans updates avec done true. Une correction (« non, plutôt jeudi », « c'est pour Siebert », « mets-le en urgent ») juste après une note porte sur ce qu'il vient de noter : updates avec seulement les champs qui changent, ou delete true pour annuler.
+- C'est fait, j'y suis, c'est réglé : ne crée rien, mets l'élément de sa liste (id dans <contexte>) dans updates avec done true. Une correction (« non, plutôt jeudi », « c'est pour le client Dupont », « mets-le en urgent ») juste après une note porte sur ce qu'il vient de noter : updates avec seulement les champs qui changent, ou delete true pour annuler.
 ${jvTriEspaces()}
 ${CFG.profile ? "Sa fiche :\n" + CFG.profile + "\n" : ""}Contacts clés à qui il écrit :
 ${ctc || "(aucun)"}
@@ -7139,20 +7142,20 @@ async function paintCarnet(){
 
 /* ---------- lot 25 · il apprend de toi : règles de tri et vocabulaire ----------
    Une règle (« Vinted : seulement l'arrivée avec le code ») vaut pour Nestor, pour le tri en coulisses (Haiku) et pour le « check ».
-   Un mot retenu (« Arvato ») passe en tête de la dictée Voxtral et dans ses consignes. */
+   Un mot retenu (un nom de client) passe en tête de la dictée Voxtral et dans ses consignes. */
 function jvRegles(){ return (CFG.jvRegles || []).filter(r => r && r.s); }
 function jvReglesTxt(){ return jvRegles().map(r => `- ${r.s} : ${r.t}${r.e === "ignorer" ? " (à ignorer complètement)" : r.e === "important" ? " (toujours important, en premier)" : ""}`).join("\n"); }
 function jvRegleIgnore(m){ const t = busKey([m && m.who, m && m.app, m && m.body].join(" ")); return jvRegles().some(r => r.e === "ignorer" && busKey(r.s) && t.includes(busKey(r.s))); }
 var JV_REGLE_TOOLS = [
-  { name: "regle_tri", description: "Retient (ou retire) une règle de tri qu'il te donne pour ses messages, notifications et mails : « Vinted, seulement quand le colis est arrivé, avec le code », « ignore les pubs Fnac », « les messages de Loïc sont toujours importants ». Elle vaut tout de suite, pour toi et pour le tri en coulisses.",
+  { name: "regle_tri", description: "Retient (ou retire) une règle de tri qu'il te donne pour ses messages, notifications et mails : « Vinted, seulement quand le colis est arrivé, avec le code », « ignore les pubs Fnac », « les messages de mon chef sont toujours importants ». Elle vaut tout de suite, pour toi et pour le tri en coulisses.",
     input_schema: { type: "object", properties: {
-      sujet: { type: "string", description: "L'expéditeur, l'appli ou le type de message : « Vinted », « Fnac », « Loïc »." },
+      sujet: { type: "string", description: "L'expéditeur, l'appli ou le type de message : « Vinted », « Fnac », un prénom." },
       regle: { type: "string", description: "La règle, courte et claire : « seulement l'arrivée du colis avec le code de retrait, pas les autres étapes »." },
       effet: { type: "string", enum: ["ignorer", "essentiel", "important"], description: "ignorer : ne jamais le remonter ; essentiel : seulement ce que dit la règle ; important : toujours le remonter en premier." },
       action: { type: "string", enum: ["ajouter", "retirer"] } },
       required: ["sujet", "action"] } },
   { name: "retenir_mot", description: "Retient un mot qu'il emploie et que la dictée écorche (nom de chantier, de client, de personne, de matériel, sigle) : la dictée l'entendra mieux ensuite. À utiliser quand il te corrige un mot mal compris ou te demande de retenir un nom.",
-    input_schema: { type: "object", properties: { mot: { type: "string", description: "Le mot exact, bien écrit (« Arvato », « Storify », « IP Verso »)." }, action: { type: "string", enum: ["ajouter", "retirer"] } }, required: ["mot"] } }
+    input_schema: { type: "object", properties: { mot: { type: "string", description: "Le mot exact, bien écrit (un nom de client, de produit, de lieu)." }, action: { type: "string", enum: ["ajouter", "retirer"] } }, required: ["mot"] } }
 ];
 function jvRegleApply(x){
   const sujet = String((x && x.sujet) || "").trim().slice(0, 60); if (!sujet) return;
@@ -7179,10 +7182,184 @@ function paintApprend(){
   const box = $("cvApprend"); if (!box) return;
   const R = jvRegles(), M = CFG.jvLexique || [];
   box.innerHTML = (R.length ? R.map((r, i) => `<div class="sub" style="padding:6px 0;border-bottom:1px solid var(--faint);display:flex;gap:10px"><span style="flex:1;min-width:0"><span style="color:var(--fg)">${esc(r.s)}</span> · ${esc(r.t)}</span><button data-rdel="${i}">retirer</button></div>`).join("") : `<p class="small" style="margin:0 0 4px">Aucune règle. Dites par exemple : « Nestor, Vinted : seulement quand le colis est arrivé, avec le code ».</p>`)
-    + `<div class="sub" style="margin-top:10px">Mots qu'il doit bien entendre : ${M.length ? M.map((m, i) => `<span style="color:var(--fg)">${esc(m)}</span> <button data-mdel="${i}" aria-label="retirer">×</button>`).join(" · ") : "aucun pour l'instant (dites « retiens le mot Arvato »)"}</div>`;
+    + `<div class="sub" style="margin-top:10px">Mots qu'il doit bien entendre : ${M.length ? M.map((m, i) => `<span style="color:var(--fg)">${esc(m)}</span> <button data-mdel="${i}" aria-label="retirer">×</button>`).join(" · ") : "aucun pour l'instant (dites « retiens le mot Verso »)"}</div>`;
   box.querySelectorAll("[data-rdel]").forEach(b => b.onclick = () => { const r = jvRegles()[+b.dataset.rdel]; if (r) jvRegleApply({ sujet: r.s, action: "retirer" }); });
   box.querySelectorAll("[data-mdel]").forEach(b => b.onclick = () => { const m = (CFG.jvLexique || [])[+b.dataset.mdel]; if (m) jvMotApply({ mot: m, action: "retirer" }); });
 }
+/* ---------- lot 26 · le journal de bord : où il était, ce qu'il a fait ----------
+   Ses lieux viennent de sa Timeline Google (fichier exporté du téléphone) et de ce que Nestor voit quand il s'en sert.
+   Gardé chiffré dans le téléphone (clé de sa mémoire), jamais sur un serveur : Claude n'en reçoit que la réponse à une question.
+   Un mois = { v: [[début, fin, lat, lon, source t|n, type maison|travail, nom]], a: [[début, fin, mode, mètres]] } */
+const JR = { mois: new Map(), geo: null, dernier: 0 };
+const jrMois = t => ymd(new Date(t)).slice(0, 7);
+const jrIdx = () => LS.get("copilote_jr", null) || { m: {} };   // juste quels mois existent et combien de lieux (rien de lisible)
+async function jrLire(m){   // une lecture ratée lève une erreur : on n'écrase jamais un mois qu'on n'a pas pu lire
+  if (JR.mois.has(m)) return JR.mois.get(m);
+  if (!MEM.key) throw new Error("verrou");
+  const r = await kvGet("jr|" + m), o = r ? await memOpenRow(r) : { v: [], a: [] };
+  JR.mois.set(m, o); return o;
+}
+async function jrEcrire(m, o){
+  JR.mois.set(m, o); if (!MEM.key) return;
+  try { await kvSet("jr|" + m, await memSeal("jr|" + m, o)); } catch (e) {}
+  const x = jrIdx(); if (o.v.length || o.a.length) x.m[m] = o.v.length; else delete x.m[m]; LS.set("copilote_jr", x);
+}
+/* les coordonnées, quel que soit l'export : « 48.69°, 6.18° », « geo:48.69,6.18 », E7 ou {latitude, longitude} */
+function jrCoord(x){
+  if (!x) return null;
+  if (typeof x === "object") { if (x.latLng) return jrCoord(x.latLng); if (x.latitudeE7 != null) return [x.latitudeE7 / 1e7, x.longitudeE7 / 1e7]; if (x.latitude != null) return [+x.latitude, +x.longitude]; return null; }
+  const m = String(x).replace(/^geo:/, "").match(/(-?\d+(?:\.\d+)?)[^\d-]+(-?\d+(?:\.\d+)?)/);
+  return m ? [+m[1], +m[2]] : null;
+}
+const jrType = t => /HOME/i.test(t || "") ? "maison" : /WORK/i.test(t || "") ? "travail" : "";
+const jrMode = t => { t = String(t || "").toUpperCase(); return /VEHICLE|DRIV|CAR|TAXI|MOTOR/.test(t) ? "voiture" : /WALK|RUN|FOOT/.test(t) ? "marche" : /CYCL|BIK/.test(t) ? "vélo" : /BUS|TRAM|SUBWAY|METRO/.test(t) ? "transports" : /TRAIN|RAIL/.test(t) ? "train" : /FLY|PLANE/.test(t) ? "avion" : "autre"; };
+const jrT = (s, ms) => Date.parse(s || "") || +ms || 0;
+function jrParse(j){
+  const V = [], A = [], c5 = x => Math.round(x * 1e5) / 1e5;
+  const segs = Array.isArray(j) ? j : j && j.semanticSegments;   // export du téléphone (Android : objet ; iPhone : tableau)
+  if (segs) for (const s of segs) {
+    const t0 = jrT(s.startTime), t1 = jrT(s.endTime); if (!t0 || !t1) continue;
+    if (s.visit) { const c = s.visit.topCandidate || {}, p = jrCoord(c.placeLocation); if (p) V.push([t0, t1, c5(p[0]), c5(p[1]), "t", jrType(c.semanticType), ""]); }
+    else if (s.activity) { const c = s.activity.topCandidate || {}; A.push([t0, t1, jrMode(c.type), Math.round(+s.activity.distanceMeters || 0)]); }
+  }
+  for (const o of (j && j.timelineObjects) || []) {   // ancien export Takeout, un fichier par mois, avec les noms des lieux
+    if (o.placeVisit) { const l = o.placeVisit.location || {}, d = o.placeVisit.duration || {}, p = jrCoord(l), t0 = jrT(d.startTimestamp, d.startTimestampMs), t1 = jrT(d.endTimestamp, d.endTimestampMs); if (p && t0 && t1) V.push([t0, t1, c5(p[0]), c5(p[1]), "t", jrType(l.semanticType), String(l.name || l.address || "").slice(0, 80)]); }
+    else if (o.activitySegment) { const s = o.activitySegment, d = s.duration || {}, t0 = jrT(d.startTimestamp, d.startTimestampMs), t1 = jrT(d.endTimestamp, d.endTimestampMs); if (t0 && t1) A.push([t0, t1, jrMode(s.activityType), Math.round(+s.distance || 0)]); }
+  }
+  return { V, A };
+}
+/* l'import : la Timeline remplace ce qui venait d'elle sur la même période ; ce que Nestor a vu lui-même reste */
+async function jrImporter(files){
+  if (!MEM.key) return { erreur: "mémoire verrouillée" };
+  const par = new Map(), get = m => par.get(m) || (par.set(m, { v: [], a: [] }), par.get(m));
+  let lus = 0;
+  for (const f of files) { let j = null; try { j = JSON.parse(await f.text()); } catch (e) { continue; } const r = jrParse(j); lus++; r.V.forEach(v => get(jrMois(v[0])).v.push(v)); r.A.forEach(a => get(jrMois(a[0])).a.push(a)); }
+  let n = 0, du = "", au = "";
+  for (const [m, x] of par) {
+    const ts = x.v.map(v => v[0]).concat(x.a.map(a => a[0])), te = x.v.map(v => v[1]).concat(x.a.map(a => a[1]));
+    const t0 = ts.reduce((a, b) => Math.min(a, b), Infinity), t1 = te.reduce((a, b) => Math.max(a, b), 0); let o; try { o = await jrLire(m); } catch (e) { continue; }
+    o.v = o.v.filter(v => v[4] !== "t" || v[1] < t0 || v[0] > t1).concat(x.v).sort((a, b) => a[0] - b[0]);
+    o.a = o.a.filter(a => a[1] < t0 || a[0] > t1).concat(x.a).sort((a, b) => a[0] - b[0]);
+    await jrEcrire(m, o); n += x.v.length;
+    if (!du || m < du) du = m; if (!au || m > au) au = m;
+  }
+  return { fichiers: lus, lieux: n, du, au };
+}
+/* ce que Nestor voit : chaque position qu'il obtient (au plus une toutes les 10 min) prolonge le lieu en cours ou en ouvre un */
+async function jrPoint(p){
+  if (!p || typeof p.lat !== "number" || !MEM.key || CFG.jvJournal === false) return;
+  const t = Date.now(); if (t - JR.dernier < 10 * 60e3) return; JR.dernier = t;
+  const m = jrMois(t), o = await jrLire(m), last = o.v.filter(v => v[4] === "n").pop();
+  if (last && t - last[1] < 2 * 3600e3 && jvKm({ lat: last[2], lon: last[3] }, p) < 0.3) last[1] = t;
+  else o.v.push([t, t, Math.round(p.lat * 1e5) / 1e5, Math.round(p.lon * 1e5) / 1e5, "n", "", ""]);
+  await jrEcrire(m, o);
+}
+{ const _p = jvPos; jvPos = async function(){ const p = await _p.apply(this, arguments); try { jrPoint(p).catch(() => {}); } catch (e) {} return p; }; }
+/* le nom d'un lieu : ses lieux à lui d'abord, puis maison / travail, puis l'adresse (IGN), gardée chiffrée pour la prochaine fois */
+async function jrGeoCharge(){
+  if (JR.geo) return JR.geo; JR.geo = new Map();
+  try { const r = await kvGet("jrgeo"); if (r && MEM.key) for (const [k, v] of Object.entries(await memOpenRow(r))) JR.geo.set(k, v); } catch (e) {}
+  return JR.geo;
+}
+async function jrGeoGarde(){ try { if (MEM.key && JR.geo) await kvSet("jrgeo", await memSeal("jrgeo", Object.fromEntries([...JR.geo].slice(-3000)))); } catch (e) {} }
+async function jrInverse(lat, lon){
+  const get = async idx => { try { const r = await fetch(`https://data.geopf.fr/geocodage/reverse?lon=${lon}&lat=${lat}&index=${idx}&limit=1`); const j = await r.json(), f = j.features && j.features[0]; if (!f) return null; const pr = f.properties || {}; return { label: pr.label || [].concat(pr.toponym || pr.name || []).join(" "), city: [].concat(pr.city || [])[0] || "", d: +pr.distance }; } catch (e) { return null; } };
+  const [poi, adr] = await Promise.all([get("poi"), get("address")]);
+  if (poi && poi.label && poi.d < 120) return poi.label + (poi.city && !poi.label.includes(poi.city) ? ", " + poi.city : "");
+  if (adr && adr.label && !(adr.d > 1500)) return adr.label;
+  return "";
+}
+function jrConnu(v){
+  let best = null; for (const l of jvLieux()) { const km = jvKm({ lat: v[2], lon: v[3] }, l.g); if (km < 0.25 && (!best || km < best.km)) best = { km, nom: l.g.nom }; }
+  return best ? best.nom : v[6] || (v[5] === "maison" ? "chez vous" : v[5] === "travail" ? "au travail" : "");
+}
+async function jrNoms(V){
+  const G = await jrGeoCharge(), k = v => v[2].toFixed(3) + "," + v[3].toFixed(3), out = new Map(), manque = [], nb = new Map();
+  for (const v of V) { const c = jrConnu(v); if (c) out.set(v, c); else if (G.has(k(v))) out.set(v, G.get(k(v))); else { manque.push(v); nb.set(k(v), (nb.get(k(v)) || 0) + 1); } }
+  const uniq = [...new Map(manque.map(v => [k(v), v])).values()].sort((x, y) => nb.get(k(y)) - nb.get(k(x))).slice(0, 60);   // les lieux les plus fréquents d'abord
+  for (let i = 0; i < uniq.length; i += 6) await Promise.all(uniq.slice(i, i + 6).map(async v => { const n = await jrInverse(+v[2].toFixed(4), +v[3].toFixed(4)); G.set(k(v), n || `vers ${v[2].toFixed(3)}, ${v[3].toFixed(3)}`); }));
+  if (uniq.length) jrGeoGarde();
+  for (const v of manque) out.set(v, G.get(k(v)) || `vers ${v[2].toFixed(3)}, ${v[3].toFixed(3)}`);
+  return out;
+}
+async function jrPeriode(du, au){
+  const a = new Date(du + "T00:00").getTime(), b = new Date(au + "T23:59:59").getTime(), V = [], A = [];
+  const M = new Set(Object.keys(jrIdx().m).concat([...JR.mois.keys()]));
+  for (const m of [...M].filter(m => m >= du.slice(0, 7) && m <= au.slice(0, 7)).sort()) {
+    let o; try { o = await jrLire(m); } catch (e) { continue; }
+    o.v.forEach(v => { if (v[1] >= a && v[0] <= b) V.push(v); }); o.a.forEach(x => { if (x[1] >= a && x[0] <= b) A.push(x); });
+  }
+  const T = V.filter(v => v[4] === "t");   // ce que Nestor a vu pendant une visite déjà dans la Timeline ne compte pas deux fois
+  return { V: V.filter(v => v[4] === "t" || !T.some(t => v[0] >= t[0] - 6e5 && v[0] <= t[1] + 6e5)).sort((x, y) => x[0] - y[0]), A };
+}
+const jrH = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const JV_JOURNAL_TOOLS = [{ name: "journal", description: "Son journal de bord, gardé dans son téléphone : où il était (lieux et heures, d'après sa Timeline Google et ce que tu as vu quand il se servait de toi), ses trajets, ce qu'il a coché et noté, son agenda. Pour « où j'étais le… / en mars ? », « qu'est-ce que j'ai fait la semaine dernière ? », « raconte-moi ma semaine », ou avec lieu : « quand suis-je allé à… ? ». Réponds comme un récit bref, pas une liste brute.", input_schema: { type: "object", properties: {
+  du: { type: "string", description: "premier jour, AAAA-MM-JJ" }, au: { type: "string", description: "dernier jour, AAAA-MM-JJ (par défaut : du)" },
+  lieu: { type: "string", description: "pour retrouver les dates d'un lieu : un de ses lieux, un client, une ville, une adresse" } } } }];
+async function toolJournal(x){
+  if (!MEM.key) return { erreur: "mémoire verrouillée : le journal ne s'ouvre pas" };
+  const ok = d => /^\d{4}-\d{2}-\d{2}$/.test(d || ""), auj = ymd(new Date());
+  let du = ok(x.du) ? x.du : x.lieu ? "2000-01-01" : auj, au = ok(x.au) ? x.au : x.lieu && !ok(x.du) ? auj : du; if (au < du) [du, au] = [au, du];
+  const idx = Object.keys(jrIdx().m).sort(), couv = idx.length ? `journal du ${idx[0]} au ${idx[idx.length - 1]} (mois)` : "journal encore vide : il peut importer sa Timeline Google dans Réglages → Nestor → Journal de bord";
+  if (x.lieu) return jrChercheLieu(String(x.lieu).slice(0, 80), du, au, couv);
+  const { V, A } = await jrPeriode(du, au), n = jvEcart(du, au) + 1, noms = await jrNoms(V);
+  const items = (CFG.jvPro ? ["pro", "perso"] : ["perso"]).flatMap(sp => (spaceState(sp).items || []).map(i => ({ i, sp })));
+  const km = L => { const s = {}; L.forEach(a => { if (a[3] > 0) s[a[2]] = (s[a[2]] || 0) + a[3]; }); return Object.entries(s).sort((p, q) => q[1] - p[1]).map(([m, d]) => `${m} ${Math.round(d / 1000)} km`).join(", "); };
+  if (n <= 10) {
+    const jours = [];
+    for (let d = du; d <= au; d = jvAjoute(d, 1)) {
+      const a = new Date(d + "T00:00").getTime(), b = a + 864e5, lieux = [];
+      V.filter(v => v[1] >= a && v[0] < b).forEach(v => { const nom = noms.get(v), h = `${v[0] < a ? "00:00" : jrH(v[0])}${v[1] - v[0] > 9e5 ? "–" + (v[1] >= b ? "24:00" : jrH(v[1])) : ""}`, prev = lieux[lieux.length - 1]; if (prev && prev.nom === nom) prev.fin = v[1] >= b ? "24:00" : jrH(v[1]); else lieux.push({ nom, h, fin: "" }); });
+      const fait = items.filter(({ i }) => i.done && i.doneAt && ymd(new Date(i.doneAt)) === d).map(({ i, sp }) => `${i.title} (${sp})`).slice(0, 12);
+      const note = items.filter(({ i }) => i.created && ymd(new Date(i.created)) === d && !(i.done && i.doneAt && ymd(new Date(i.doneAt)) === d)).map(({ i, sp }) => `${i.title} (${sp})`).slice(0, 12);
+      let agenda; if (n <= 3 && gOn()) { try { agenda = ((await jvAuPlus(gEvents(d), 4000)) || []).filter(e => !e.tempo).slice(0, 8).map(e => (e.allDay || !e.s ? "journée" : hm(e.s)) + " " + e.title); } catch (e) {} }
+      const j = { jour: d, lieux: lieux.map(l => `${l.h.replace(/–.*/, "")}${l.fin ? "–" + l.fin : l.h.includes("–") ? l.h.slice(l.h.indexOf("–")) : ""} ${l.nom}`) };
+      const t = km(A.filter(x => x[0] >= a && x[0] < b)); if (t) j.trajets = t;
+      if (fait.length) j.coche = fait; if (note.length) j.note = note; if (agenda && agenda.length) j.agenda = agenda;
+      if (!lieux.length && !fait.length && !note.length && !(agenda && agenda.length)) j.rien = "aucune trace ce jour-là";
+      jours.push(j);
+    }
+    return { periode: du === au ? du : `du ${du} au ${au}`, jours, couverture: couv };
+  }
+  const par = new Map(); V.forEach(v => { const nom = noms.get(v), e = par.get(nom) || { j: new Set(), h: 0 }; e.j.add(ymd(new Date(v[0]))); e.h += Math.max(0, v[1] - v[0]); par.set(nom, e); });
+  const lieux = [...par].sort((p, q) => q[1].j.size - p[1].j.size || q[1].h - p[1].h).slice(0, 20).map(([nom, e]) => { const js = [...e.j].sort(); return `${nom} : ${js.length} jour${js.length > 1 ? "s" : ""}${js.length > 1 ? ` (du ${js[0]} au ${js[js.length - 1]})` : ` (${js[0]})`}`; });
+  const fait = items.filter(({ i }) => i.done && i.doneAt && ymd(new Date(i.doneAt)) >= du && ymd(new Date(i.doneAt)) <= au).length;
+  return { periode: `du ${du} au ${au}`, jours_avec_traces: new Set(V.map(v => ymd(new Date(v[0])))).size, lieux, trajets: km(A) || undefined, taches_cochees: fait, couverture: couv, conseil: "pour le détail d'un jour, redemande avec du (et au) sur 10 jours au plus" };
+}
+async function jrChercheLieu(q, du, au, couv){
+  let cible = null, rayon = 0.4;
+  const l = jvLieu(q); if (l && l.g) cible = { lat: l.g.lat, lon: l.g.lon, nom: l.g.nom };
+  else { const g = await jvGeocode(q); if (g && g.score >= 0.4) { cible = { lat: g.lat, lon: g.lon, nom: g.label }; if (g.city && busKey(g.label) === busKey(g.city)) rayon = 3; } }
+  const k = busKey(q), { V } = await jrPeriode(du, au);
+  const hits = V.filter(v => (cible && jvKm(cible, { lat: v[2], lon: v[3] }) < rayon) || (v[6] && busKey(v[6]).includes(k)));
+  const jours = new Map(); hits.forEach(v => { const d = ymd(new Date(v[0])), e = jours.get(d); if (!e) jours.set(d, [v[0], v[1]]); else { e[0] = Math.min(e[0], v[0]); e[1] = Math.max(e[1], v[1]); } });
+  const L = [...jours].sort((p, q2) => q2[0].localeCompare(p[0])).map(([d, [a, b]]) => `${d} ${jrH(a)}${b - a > 9e5 ? "–" + jrH(b) : ""}`);
+  return { lieu: cible ? cible.nom : q, rayon_km: rayon, jours: L.slice(0, 40), total_jours: L.length, premiere_fois: L.length ? L[L.length - 1].slice(0, 10) : undefined, derniere_fois: L.length ? L[0].slice(0, 10) : undefined, couverture: couv, remarque: cible ? undefined : "lieu introuvable sur la carte : seuls les noms de l'ancienne Timeline ont été comparés" };
+}
+JV_LOCAL.journal = toolJournal; JV_ATTENTE.journal = "j'ouvre le journal…";
+/* réglages : importer, voir ce qu'il y a, tout effacer */
+function paintJournal(){
+  const box = $("cvJournal"); if (!box) return;
+  const m = Object.entries(jrIdx().m).sort(), n = m.reduce((s, [, x]) => s + x, 0);
+  box.innerHTML = `<p class="small" style="margin:4px 0 6px">${m.length ? `${n.toLocaleString("fr-FR")} lieux, de ${m[0][0]} à ${m[m.length - 1][0]}. Demandez-lui « où j'étais le 12 mars ? » ou « quand suis-je allé à Metz ? ».` : "Vide pour l'instant. Importez votre Timeline Google pour remonter le temps ; ensuite, il note où vous êtes quand il vous sert."}</p>`
+    + `<label class="small" style="display:flex;gap:10px;align-items:center;margin-top:4px"><input type="checkbox" id="cvJrChk" style="width:auto"${CFG.jvJournal !== false ? " checked" : ""}> il note où je suis quand il me sert (chiffré, dans le téléphone)</label>`
+    + `<div class="foot" style="margin-top:8px;gap:8px;flex-wrap:wrap"><button id="cvJrImp">importer ma Timeline</button><button id="cvJrAide">comment l'exporter ?</button>${m.length ? '<button id="cvJrDel">tout effacer</button>' : ""}</div><p class="small" id="cvJrSt" style="margin:6px 0 0"></p>`;
+  $("cvJrChk").onchange = () => { CFG.jvJournal = $("cvJrChk").checked; saveCfg(); };
+  $("cvJrImp").onclick = () => { if (!MEM.key) return toast("ouvrez d'abord sa mémoire"); $("cvJrIn").value = ""; $("cvJrIn").click(); };
+  $("cvJrAide").onclick = () => { $("cvJrSt").textContent = "Sur le téléphone : Paramètres → Localisation → Services de localisation → Timeline → Exporter les données de la Timeline. Ça crée un fichier Timeline.json : importez-le ici. Les anciens exports Takeout (un fichier par mois) marchent aussi."; };
+  const del = $("cvJrDel"); if (del) del.onclick = async () => {
+    if (!del.dataset.sur) { del.dataset.sur = 1; del.textContent = "sûr ? touchez encore"; setTimeout(() => { if (del.isConnected) { delete del.dataset.sur; del.textContent = "tout effacer"; } }, 4000); return; }
+    for (const k of Object.keys(jrIdx().m)) { try { await kvDel("jr|" + k); } catch (e) {} }
+    try { await kvDel("jrgeo"); } catch (e) {} JR.mois.clear(); JR.geo = null; LS.set("copilote_jr", { m: {} }); paintJournal(); toast("journal effacé");
+  };
+}
+$("cvJrIn").onchange = async () => {
+  const f = [...($("cvJrIn").files || [])]; if (!f.length) return;
+  const st = $("cvJrSt"); if (st) st.textContent = "lecture de la Timeline…";
+  try { const r = await jrImporter(f); if (r.erreur) toast(r.erreur); else toast(r.lieux ? `journal : ${r.lieux.toLocaleString("fr-FR")} lieux importés (${r.du} → ${r.au})` : "aucun lieu reconnu dans ce fichier", "", null, 6000); }
+  catch (e) { toast("fichier illisible"); }
+  paintJournal();
+};
 /* ---------- lot 23 · le halo : Nestor répond sans ouvrir la conversation ----------
    La constellation s'ouvre en anneau ; la réponse y défile comme un générique, au rythme de la voix.
    Dessous : ce qu'il a fait ou propose (avec son bouton), puis deux symboles : ouvrir en grand, répondre.
@@ -7624,7 +7801,9 @@ async function jvBrief(){
   LS.set("copilote_brief", ymd(new Date()));
   const we = [0, 6].includes(new Date().getDay());
   let sante = ""; try { sante = await jvSantePrep(); } catch (e) {}
-  await cvSend("Mon brief du jour." + (we ? " C'est le week-end : rien de pro." : ""));
+  let voix = false;   // lot 26 : écouteurs branchés → il vous le lit (sinon il s'affiche, sans déranger)
+  if (NATIVE && CFG.jvBriefVoix !== false && CFG.jvParle !== false && !CFG.jvDiscret) { try { const r = await tn("sonState"); voix = !!(r && r.casque); } catch (e) {} }
+  await cvSend("Mon brief du jour." + (we ? " C'est le week-end : rien de pro." : ""), voix ? { voix: true } : undefined);
   // calculée dans le téléphone, montrée telle quelle : elle ne part pas chez Claude, et n'est pas gardée avec la conversation
   if (sante) { JV.view.push({ r: "a", t: sante.replace(/^Santé · /, "**Santé** · "), loc: 1 }); cvPaint(); }
 }
