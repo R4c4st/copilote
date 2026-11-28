@@ -99,7 +99,7 @@ import org.json.JSONObject;
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 20;
+    static final int NATIVE_BUILD = 21;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -1556,6 +1556,13 @@ public class TempoNativePlugin extends Plugin {
         }
     }
 
+    /** Lot 32 : Nestor pose lui-même l'image de l'écran verrouillé (le fond animé n'y est pas permis sur Samsung) */
+    @PluginMethod
+    public void fondVerrou(PluginCall call) {
+        prefs().edit().putBoolean("fond_verrou", call.getBoolean("on", false)).apply();
+        call.resolve();
+    }
+
     /** Le fond animé de Nestor est-il en place, et quelle boucle est rangée ? */
     @PluginMethod
     public void fondEtat(PluginCall call) {
@@ -1570,6 +1577,7 @@ public class TempoNativePlugin extends Plugin {
         r.put("fichier", NestorFond.fichier(c).exists());
         r.put("scene", NestorFond.scene(c).exists() && NestorFond.decor(c).exists());
         r.put("nom", prefs().getString("fond_nom", ""));
+        r.put("verrou", prefs().getBoolean("fond_verrou", false));
         call.resolve(r);
     }
 

@@ -1,6 +1,7 @@
 package fr.rc4st.copilote;
 
 import android.app.KeyguardManager;
+import android.app.WallpaperManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -49,6 +50,8 @@ import org.json.JSONObject;
  * quand le téléphone dit quelle page est affichée. En mode économie d'énergie, le fond se fige.
  * Lot 31 : sur l'écran verrouillé, le cœur passe au centre, plus grand, avec l'or de la journée en couronne ;
  * au déverrouillage, il glisse jusqu'à sa place de l'écran d'accueil.
+ * Lot 32 : quand le téléphone ne permet pas le fond animé sur l'écran verrouillé (Samsung), Nestor y pose une image
+ * fixe de cette mise en scène et la refait dès que l'état change (écran éteint ou rallumé, tâche cochée, rappel, message).
  * Sans scène, il rejoue l'ancienne boucle vidéo (lot 29).
  */
 public class NestorFond extends WallpaperService {
@@ -98,12 +101,16 @@ public class NestorFond extends WallpaperService {
         private boolean verrouille = false, recepteur = false;
         private float verrou = 0f;
         private long verrouT = 0;
+        // lot 32 : l'image de l'écran verrouillé, refaite par Nestor
+        private boolean verrouAuto = false, pourVerrou = false;
+        private String sigVerrou = "";
         private final BroadcastReceiver ecran = new BroadcastReceiver() {
             @Override
             public void onReceive(Context ctx, Intent i) {
                 String a = i.getAction();
                 if (Intent.ACTION_USER_PRESENT.equals(a)) verrouille = false;   // déverrouillé : le cœur rejoint sa place
-                else if (Intent.ACTION_SCREEN_ON.equals(a)) { verrouille = estVerrouille(); if (verrouille) verrou = 1f; }
+                else if (Intent.ACTION_SCREEN_ON.equals(a)) { verrouille = estVerrouille(); if (verrouille) verrou = 1f; majVerrou(false); }
+                else if (Intent.ACTION_SCREEN_OFF.equals(a)) majVerrou(false);   // écran éteint : l'image du prochain réveil est prête
                 if (sc != null && visible) relance();
             }
         };
@@ -132,6 +139,7 @@ public class NestorFond extends WallpaperService {
                 IntentFilter f = new IntentFilter();
                 f.addAction(Intent.ACTION_USER_PRESENT);
                 f.addAction(Intent.ACTION_SCREEN_ON);
+                f.addAction(Intent.ACTION_SCREEN_OFF);
                 if (Build.VERSION.SDK_INT >= 33) registerReceiver(ecran, f, Context.RECEIVER_EXPORTED); else registerReceiver(ecran, f);
                 recepteur = true;
             } catch (Exception ignored) {}
@@ -145,7 +153,11 @@ public class NestorFond extends WallpaperService {
 
         @Override
         public void onSharedPreferenceChanged(SharedPreferences p, String cle) {
-            if (cle != null && cle.startsWith("fond_")) { litEtat(); if (visible && !enCours) h.post(image); }
+            if (cle != null && cle.startsWith("fond_")) {
+                litEtat();
+                if (visible && !enCours) h.post(image);
+                h.postDelayed(() -> majVerrou("fond_verrou".equals(cle)), 400);
+            }
         }
 
         @Override
@@ -235,6 +247,7 @@ public class NestorFond extends WallpaperService {
 
         private void litEtat() {
             SharedPreferences p = prefs();
+            verrouAuto = p.getBoolean("fond_verrou", false);
             faits = tableau(p.getString("fond_or", "[]"));
             rappels = tableau(p.getString("fond_rappels", "[]"));
             calculeEtat(true);
@@ -288,6 +301,7 @@ public class NestorFond extends WallpaperService {
                 sc = o;
                 sceneCharge = s.lastModified();
                 tireParametres();
+                h.postDelayed(() -> majVerrou(true), 800);
                 return true;
             } catch (Throwable e) {
                 sc = null;
@@ -413,7 +427,7 @@ public class NestorFond extends WallpaperService {
                     if (v > .05f) etincelle(c, (float) p.optDouble(0), (float) p.optDouble(1), (float) p.optDouble(2) * v, v); }
             }
             // lot 31 : verrouillé, le cœur passe au centre avec l'or de la journée en couronne
-            verrou += ((visible && verrouille ? 1f : 0f) - verrou) * .1f;
+            if (pourVerrou) verrou = 1f; else verrou += ((visible && verrouille ? 1f : 0f) - verrou) * .1f;
             float e = verrou * verrou * (3 - 2 * verrou);
             JSONObject C0 = sc.optJSONObject("coeur");
             boolean deco = "art-deco".equals(style);
@@ -461,7 +475,7 @@ public class NestorFond extends WallpaperService {
             }
             // le cœur de Nestor (à la place du widget), seulement sur la première page quand le téléphone le dit
             float cible = decalagesVus && xPas > 0 && xPas < 1 ? Math.max(0, Math.min(1, 1 - xOff / xPas)) : 1;
-            coeur += (cible - coeur) * .25f;
+            if (!pourVerrou) coeur += (cible - coeur) * .25f;
             JSONObject C = C0;
             if (C != null && Math.max(coeur, e) > .01f) {
                 float cx = chx + (vx - chx) * e, cy = chy + (vy - chy) * e, kc = (chr + (vr - chr) * e) / 142f;
@@ -487,11 +501,37 @@ public class NestorFond extends WallpaperService {
                 }
             }
             // les ondes du toucher
-            for (int i = ondes.size() - 1; i >= 0; i--) { float[] w = ondes.get(i); float age = t - w[2];
+            if (!pourVerrou) for (int i = ondes.size() - 1; i >= 0; i--) { float[] w = ondes.get(i); float age = t - w[2];
                 if (age > 1.4f) { ondes.remove(i); continue; }
                 float f = age / 1.4f; trait.setColor(couleur(PAL[1], .55f * (1 - f))); trait.setStrokeWidth(2);
                 c.drawCircle(w[0], w[1], 20 + 260 * (float) Math.sqrt(f), trait); lueur(c, w[0], w[1], 120, PAL[1], .25f * (1 - f)); }
             c.restore();
+        }
+
+        /* ------------------------------------------------------------ lot 32 : l'image de l'écran verrouillé */
+
+        private String etatVerrou() {
+            calculeEtat(true);
+            return or + "|" + rappel() + "|" + msgs + "|" + sceneCharge + "|" + sw + "x" + sh;
+        }
+
+        /** Refait l'image de l'écran verrouillé si quelque chose a changé (ou tout de suite si force) */
+        private void majVerrou(boolean force) {
+            try {
+                if (isPreview() || !verrouAuto || sc == null || decorBmp == null || sw == 0 || sh == 0) return;
+                String sig = etatVerrou();
+                if (!force && sig.equals(sigVerrou)) return;
+                sigVerrou = sig;
+                final Bitmap b = Bitmap.createBitmap(sw, sh, Bitmap.Config.ARGB_8888);
+                float v0 = verrou, c0 = coeur;
+                pourVerrou = true;
+                try { dessine(new Canvas(b), 8.3f); } finally { pourVerrou = false; verrou = v0; coeur = c0; }
+                new Thread(() -> {
+                    try { WallpaperManager.getInstance(NestorFond.this).setBitmap(b, null, true, WallpaperManager.FLAG_LOCK); }
+                    catch (Throwable ignored) {}
+                    finally { b.recycle(); }
+                }).start();
+            } catch (Throwable ignored) {}
         }
 
         /* ------------------------------------------------------------ petits outils de dessin */
