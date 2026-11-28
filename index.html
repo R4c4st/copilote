@@ -426,7 +426,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v58 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v59 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -693,7 +693,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 58;
+const TEMPO_BUILD = 59;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4790,7 +4790,7 @@ const jvSys = () => CV_SYS.replace(/\{WEB\}/g, jvWebOn() ? " ; pour le monde ext
   + (jvWebOn() ? "\n\nLe web (recherche_web)\n- Pour une information du monde extérieur qui peut changer ou que tu ne connais pas avec certitude (horaires, prix, actualité, résultats, doc technique, démarche, renseignement), cherche avec recherche_web au lieu de répondre de mémoire. Pas pour ce qui est dans ses souvenirs, ses tâches ou tes autres outils (bus, météo, trajet, agenda).\n- Une recherche suffit le plus souvent, deux au plus. approfondi seulement pour une question pointue ou technique.\n- Avant recherche_web, écris une seule phrase d'attente très courte (« Je consulte mes sources, monsieur. »). Ensuite, va droit au fait : la réponse d'abord, avec le chiffre, l'horaire ou le nom exact, en une à trois phrases. Ne répète pas la phrase d'attente, ne dis ni « d'après mes recherches » ni « selon Perplexity », pas d'hésitation inutile.\n- recherche_web te renvoie le plus souvent une réponse déjà rédigée par Perplexity (reponse), sinon des extraits. Réponds uniquement d'après ce qu'il renvoie. S'il ne répond pas vraiment, dis-le en une phrase. Pour un horaire, un prix ou une règle, signale si la source date.\n- La requête part sur Internet : jamais le nom de ses proches, son adresse ni un détail personnel. Seulement l'objet de la recherche (le commerce, le produit, la ville).\n- Pas de lien ni de source, sauf s'il les demande : ils sont alors dans <contexte>." : "")
   + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Quand il te dit qu'il part ou qu'il est parti de chez lui (« je pars », « je suis parti », « je m'en vais », « je pars au boulot ») : mets la maison en absent (chauffage_mode), sans rien demander. Quand il dit qu'il rentre ou qu'il est rentré : remets le planning. Il te l'a délégué.\n- S'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets la maison en absent jusqu'à son retour, et dis-le.\n- En dehors de ça, ne touche jamais au chauffage de ta propre initiative.\n- Si Netatmo ne répond pas, dis-le en une phrase et propose de réessayer : ne fais pas d'hypothèse sur ce qu'il voulait.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "")
   + jvSysCurseurs() + jvSysUnique() + jvSysApprend()
-  + (jvVoixMistral() && CFG.jvParle !== false ? "\n\nTa voix suit ton registre (balises d'émotion)\n- Ta voix est celle d'un majordome anglais qui parle français : son accent sert ton flegme. Une balise placée devant une phrase règle son intonation jusqu'à la balise suivante. Elles ne s'affichent pas et ne se prononcent pas.\n- Commence toujours ta réponse par une balise, puis changes-en à chaque fois que ton registre change :\n  · le factuel (horaire, chiffre, confirmation) : [emotion=confident] ; une mauvaise nouvelle : [emotion=calm] ;\n  · la pique impertinente : [emotion=sarcastic], et reviens à [emotion=confident] dès la phrase factuelle suivante ;\n  · l'humour : [emotion=amused], ou [emotion=playful] quand tu le taquines ; impertinence et humour mêlés : [emotion=sarcastic] pour la pique, [emotion=amused] pour la chute ;\n  · quand il est fatigué ou que le sujet est sensible : [emotion=warm], sans ironie ; urgence : [emotion=urgent].\n- Le dosage suit tes curseurs : plus l'humour et l'impertinence sont hauts, plus ces changements d'intonation reviennent souvent. Le factuel reste factuel.\n- Exemple : « [emotion=confident] Votre bus passe à 18 h 45, monsieur. [emotion=sarcastic] Je vous laisse le temps de retrouver vos clés. »\n- Jamais de balise dans ce que tu ranges avec noter, ni dans un mail, un texto, une liste ou un souvenir." : "")
+  + (jvVoixMistral() && CFG.jvParle !== false ? "\n\nTa voix suit ton registre (balises d'émotion)\n- Ta voix est celle d'un majordome anglais qui parle français : son accent sert ton flegme. Une balise placée devant une phrase règle son intonation jusqu'à la suivante. Elles ne s'affichent pas et ne se prononcent pas.\n- Ton de fond, du début à la fin : posé et légèrement souriant, [emotion=warm]. La phrase d'attente (« Très bien, monsieur. ») et les faits (horaire, chiffre, confirmation) restent dans ce ton : pas de solennité, pas d'enthousiasme.\n- Les changements sont des nuances, jamais des ruptures. Une pointe d'humour : [emotion=amused], puis retour à [emotion=warm]. Une vraie pique impertinente : [emotion=sarcastic] seulement si ton impertinence est à 60 % ou plus, sinon [emotion=amused]. Une mauvaise nouvelle : [emotion=calm]. Urgence : [emotion=urgent]. Pas de [emotion=confident], ni de passage brusque d'un ton enjoué à un ton grave.\n- Le dosage suit tes curseurs : plus l'humour et l'impertinence sont hauts, plus ces nuances reviennent souvent. Le factuel reste dans le ton de fond.\n- Exemple : « [emotion=warm] Très bien, monsieur. Votre bus passe à 18 h 45. [emotion=amused] Je vous laisse le temps de retrouver vos clés. »\n- Jamais de balise dans ce que tu ranges avec noter, ni dans un mail, un texto, une liste ou un souvenir." : "")
   + "\n\nQuand tu ne sais pas faire\n- Si aucun de tes outils ne permet ce qu'il demande, dis-le franchement en une phrase, propose ce que tu peux faire à la place, et note la demande avec noter_evolution : Claude la lira à la prochaine session de développement. Ne prétends jamais avoir fait ce que tu n'as pas pu faire.\n- Pour envoyer, copier ou exporter une liste ou un texte (mail, fichier texte, partage), utilise partager. Pour sa liste de courses en cours, source courses."
   + (jvSanteOn() ? "\n\nSa santé (sa montre et sa balance)\n- Pour un bilan santé, son sommeil, son poids, son pouls ou son activité, appelle sante_bilan (jours : 7 par défaut, 30 pour le mois, davantage pour suivre le poids).\n- Le bilan : court et parlé, quelques chiffres seulement. Compare sa période à ses propres habitudes (la référence), pas à des normes générales. Termine par un point positif et un point à surveiller.\n- Tu commentes des tendances, jamais de diagnostic. Si un signal dure (pouls au repos haut plusieurs jours, poids qui baisse sans qu'il le cherche, nuits très courtes en série), conseille-lui simplement d'en parler à son médecin.\n- N'en parle jamais de toi-même : seulement quand il le demande." : "");
 /* début de la fenêtre envoyée à Claude, fixé pour toute une réponse : si on le décale pendant qu'il utilise ses outils,
@@ -4900,6 +4900,7 @@ async function jvVoixPermise(){
 }
 async function jvVoixAudio(t){
   if (jvVoixMistral()) {
+    if (!/\[emotion=/i.test(t)) t = JV_EMO_FOND + " " + t;   // jamais sans émotion : sinon Voxtral improvise (ton aigu et enjoué)
     const r0 = +CFG.jvRate || 1.05, pace = r0 >= 1.2 ? "[pace=fast] " : r0 <= 0.85 ? "[pace=slow] " : "";
     if (pace && !/\[pace=/i.test(t)) t = pace + t;
     const voix = CFG.jvVoix.slice(2), ex = jvExpr(), k = ["m", voix, ex, t].join("|");
@@ -4927,9 +4928,9 @@ function jvVoixPhrase(t){
   const brut = String(t || "");
   t = jvPourVoix(brut).trim(); if (!t || JV_VQ.muet) return;
   const g = JV_VQ.gen; let tm = jvVoixMistral() ? jvPourVoixEmo(brut) : t;
-  if (jvVoixMistral()) {   // chaque phrase est lue à part : l'émotion choisie vaut jusqu'à la suivante, comme dans un seul texte
-    const e = tm.match(/\[emotion=[a-z-]+\]/gi);
-    if (e) JV_VQ.emo = e[e.length - 1]; else if (JV_VQ.emo) tm = JV_VQ.emo + " " + tm;
+  if (jvVoixMistral()) {   // chaque morceau est lu à part : il reprend l'émotion en cours (sinon le ton de fond), pour une voix continue
+    if (!/^\s*\[emotion=/i.test(tm)) tm = (JV_VQ.emo || JV_EMO_FOND) + " " + tm;
+    const e = tm.match(/\[emotion=[a-z-]+\]/gi); if (e) JV_VQ.emo = e[e.length - 1];
   }
   JV_VQ.file.push({ t, i: JV_VQ.nq++, src: jvVoixEnLigne() && MEM.tok && navigator.onLine !== false ? jvVoixAudio(tm).catch(() => null) : null });
   if (!JV_VQ.joue) { JV_VQ.joue = true; jvVoixSuite(g); }
@@ -6209,7 +6210,8 @@ async function toolRechercheWeb(x){
   const qs = [x.requete].concat(Array.isArray(x.autres_requetes) ? x.autres_requetes.slice(0, 2) : []);
   const sites = (Array.isArray(x.sites) ? x.sites : []).map(s => String(s).replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "")).filter(s => /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(s)).slice(0, 5);
   /* lot 24 : la réponse rédigée par Perplexity (Agent API) d'abord, plus sûre que des extraits ; sinon les extraits, comme avant */
-  if (!sites.length && CFG.jvWebReponse !== false) {
+  const repOff = LS.get("copilote_webrep_off", 0);
+  if (!sites.length && CFG.jvWebReponse !== false && !(repOff && Date.now() - repOff < 24 * 3600e3)) {
     const q = jvWebNeutre(x.requete);
     if (q.length > 2) {
       const r = await wFn({ action: "repondre", question: q, recence: JV_WEB_RECENCE[x.fraicheur] || "", approfondi: !!x.approfondi }, x.approfondi ? 35000 : 18000);
@@ -6223,6 +6225,7 @@ async function toolRechercheWeb(x){
           consigne: "Réponse rédigée par Perplexity à partir de ses sources. Reformule-la pour l'oral : la réponse d'abord, en une à trois phrases, avec le chiffre ou l'horaire exact. Pas de numéro de source, pas de « selon Perplexity ». Si elle dit ne pas savoir, dis-le simplement. Si un horaire ou un prix vient d'une source ancienne, signale-le." };
       }
       if (r && r.error === "plafond") return { erreur: "plafond du mois atteint pour la recherche web" };
+      if (r && r.error === "credits") LS.set("copilote_webrep_off", Date.now());   // pas de crédits payants Perplexity : extraits seulement, on réessaie demain
     }
   }
   const r = await jvChercher(qs, { type: x.approfondi ? "web" : "fast", recence: JV_WEB_RECENCE[x.fraicheur] || "", sites, max: x.approfondi ? 6 : 5, long: !!x.approfondi });
@@ -8096,9 +8099,10 @@ const jvVoixGoogle = () => /^g:fr-FR-Chirp3-HD-/.test(CFG.jvVoix || "");
 /* lot 25 · la voix Mistral (Voxtral TTS 3) : une voix britannique qui lit le français, avec ses émotions */
 const JV_VOIX_M = [["voice_1788", "David"], ["voice_3147", "Howard"], ["voice_3149", "Hugo"], ["voice_591", "Fred"], ["voice_3150", "James (américain)"], ["voice_485", "Rob (américain)"]];
 const JV_PRIX_VM = 0.016 / 1000;   // $ par caractère (Voxtral TTS)
+const JV_EMO_FOND = "[emotion=warm]";   // v59 : le ton de fond, posé et souriant, du début à la fin
 function jvVoixMistral(){ return /^m:voice_\d+$/.test(CFG.jvVoix || ""); }
 function jvVoixEnLigne(){ return jvVoixGoogle() || (jvVoixMistral() && !!CFG.mkey); }
-function jvExpr(){ return Math.min(5, Math.max(1, Math.round((+CFG.jvExpr || 3.5) * 10) / 10)); }
+function jvExpr(){ return Math.min(5, Math.max(1, Math.round((+CFG.jvExpr || 2.8) * 10) / 10)); }
 function jvVoixMCompte(n){
   try {
     const u = LS.get("copilote_mvoix", null), cur = u && u.m === curMonth() ? u.n : 0; LS.set("copilote_mvoix", { m: curMonth(), n: cur + n });
@@ -8112,6 +8116,7 @@ function jvVoixMErreur(r){
   try { toast(`voix Mistral : ${why}, je prends la voix du téléphone`, "", null, 6000); } catch (x) {}
 }
 if (!CFG.jvRegles58) { const L = (CFG.jvRegles || []).slice(); if (!L.some(r => /vinted/i.test(r.s))) L.push({ s: "Vinted", t: "seulement l'arrivée du colis au point de retrait, avec le code ; pas les autres étapes (expédié, en transit, en cours de livraison)", e: "essentiel", at: Date.now() }); CFG.jvRegles = L; CFG.jvRegles58 = 1; try { saveCfg(); } catch (e) {} }   // v58 : sa règle Vinted du 28/11
+if (!CFG.jvExpr59) { if (!CFG.jvExpr || +CFG.jvExpr === 3.5 || +CFG.jvExpr === 3.9) CFG.jvExpr = 2.8; CFG.jvExpr59 = 1; CFG.jvExpr57 = 1; try { saveCfg(); } catch (e) {} }   // v59 : 2,8 par défaut
 if (!CFG.jvExpr57) { if (!CFG.jvExpr || +CFG.jvExpr === 3.9) CFG.jvExpr = 3.5; CFG.jvExpr57 = 1; try { saveCfg(); } catch (e) {} }   // v57 : 3,5 par défaut
 if (!CFG.jvVoix56) { if (CFG.mkey) { CFG.jvVoix = "m:voice_1788"; CFG.jvParle = true; } CFG.jvVoix56 = 1; try { saveCfg(); } catch (e) {} }   // v56 : David par défaut
 function jvDire(t, then){
@@ -8224,7 +8229,7 @@ async function jvVoixListe(){
   if (jvVoixMistral()) { st.textContent = CFG.mkey ? `voix Mistral ce mois : ${mn.toLocaleString("fr-FR")} caractères (≈ ${cvMoney(mn * JV_PRIX_VM)})` : "les voix Mistral ont besoin de votre clé Mistral (réglages → dictée)"; return; }
   st.textContent = gInfo || (jvVoixGoogle() && um ? `voix Google ce mois : ${(um.hd || 0).toLocaleString("fr-FR")} caractères${um.style ? " + " + um.style.toLocaleString("fr-FR") + " en style Jarvis" : ""}` : (GV.length || L.length) && !CFG.jvVoix ? "écoutez-les une par une et gardez la voix d'homme qui vous plaît" : "");
 }
-function jvVoixSave(){ CFG.jvVoix = $("cvVoix").value; CFG.jvPitch = +$("cvPitch").value || 1; CFG.jvRate = +$("cvRate").value || 1.05; CFG.jvExpr = +$("cvExpr").value || 3.5; CFG.jvStyle = $("cvStyleChk").checked; CFG.jvStyleTxt = $("cvStyleTxt").value.trim() || JV_STYLE_DEF; saveCfg(); $("cvStyleBox").style.display = jvVoixGoogle() ? "" : "none"; $("cvExprBox").style.display = jvVoixMistral() ? "flex" : "none"; try { jvVoixListe(); } catch (e) {} }
+function jvVoixSave(){ CFG.jvVoix = $("cvVoix").value; CFG.jvPitch = +$("cvPitch").value || 1; CFG.jvRate = +$("cvRate").value || 1.05; CFG.jvExpr = +$("cvExpr").value || 2.8; CFG.jvStyle = $("cvStyleChk").checked; CFG.jvStyleTxt = $("cvStyleTxt").value.trim() || JV_STYLE_DEF; saveCfg(); $("cvStyleBox").style.display = jvVoixGoogle() ? "" : "none"; $("cvExprBox").style.display = jvVoixMistral() ? "flex" : "none"; try { jvVoixListe(); } catch (e) {} }
 function paintVoix(){
   $("cvNom").value = jvNom(); $("cvPitch").value = CFG.jvPitch || 1; $("cvRate").value = CFG.jvRate || 1.05; $("cvParleChk").checked = CFG.jvParle !== false;
   $("cvDiscretChk").checked = !!CFG.jvDiscret; $("cvDiscretAutoChk").checked = CFG.jvDiscretAuto !== false;

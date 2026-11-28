@@ -136,6 +136,7 @@ Deno.serve(async (req: Request) => {
       if (!(await allow(kMois(), PLAFOND, 40 * 86400))) return json({ error: "plafond", mois: PLAFOND, plafond: PLAFOND }, 402);
       const t0 = Date.now();
       const r = await repondre(q, { recence: RECENCE[String(b.recence ?? "")], approfondi: !!b.approfondi, sites: (Array.isArray(b.sites) ? b.sites : []).filter(okSite).slice(0, 10) });
+      if ("erreur" in r && r.erreur === "perplexity 403") return json({ error: "credits", detail: "l'Agent API de Perplexity demande des crédits payants" }, 402);
       if ("erreur" in r) return json({ error: "perplexity", detail: r.erreur + ("detail" in r && r.detail ? " · " + r.detail : "") }, 502);
       return json({ ok: true, ms: Date.now() - t0, reponse: r.reponse, sources: r.sources });
     }
