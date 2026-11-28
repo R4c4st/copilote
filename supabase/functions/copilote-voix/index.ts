@@ -32,6 +32,17 @@ const okVoix = (s: unknown) => typeof s === "string" && /^fr-FR-Chirp3-HD-[A-Za-
 const okVoixM = (s: unknown) => typeof s === "string" && /^voice_\d{2,7}$/.test(s);
 const okCleM = (s: unknown) => typeof s === "string" && /^[A-Za-z0-9_-]{20,128}$/.test(s);
 const MISTRAL_TTS = "https://api.mistral.ai/v1/audio/speech";
+// durée d'un WAV en base64, d'après son en-tête (fréquence, canaux, bits) et sa taille ; 0 si illisible
+function dureeWav(b64: string): number {
+  try {
+    const h = Uint8Array.from(atob(b64.slice(0, 64)), (c) => c.charCodeAt(0)), v = new DataView(h.buffer);
+    if (String.fromCharCode(h[0], h[1], h[2], h[3]) !== "RIFF") return 0;
+    const ch = v.getUint16(22, true), sr = v.getUint32(24, true), bits = v.getUint16(34, true);
+    if (!ch || !sr || !bits) return 0;
+    const octets = Math.floor(b64.replace(/=+$/, "").length * 3 / 4) - 44;
+    return Math.max(0, octets / (sr * ch * bits / 8));
+  } catch { return 0; }
+}
 const mois = () => new Date().toISOString().slice(0, 7);
 
 /* ---------- jeton d'accès Google à partir du compte de service (gardé en mémoire ~55 min) ---------- */
@@ -113,9 +124,18 @@ Deno.serve(async (req: Request) => {
       if (r.status === 400 || r.status === 422) { const d = (await r.text()).slice(0, 200); console.log("copilote-voix: mistral wav " + r.status + " " + d); r = await essai("mp3"); mime = "audio/mpeg"; }
       if (r.status === 401 || r.status === 403) return json({ error: "cle_mistral" }, 401);
       if (r.status === 429) return json({ error: "mistral_limit" }, 429);
-      const j = await r.json().catch(() => ({}));
+      let j = await r.json().catch(() => ({}));
       if (!r.ok || !j.audio_data) { console.log("copilote-voix: mistral " + r.status + " " + JSON.stringify(j).slice(0, 200)); return json({ error: "mistral", status: r.status }, 502); }
-      return json({ ok: true, audio: j.audio_data, mime, n: texte.length });
+      // v60 · garde-fou : une prise anormalement longue pour son texte (voix traînante, « outre-tombe ») est refaite une fois
+      const parle = texte.replace(/\[(?:emotion|pace)=[a-z-]+\]\s*/gi, "").trim().length;
+      const maxD = (1.6 + parle * 0.1) * (/\[pace=(?:slow|very-slow)\]/i.test(texte) ? 1.4 : 1);
+      let d = mime === "audio/wav" ? dureeWav(j.audio_data) : 0, relance = false;
+      if (d > maxD) {
+        const r2 = await essai(mime === "audio/wav" ? "wav" : "mp3"), j2 = r2.ok ? await r2.json().catch(() => ({})) : {};
+        if (j2.audio_data) { relance = true; const d2 = dureeWav(j2.audio_data); if (d2 && d2 < d) { j = j2; d = d2; } }
+      }
+      console.log(`copilote-voix: mistral ${parle} car → ${d.toFixed(1)} s (max ${maxD.toFixed(1)})${relance ? " · refaite" : ""}`);
+      return json({ ok: true, audio: j.audio_data, mime, n: texte.length * (relance ? 2 : 1), d: Math.round(d * 10) / 10, long: d > maxD, relance });
     }
 
     if (!sa()) return json({ error: "config" }, 503);

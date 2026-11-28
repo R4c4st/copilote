@@ -426,7 +426,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v59 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v60 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -693,7 +693,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 59;
+const TEMPO_BUILD = 60;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4787,10 +4787,10 @@ const jvSys = () => CV_SYS.replace(/\{WEB\}/g, jvWebOn() ? " ; pour le monde ext
   + (jvEstNestor() ? "\n- Ton nom s'écrit N.E.S.T.O.R. en sigle. C'est un acronyme à géométrie variable : s'il te demande ce qu'il veut dire, donne avec flegme une seule de ces versions, jamais une autre : " + jvAcroListe().map(a => "« " + a + " »").join(", ") + "." : "")
   + (jvBetaMatchOn() || jvBetaCineOn() ? "\n\nBêta (essais qu'il peut couper)\n- Quand il demande son brief, et seulement là, termine par les blocs bêta présents dans <contexte> (Cote & Match, Ciné du week-end) : francs, courts, sans les délayer.\n- S'il annonce son pari Cote & Match, note-le avec cote_match_choix, puis propose en une ligne le message prêt à envoyer au groupe : c'est lui qui l'envoie." : "")
   + "\n\nCorriger plutôt qu'ajouter\n- S'il corrige une date, une heure ou un titre (« je me suis trompé », « non, c'est jeudi », « décale à 19h »), qu'il annule quelque chose, ou s'il y a un doublon : utilise modifier_tache sur l'élément qui existe déjà (cherche-le avec taches si besoin). Ne crée jamais un second rendez-vous ou un second rappel à côté de l'ancien.\n- Ça vaut aussi pour ce que tu viens d'ajouter dans cette conversation.\n- Si son rappel de bus a été retiré, propose le bus pour la nouvelle date."
-  + (jvWebOn() ? "\n\nLe web (recherche_web)\n- Pour une information du monde extérieur qui peut changer ou que tu ne connais pas avec certitude (horaires, prix, actualité, résultats, doc technique, démarche, renseignement), cherche avec recherche_web au lieu de répondre de mémoire. Pas pour ce qui est dans ses souvenirs, ses tâches ou tes autres outils (bus, météo, trajet, agenda).\n- Une recherche suffit le plus souvent, deux au plus. approfondi seulement pour une question pointue ou technique.\n- Avant recherche_web, écris une seule phrase d'attente très courte (« Je consulte mes sources, monsieur. »). Ensuite, va droit au fait : la réponse d'abord, avec le chiffre, l'horaire ou le nom exact, en une à trois phrases. Ne répète pas la phrase d'attente, ne dis ni « d'après mes recherches » ni « selon Perplexity », pas d'hésitation inutile.\n- recherche_web te renvoie le plus souvent une réponse déjà rédigée par Perplexity (reponse), sinon des extraits. Réponds uniquement d'après ce qu'il renvoie. S'il ne répond pas vraiment, dis-le en une phrase. Pour un horaire, un prix ou une règle, signale si la source date.\n- La requête part sur Internet : jamais le nom de ses proches, son adresse ni un détail personnel. Seulement l'objet de la recherche (le commerce, le produit, la ville).\n- Pas de lien ni de source, sauf s'il les demande : ils sont alors dans <contexte>." : "")
+  + (jvWebOn() ? "\n\nLe web (recherche_web)\n- Pour une information du monde extérieur qui peut changer ou que tu ne connais pas avec certitude (horaires, prix, actualité, résultats, doc technique, démarche, renseignement), cherche avec recherche_web au lieu de répondre de mémoire. Pas pour ce qui est dans ses souvenirs, ses tâches ou tes autres outils (bus, météo, trajet, agenda).\n- Une recherche suffit le plus souvent, deux au plus. approfondi seulement pour une question pointue ou technique.\n- Avant recherche_web, écris une seule phrase d'attente, toujours exactement la même : « Très bien, monsieur, je regarde. » Ensuite, va droit au fait : la réponse d'abord, avec le chiffre, l'horaire ou le nom exact, en une à trois phrases. Ne répète pas la phrase d'attente, ne dis ni « d'après mes recherches » ni « selon Perplexity », pas d'hésitation inutile.\n- recherche_web te renvoie le plus souvent une réponse déjà rédigée par Perplexity (reponse), sinon des extraits. Réponds uniquement d'après ce qu'il renvoie. S'il ne répond pas vraiment, dis-le en une phrase. Pour un horaire, un prix ou une règle, signale si la source date.\n- La requête part sur Internet : jamais le nom de ses proches, son adresse ni un détail personnel. Seulement l'objet de la recherche (le commerce, le produit, la ville).\n- Pas de lien ni de source, sauf s'il les demande : ils sont alors dans <contexte>." : "")
   + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Quand il te dit qu'il part ou qu'il est parti de chez lui (« je pars », « je suis parti », « je m'en vais », « je pars au boulot ») : mets la maison en absent (chauffage_mode), sans rien demander. Quand il dit qu'il rentre ou qu'il est rentré : remets le planning. Il te l'a délégué.\n- S'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets la maison en absent jusqu'à son retour, et dis-le.\n- En dehors de ça, ne touche jamais au chauffage de ta propre initiative.\n- Si Netatmo ne répond pas, dis-le en une phrase et propose de réessayer : ne fais pas d'hypothèse sur ce qu'il voulait.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "")
   + jvSysCurseurs() + jvSysUnique() + jvSysApprend()
-  + (jvVoixMistral() && CFG.jvParle !== false ? "\n\nTa voix suit ton registre (balises d'émotion)\n- Ta voix est celle d'un majordome anglais qui parle français : son accent sert ton flegme. Une balise placée devant une phrase règle son intonation jusqu'à la suivante. Elles ne s'affichent pas et ne se prononcent pas.\n- Ton de fond, du début à la fin : posé et légèrement souriant, [emotion=warm]. La phrase d'attente (« Très bien, monsieur. ») et les faits (horaire, chiffre, confirmation) restent dans ce ton : pas de solennité, pas d'enthousiasme.\n- Les changements sont des nuances, jamais des ruptures. Une pointe d'humour : [emotion=amused], puis retour à [emotion=warm]. Une vraie pique impertinente : [emotion=sarcastic] seulement si ton impertinence est à 60 % ou plus, sinon [emotion=amused]. Une mauvaise nouvelle : [emotion=calm]. Urgence : [emotion=urgent]. Pas de [emotion=confident], ni de passage brusque d'un ton enjoué à un ton grave.\n- Le dosage suit tes curseurs : plus l'humour et l'impertinence sont hauts, plus ces nuances reviennent souvent. Le factuel reste dans le ton de fond.\n- Exemple : « [emotion=warm] Très bien, monsieur. Votre bus passe à 18 h 45. [emotion=amused] Je vous laisse le temps de retrouver vos clés. »\n- Jamais de balise dans ce que tu ranges avec noter, ni dans un mail, un texto, une liste ou un souvenir." : "")
+  + (jvVoixMistral() && CFG.jvParle !== false ? "\n\nTa voix suit ton registre (balises d'émotion)\n- Ta voix est celle d'un majordome anglais qui parle français : son accent sert ton flegme. Une balise placée devant une phrase règle son intonation jusqu'à la suivante. Elles ne s'affichent pas et ne se prononcent pas.\n- Ton de fond, du début à la fin : posé et légèrement souriant, [emotion=warm]. La phrase d'attente (« Très bien, monsieur, je regarde. ») et les faits (horaire, chiffre, confirmation) restent dans ce ton : pas de solennité, pas d'enthousiasme.\n- Les changements sont des nuances, jamais des ruptures. Une pointe d'humour : [emotion=amused], puis retour à [emotion=warm]. Une vraie pique impertinente : [emotion=sarcastic] seulement si ton impertinence est à 60 % ou plus, sinon [emotion=amused]. Une mauvaise nouvelle : [emotion=calm]. Urgence : [emotion=urgent]. Pas de [emotion=confident], ni de passage brusque d'un ton enjoué à un ton grave.\n- Le dosage suit tes curseurs : plus l'humour et l'impertinence sont hauts, plus ces nuances reviennent souvent. Le factuel reste dans le ton de fond.\n- Exemple : « [emotion=warm] Très bien, monsieur. Votre bus passe à 18 h 45. [emotion=amused] Je vous laisse le temps de retrouver vos clés. »\n- Jamais de balise dans ce que tu ranges avec noter, ni dans un mail, un texto, une liste ou un souvenir." : "")
   + "\n\nQuand tu ne sais pas faire\n- Si aucun de tes outils ne permet ce qu'il demande, dis-le franchement en une phrase, propose ce que tu peux faire à la place, et note la demande avec noter_evolution : Claude la lira à la prochaine session de développement. Ne prétends jamais avoir fait ce que tu n'as pas pu faire.\n- Pour envoyer, copier ou exporter une liste ou un texte (mail, fichier texte, partage), utilise partager. Pour sa liste de courses en cours, source courses."
   + (jvSanteOn() ? "\n\nSa santé (sa montre et sa balance)\n- Pour un bilan santé, son sommeil, son poids, son pouls ou son activité, appelle sante_bilan (jours : 7 par défaut, 30 pour le mois, davantage pour suivre le poids).\n- Le bilan : court et parlé, quelques chiffres seulement. Compare sa période à ses propres habitudes (la référence), pas à des normes générales. Termine par un point positif et un point à surveiller.\n- Tu commentes des tendances, jamais de diagnostic. Si un signal dure (pouls au repos haut plusieurs jours, poids qui baisse sans qu'il le cherche, nuits très courtes en série), conseille-lui simplement d'en parler à son médecin.\n- N'en parle jamais de toi-même : seulement quand il le demande." : "");
 /* début de la fenêtre envoyée à Claude, fixé pour toute une réponse : si on le décale pendant qu'il utilise ses outils,
@@ -4868,15 +4868,18 @@ async function cvCallFlux(extras, surTexte, effort){
 /* découpe le texte qui arrive en phrases à dire (pas après « M. », « Dr. »…) */
 function jvDecoupe(){
   let tampon = "", nb = 0;
-  const mini = () => nb > 0 && typeof jvVoixMistral === "function" && jvVoixMistral() ? 220 : 25;   // lot 26 : David lit par blocs, sans changer de voix à chaque phrase
+  const vm = () => nb > 0 && typeof jvVoixMistral === "function" && jvVoixMistral();
+  const mini = () => vm() ? 220 : 25;   // lot 26 : David lit par blocs, sans changer de voix à chaque phrase
+  const reste = () => vm() ? 70 : 0;    // v60 : jamais de petit bout de fin tout seul (Voxtral déraille sur un texte trop court) : il reste collé au bloc d'avant
   const sortir = fin => {
     const out = [];
     for (;;) {
       const rx = /[.!?…](?=\s)|\n/g; let m, cut = -1;
       while ((m = rx.exec(tampon))) {
         const i = m.index + 1, avant = tampon.slice(0, i);
-        if (avant.trim().length < mini()) continue;
+        if (jvSansEmo(avant).trim().length < mini()) continue;   // v60 : on compte les mots dits, pas les balises
         if (m[0] === "." && /(?:^|\s)(?:M|Mme|Mlle|Dr|St|Ste|cf|ex|etc|n°|[A-Z])\.$/.test(avant)) continue;
+        if (reste() && jvSansEmo(tampon.slice(i)).trim().length < reste()) break;
         cut = i; break;
       }
       if (cut < 0) break;
@@ -4891,8 +4894,34 @@ function jvDecoupe(){
 const JV_VQ = { gen: 0, file: [], joue: false, ok: null, t0: 0, nq: 0, muet: false };
 function jvVoixDebut(){
   JV_VQ.gen++; JV_VQ.emo = ""; JV_VQ.file = []; JV_VQ.joue = false; JV_VQ.ok = null; JV_VQ.t0 = 0; JV_VQ.nq = 0; JV_VQ.muet = false; JV_VQ.chaud = false;
+  JV_VJ = { m: 0, t: 0, c: 0, r: 0, w: "" };
   try { if (JV_AUDIO) { JV_AUDIO.pause(); JV_AUDIO = null; } } catch (e) {}
 }
+/* v60 · le journal de la voix (qui a parlé à la dernière réponse : David ou le téléphone, et pourquoi) */
+let JV_VJ = { m: 0, t: 0, c: 0, r: 0, w: "" };
+function jvVJ(k, w){ try { JV_VJ[k] = (JV_VJ[k] || 0) + 1; if (w) JV_VJ.w = w; LS.set("copilote_vj", JV_VJ); } catch (e) {} }
+function jvVJTxt(){
+  const v = LS.get("copilote_vj", null); if (!v || !(v.m || v.t) || !jvVoixMistral()) return "";
+  return `voix : David ${v.m}` + (v.t ? `, téléphone ${v.t} (${v.w || "?"})` : "") + (v.r ? `, ${v.r} refaite${v.r > 1 ? "s" : ""}` : "") + (v.c ? `, ${v.c} en mémoire` : "");
+}
+/* la voix du téléphone en secours : ton neutre (son curseur grave/aigu ne vaut que pour elle, pas pour David) */
+function jvSecours(t, then, why){
+  if (!jvVoixMistral()) return _jvSpeak(t, then);
+  jvVJ("t", why);
+  const p = CFG.jvPitch, v = CFG.jvVoix; CFG.jvPitch = 1; CFG.jvVoix = "";
+  try { return _jvSpeak(t, then); } finally { CFG.jvPitch = p; CFG.jvVoix = v; }
+}
+/* les petites phrases de David qui reviennent (« Très bien, monsieur, je regarde. ») : une bonne prise, gardée 7 jours et rejouée sans attendre */
+const jvVcCle = async k => "vc|" + b64url(new Uint8Array(await crypto.subtle.digest("SHA-256", TE.encode(k)))).slice(0, 24);
+async function jvVcGet(k){ try { const v = await kvGet(await jvVcCle(k)); return v && Date.now() - v.at < 7 * 864e5 ? v.s : null; } catch (e) { return null; } }
+async function jvVcSet(k, s){
+  try {
+    const c = await jvVcCle(k), L = (LS.get("copilote_vc", null) || []).filter(x => x !== c); L.push(c);
+    while (L.length > 20) kvDel(L.shift()).catch(() => {});
+    LS.set("copilote_vc", L); await kvSet(c, { s, at: Date.now() });
+  } catch (e) {}
+}
+function jvVcVide(){ try { (LS.get("copilote_vc", null) || []).forEach(c => kvDel(c).catch(() => {})); LS.set("copilote_vc", []); } catch (e) {} }
 async function jvVoixPermise(){
   if (CFG.jvDiscret || CFG.jvParle === false || CFG.vSay === "0") return false;
   if (NATIVE && CFG.jvDiscretAuto !== false) { try { const r = await tn("sonState"); if (r && (r.ringer < 2 || r.dnd) && !r.casque) return false; } catch (e) {} }
@@ -4903,14 +4932,16 @@ async function jvVoixAudio(t){
     if (!/\[emotion=/i.test(t)) t = JV_EMO_FOND + " " + t;   // jamais sans émotion : sinon Voxtral improvise (ton aigu et enjoué)
     const r0 = +CFG.jvRate || 1.05, pace = r0 >= 1.2 ? "[pace=fast] " : r0 <= 0.85 ? "[pace=slow] " : "";
     if (pace && !/\[pace=/i.test(t)) t = pace + t;
-    const voix = CFG.jvVoix.slice(2), ex = jvExpr(), k = ["m", voix, ex, t].join("|");
+    const voix = CFG.jvVoix.slice(2), ex = jvExpr(), k = ["m", voix, ex, t].join("|"), court = jvSansEmo(t).trim().length <= 60;
     if (JV_SONS.has(k)) return JV_SONS.get(k);
+    if (court) { const s = await jvVcGet(k); if (s) { JV_SONS.set(k, s); jvVJ("c"); return s; } }
     if (!CFG.mkey) return null;
     const r = await vFn({ action: "mistral", texte: t, voix, expr: ex, cle: CFG.mkey });
     if (!r || !r.ok || !r.audio) { jvVoixMErreur(r); return null; }
-    jvVoixMCompte(+r.n || t.length);
+    jvVoixMCompte(+r.n || t.length); if (r.relance) jvVJ("r");
     const src = "data:" + (r.mime || "audio/wav") + ";base64," + r.audio;
     JV_SONS.set(k, src); if (JV_SONS.size > 24) JV_SONS.delete(JV_SONS.keys().next().value);
+    if (court && !r.long) jvVcSet(k, src);   // une prise jugée bonne : gardée pour la prochaine fois
     return src;
   }
   t = jvSansEmo(t);
@@ -4949,10 +4980,10 @@ async function jvVoixSuite(g){
     try {
       if (JV_AUDIO) JV_AUDIO.pause();
       const a = new Audio(src); JV_AUDIO = a; let fini = false; jvHaloSon(a); jvSonVu(a);
-      const f = () => { if (!fini) { fini = true; suite(); } }, repli = () => { if (!fini) { fini = true; _jvSpeak(it.t, suite); } };
+      const f = () => { if (!fini) { fini = true; suite(); } }, repli = why => { if (!fini) { fini = true; jvSecours(it.t, suite, why); } };
       try { a.preservesPitch = true; a.playbackRate = jvVitesseG(); } catch (e) {}
-      a.onended = f; a.onerror = repli;
-      const p = a.play(); if (p && p.catch) p.catch(repli);
+      a.onended = f; a.onerror = () => repli("son illisible"); a.addEventListener("playing", () => jvVJ("m"), { once: true });
+      const p = a.play(); if (p && p.catch) p.catch(() => repli("lecture refusée"));
       setTimeout(f, 6000 + it.t.length * 110);
       return;
     } catch (e) {}
@@ -4971,7 +5002,7 @@ function jvChrono(x){
 function jvChronoTxt(){
   const L = (LS.get("copilote_chrono", null) || []).filter(e => e.total != null); if (!L.length) return "";
   const d = L[L.length - 1], f = v => v == null ? "—" : String(v).replace(".", ",") + " s";
-  return `dernière réponse : premier mot ${f(d.premier)}, complète ${f(d.total)}${d.voix != null ? ", voix " + f(d.voix) : ""}`;
+  return `dernière réponse : premier mot ${f(d.premier)}, complète ${f(d.total)}${d.voix != null ? ", voix " + f(d.voix) : ""}` + (jvVJTxt() ? " · " + jvVJTxt() : "");
 }
 function cvCount(u, cat){
   if (!u) return 0;
@@ -7216,7 +7247,7 @@ function jvHaloSon(a){
 let JV_SILENCE = null;
 function jvSilence(){
   if (JV_SILENCE) return JV_SILENCE;
-  const sr = 8000, n = Math.round(sr * 0.32), buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const sr = 24000, n = Math.round(sr * 0.32), buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
   const w = (o, x) => { for (let i = 0; i < x.length; i++) v.setUint8(o + i, x.charCodeAt(i)); };
   w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVEfmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
   v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, n * 2, true);
@@ -8119,10 +8150,12 @@ if (!CFG.jvRegles58) { const L = (CFG.jvRegles || []).slice(); if (!L.some(r => 
 if (!CFG.jvExpr59) { if (!CFG.jvExpr || +CFG.jvExpr === 3.5 || +CFG.jvExpr === 3.9) CFG.jvExpr = 2.8; CFG.jvExpr59 = 1; CFG.jvExpr57 = 1; try { saveCfg(); } catch (e) {} }   // v59 : 2,8 par défaut
 if (!CFG.jvExpr57) { if (!CFG.jvExpr || +CFG.jvExpr === 3.9) CFG.jvExpr = 3.5; CFG.jvExpr57 = 1; try { saveCfg(); } catch (e) {} }   // v57 : 3,5 par défaut
 if (!CFG.jvVoix56) { if (CFG.mkey) { CFG.jvVoix = "m:voice_1788"; CFG.jvParle = true; } CFG.jvVoix56 = 1; try { saveCfg(); } catch (e) {} }   // v56 : David par défaut
+/* v60 : la phrase d'attente de David est prête avant la première recherche (une prise, gardée 7 jours) */
+setTimeout(() => { try { if (jvVoixMistral() && CFG.mkey && MEM.tok && navigator.onLine !== false && CFG.jvParle !== false) jvVoixAudio(JV_EMO_FOND + " Très bien, monsieur, je regarde.").catch(() => {}); } catch (e) {} }, 9000);
 function jvDire(t, then){
-  if (!jvVoixEnLigne() || !MEM.tok || navigator.onLine === false) return _jvSpeak(jvSansEmo(t), then);
+  if (!jvVoixEnLigne() || !MEM.tok || navigator.onLine === false) return jvSecours(jvSansEmo(t), then, "hors ligne");
   let fini = false; const done = () => { if (fini) return; fini = true; if (then) then(); };
-  const repli = () => { if (fini) return; fini = true; _jvSpeak(jvSansEmo(t), then); };
+  const repli = why => { if (fini) return; fini = true; jvSecours(jvSansEmo(t), then, typeof why === "string" ? why : "Mistral muet"); };
   const voix = CFG.jvVoix.slice(2), mode = CFG.jvStyle ? "style" : "hd", style = mode === "style" ? (CFG.jvStyleTxt || JV_STYLE_DEF) : "";
   const k = [mode, voix, style, t].join("|");
   const joue = src => jvChauffe().then(() => {
@@ -8130,12 +8163,12 @@ function jvDire(t, then){
       try { if (JV_AUDIO) JV_AUDIO.pause(); } catch (e) {}
       const a = new Audio(src); JV_AUDIO = a; try { jvHaloSon(a); jvSonVu(a); } catch (e) {}
       try { a.preservesPitch = true; a.playbackRate = jvVitesseG(); } catch (e) {}
-      a.onended = done; a.onerror = repli;
-      const p = a.play(); if (p && p.catch) p.catch(repli);
+      a.onended = done; a.onerror = () => repli("son illisible"); a.addEventListener("playing", () => jvVJ("m"), { once: true });
+      const p = a.play(); if (p && p.catch) p.catch(() => repli("lecture refusée"));
       setTimeout(done, 6000 + t.length * 110);
     } catch (e) { repli(); }
   });
-  if (jvVoixMistral()) { jvVoixAudio(t).then(src => src ? joue(src) : repli(), repli); return; }
+  if (jvVoixMistral()) { jvVoixAudio(t).then(src => src ? joue(src) : repli("Mistral muet"), () => repli("Mistral muet")); return; }
   if (JV_SONS.has(k)) { joue(JV_SONS.get(k)); return; }
   vFn({ action: "dire", texte: t, voix, mode, style }).then(r => {
     if (r && r.mois) LS.set("copilote_vmois", { m: curMonth(), u: r.mois });
@@ -8229,18 +8262,18 @@ async function jvVoixListe(){
   if (jvVoixMistral()) { st.textContent = CFG.mkey ? `voix Mistral ce mois : ${mn.toLocaleString("fr-FR")} caractères (≈ ${cvMoney(mn * JV_PRIX_VM)})` : "les voix Mistral ont besoin de votre clé Mistral (réglages → dictée)"; return; }
   st.textContent = gInfo || (jvVoixGoogle() && um ? `voix Google ce mois : ${(um.hd || 0).toLocaleString("fr-FR")} caractères${um.style ? " + " + um.style.toLocaleString("fr-FR") + " en style Jarvis" : ""}` : (GV.length || L.length) && !CFG.jvVoix ? "écoutez-les une par une et gardez la voix d'homme qui vous plaît" : "");
 }
-function jvVoixSave(){ CFG.jvVoix = $("cvVoix").value; CFG.jvPitch = +$("cvPitch").value || 1; CFG.jvRate = +$("cvRate").value || 1.05; CFG.jvExpr = +$("cvExpr").value || 2.8; CFG.jvStyle = $("cvStyleChk").checked; CFG.jvStyleTxt = $("cvStyleTxt").value.trim() || JV_STYLE_DEF; saveCfg(); $("cvStyleBox").style.display = jvVoixGoogle() ? "" : "none"; $("cvExprBox").style.display = jvVoixMistral() ? "flex" : "none"; try { jvVoixListe(); } catch (e) {} }
+function jvVoixSave(){ CFG.jvVoix = $("cvVoix").value; CFG.jvPitch = +$("cvPitch").value || 1; CFG.jvRate = +$("cvRate").value || 1.05; CFG.jvExpr = +$("cvExpr").value || 2.8; CFG.jvStyle = $("cvStyleChk").checked; CFG.jvStyleTxt = $("cvStyleTxt").value.trim() || JV_STYLE_DEF; saveCfg(); $("cvStyleBox").style.display = jvVoixGoogle() ? "" : "none"; $("cvExprBox").style.display = jvVoixMistral() ? "flex" : "none"; $("cvPitch").parentElement.style.display = jvVoixMistral() ? "none" : "flex"; try { jvVoixListe(); } catch (e) {} }
 function paintVoix(){
   $("cvNom").value = jvNom(); $("cvPitch").value = CFG.jvPitch || 1; $("cvRate").value = CFG.jvRate || 1.05; $("cvParleChk").checked = CFG.jvParle !== false;
   $("cvDiscretChk").checked = !!CFG.jvDiscret; $("cvDiscretAutoChk").checked = CFG.jvDiscretAuto !== false;
   $("cvStyleChk").checked = !!CFG.jvStyle; $("cvStyleTxt").value = CFG.jvStyleTxt || JV_STYLE_DEF; $("cvStyleBox").style.display = jvVoixGoogle() ? "" : "none";
-  $("cvExpr").value = jvExpr(); $("cvExprBox").style.display = jvVoixMistral() ? "flex" : "none";
+  $("cvExpr").value = jvExpr(); $("cvExprBox").style.display = jvVoixMistral() ? "flex" : "none"; $("cvPitch").parentElement.style.display = jvVoixMistral() ? "none" : "flex";
   jvVoixListe();
 }
 $("cvNom").onchange = () => { CFG.jvNom = $("cvNom").value.trim() || "Nestor"; saveCfg(); jvNomDom(); toast(`désormais, je m'appelle ${jvNom()}`); };
 ["cvVoix", "cvPitch", "cvRate", "cvExpr", "cvStyleChk", "cvStyleTxt"].forEach(id => $(id).onchange = jvVoixSave);
 $("cvParleChk").onchange = () => { CFG.jvParle = $("cvParleChk").checked; saveCfg(); };
-$("cvVoixTest").onclick = () => { jvVoixSave(); try { hush(); } catch (e) {} jvDire(`Bonsoir monsieur. Ici ${jvNom()}. Votre bus passe à 18 heures 45 : je vous laisse le temps de retrouver vos clés.`); };
+$("cvVoixTest").onclick = () => { jvVoixSave(); jvVcVide(); try { hush(); } catch (e) {} jvDire(`Bonsoir monsieur. Ici ${jvNom()}. Votre bus passe à 18 heures 45 : je vous laisse le temps de retrouver vos clés.`); };
 const _jvOpenEdit = openEdit;
 openEdit = function(it){ const r = _jvOpenEdit.apply(this, arguments); const b = $("eSpace"); if (b) b.textContent = "→ " + jvAutre(); return r; };
 $("cvAlChk").onchange = async () => {
