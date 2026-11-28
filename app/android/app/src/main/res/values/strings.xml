@@ -9,4 +9,6 @@
     <string name="sc_noter">Noter</string>
     <string name="sc_noter_long">Noter à la voix</string>
     <string name="notif_listener">Nestor : appels manqués, SMS et WhatsApp</string>
+    <string name="fond_nom">Nestor</string>
+    <string name="fond_desc">Le fond animé de Nestor : la boucle choisie dans ses réglages, en pause quand l\'écran d\'accueil n\'est pas visible</string>
 </resources>

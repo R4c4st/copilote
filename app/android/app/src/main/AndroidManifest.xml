@@ -93,6 +93,18 @@
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/tempo_widget_info" />
         </receiver>
 
+        <!-- lot 29 : le fond d'écran animé de Nestor (boucle vidéo choisie dans les réglages) -->
+        <service
+            android:name=".NestorFond"
+            android:label="@string/fond_nom"
+            android:exported="true"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data android:name="android.service.wallpaper" android:resource="@xml/nestor_fond" />
+        </service>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -103,6 +115,8 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
     </application>
+
+    <uses-feature android:name="android.software.live_wallpaper" android:required="false" />
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />

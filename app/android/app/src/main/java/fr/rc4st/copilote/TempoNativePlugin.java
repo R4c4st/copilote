@@ -99,7 +99,7 @@ import org.json.JSONObject;
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 17;
+    static final int NATIVE_BUILD = 18;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -1458,6 +1458,85 @@ public class TempoNativePlugin extends Plugin {
             else getActivity().getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             call.resolve();
         });
+    }
+
+    /* ---------- lot 29 : le fond d'écran animé ---------- */
+
+    /** Télécharge la boucle choisie (hébergée avec l'appli) et la range pour le fond d'écran : files/fond/actuel.mp4 */
+    @PluginMethod
+    public void fondInstaller(PluginCall call) {
+        final String url = call.getString("url", ""), nom = call.getString("nom", "");
+        if (!url.startsWith("https://")) { call.reject("adresse invalide"); return; }
+        new Thread(() -> {
+            HttpURLConnection cx = null;
+            try {
+                File dir = new File(getContext().getFilesDir(), "fond");
+                if (!dir.exists() && !dir.mkdirs()) throw new Exception("dossier impossible");
+                File tmp = new File(dir, "nouveau.part"), fin = NestorFond.fichier(getContext());
+                cx = (HttpURLConnection) new URL(url).openConnection();
+                cx.setConnectTimeout(15000);
+                cx.setReadTimeout(30000);
+                cx.setInstanceFollowRedirects(true);
+                int code = cx.getResponseCode();
+                if (code != 200) throw new Exception("HTTP " + code);
+                long total = 0;
+                try (InputStream in = cx.getInputStream(); OutputStream out = new FileOutputStream(tmp)) {
+                    byte[] b = new byte[65536];
+                    int n;
+                    while ((n = in.read(b)) > 0) { out.write(b, 0, n); total += n; }
+                }
+                if (total < 100000) throw new Exception("fichier incomplet");
+                // le remplacement est d'un seul coup : le fond en cours garde l'ancienne boucle jusqu'au retour sur l'accueil
+                if (!tmp.renameTo(fin)) throw new Exception("rangement impossible");
+                prefs().edit().putString("fond_nom", nom).apply();
+                JSObject r = new JSObject();
+                r.put("ok", true);
+                r.put("taille", total);
+                call.resolve(r);
+            } catch (Exception e) {
+                call.reject("téléchargement : " + e.getMessage());
+            } finally {
+                if (cx != null) cx.disconnect();
+            }
+        }).start();
+    }
+
+    /** Ouvre l'écran d'Android qui applique le fond animé de Nestor (« Appliquer ») */
+    @PluginMethod
+    public void fondChoisir(PluginCall call) {
+        Context c = getContext();
+        try {
+            Intent i = new Intent(android.app.WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER);
+            i.putExtra(android.app.WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, new android.content.ComponentName(c, NestorFond.class));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            c.startActivity(i);
+            call.resolve();
+        } catch (Exception e) {
+            try {
+                Intent j = new Intent(android.app.WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER);
+                j.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                c.startActivity(j);
+                call.resolve();
+            } catch (Exception e2) {
+                call.reject("le téléphone n'a pas ouvert le choix du fond d'écran");
+            }
+        }
+    }
+
+    /** Le fond animé de Nestor est-il en place, et quelle boucle est rangée ? */
+    @PluginMethod
+    public void fondEtat(PluginCall call) {
+        Context c = getContext();
+        JSObject r = new JSObject();
+        boolean actif = false;
+        try {
+            android.app.WallpaperInfo wi = android.app.WallpaperManager.getInstance(c).getWallpaperInfo();
+            actif = wi != null && c.getPackageName().equals(wi.getPackageName());
+        } catch (Exception ignored) {}
+        r.put("actif", actif);
+        r.put("fichier", NestorFond.fichier(c).exists());
+        r.put("nom", prefs().getString("fond_nom", ""));
+        call.resolve(r);
     }
 
     /** Tempo quitte l'écran : on rend tout de suite le micro et la reconnaissance vocale aux autres applis */
