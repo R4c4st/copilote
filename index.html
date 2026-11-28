@@ -426,7 +426,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v54 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v55 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -555,6 +555,14 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvParleChk" style="width:auto"> il me répond à voix haute quand je lui parle</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvDiscretChk" style="width:auto"> mode discret : il ne parle plus du tout (ou dites-lui « mode discret » / « tu peux parler »)</label>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvDiscretAutoChk" style="width:auto"> se taire tout seul quand le téléphone est en silencieux, vibreur ou « ne pas déranger » (sauf casque ou Bluetooth)</label>
+    <div class="lab">Un seul Nestor</div>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:4px"><input type="checkbox" id="cvUniqueChk" style="width:auto"> tout ce que je dis au rond passe par lui : il range, répond ou me pose une question (décoché : le tri rapide d'avant)</label>
+    <div class="lab">Son caractère</div>
+    <div id="cvCurs"></div>
+    <div class="foot" style="margin-top:8px"><p class="small" style="margin:0;flex:1;min-width:0">ou dites-lui « augmente ton humour de 10 % »</p><button id="cvCursDef">par défaut</button></div>
+    <div class="lab">Carnet d'évolutions</div>
+    <p class="small" style="margin:4px 0 6px">Ce qu'il ne sait pas encore faire : Claude le lit à chaque session de développement.</p>
+    <div id="cvCarnet"></div>
     <div class="lab">Mes souvenirs</div>
     <input id="cvQ" placeholder="chercher dans ma mémoire…" style="margin-top:4px">
     <div id="cvMemList" style="margin-top:6px"></div>
@@ -682,7 +690,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 54;
+const TEMPO_BUILD = 55;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1054,6 +1062,11 @@ ICI C'EST UNE LIGNE D'UN MAIL qu'il s'est envoyé à lui-même pour te confier q
   if (j.stop_reason === "max_tokens") throw new Error("coupé");
   const raw = (j.content || []).map(c => c.text || "").join("");
   const obj = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
+  return aiNorm(obj, kind);
+}
+/* le JSON de tri (Haiku, ou l'outil noter de Nestor) → éléments propres */
+function aiNorm(obj, kind){
+  obj = obj || {};
   const items = (obj.items || []).map(it => { const sp = CFG.jvEsp !== false && (it.sp === "pro" || it.sp === "perso") ? it.sp : SPACE, CX = sp === "perso" ? CATS_PERSO : CATS_PRO; return ({
     sp, title: it.title || "", cat: CX[it.cat] ? it.cat : "remarque", ch: it.ch || "",
     u: [1, 2, 3].includes(+it.u) ? +it.u : 1, due: it.due || null, time: it.time || null, note: it.note || "", ai: true,
@@ -1190,6 +1203,11 @@ async function capture(text, src, kind, ctx){
       return true;
     }
   }
+  /* lot 24 · un seul Nestor : la dictée va au même cerveau que la conversation (il range, répond ou demande, avec tout le contexte).
+     S'il ne répond pas (réseau, plafond, erreur), le tri rapide d'avant prend le relais : rien ne se perd. */
+  if (!kind && (src === "voix" || src === "texte") && !(ctx && (ctx.reprise || ctx.fond || ctx.muet || ctx.ligneMail || ctx.sansSecours)) && typeof jvCerveau === "function" && jvUniqueOn()) {
+    if (await jvCerveau(text, src)) return true;
+  }
   let parsed = null, viaAI = false, U = { n: 0, done: [], undo: [] }, aiErr = null;
   /* en fond (messages reçus, dictée remise à ranger) : le cercle reste libre, rien à l'écran tant que ce n'est pas fini */
   const fond = kind === "phone" || !!(ctx && (ctx.reprise || ctx.fond));
@@ -1215,6 +1233,11 @@ async function capture(text, src, kind, ctx){
     parsed = text ? localParse(text) : [];
     if (!parsed.length && text && !U.n) parsed = [{ title: cleanTitle(text), cat: "remarque", ch: "", u: 1, due: null, time: null, note: "" }];
   }
+  return captureFin(text, src, kind, ctx, parsed, U, viaAI, fond);
+}
+/* ce qui a été compris → dans les listes, avec l'agenda, le bilan et « annuler » ; o.dejaDit : Nestor a déjà répondu à voix haute */
+function captureFin(text, src, kind, ctx, parsed, U, viaAI, fond, o){
+  o = o || {};
   const now = Date.now();
   const added = (parsed || []).map(p => Object.assign({ id: uid(), created: now, done: false, doneAt: null, src: src || "voix", raw: text, orig: { cat: p.cat, ch: p.ch, u: p.u, slot: bucket(p) } }, p));
   const moved = typeof jvRanger === "function" ? jvRanger(added, kind) : [], versSp = SPACE === "pro" ? "perso" : "pro";
@@ -1241,7 +1264,7 @@ async function capture(text, src, kind, ctx){
   if (kind === "phone" && parts.length) parts.unshift(IC.msg + " messages");
   if (!kind && added.length) LAST = { ids: added.map(a => a.id), at: Date.now() };
   else if (!kind && U.n && LAST) LAST.at = Date.now();
-  if (!kind && (src === "voix" || src === "texte") && shouldSpeak()) speakThenFollow(sayBack(added, U, viaAI));
+  if (!kind && (src === "voix" || src === "texte") && shouldSpeak() && !o.dejaDit) speakThenFollow(sayBack(added, U, viaAI));
   const ag = gOn() ? [] : added.filter(wantsAgenda);
   const gAdded = gOn() ? added.filter(gWants) : [];
   if (gAdded.length) parts.push(IC.cal + " dans l'agenda");
@@ -4432,7 +4455,7 @@ function memSearch(q, k){
 }
 const cvShort = id => id.slice(0, 8);
 const cvFull = s => { s = String(s || "").replace(/[^0-9a-f]/gi, "").toLowerCase(); if (s.length < 6) return null; for (const id of MEM.items.keys()) if (id.replace(/-/g, "").startsWith(s)) return id; return null; };
-function cvSouvenirs(q){
+function cvSouvenirs(q, max){
   const byDate = (a, b) => (Date.parse(b.q) || 0) - (Date.parse(a.q) || 0);
   const all = [...MEM.items.values()];
   const picked = new Map();
@@ -4444,7 +4467,7 @@ function cvSouvenirs(q){
   let size = 0; const lines = [];
   for (const i of picked.values()) {
     const l = `[${cvShort(i.id)}] ${(i.q || "").slice(0, 10)} · ${i.d}${i.p ? " · épinglé" : ""} : ${i.t}`;
-    if (size + l.length > 7000) break; size += l.length; lines.push(l);
+    if (size + l.length > (max || 7000)) break; size += l.length; lines.push(l);
   }
   return lines.length ? lines.join("\n") : "(aucun souvenir pour l'instant)";
 }
@@ -4477,6 +4500,14 @@ Ta façon de répondre
 - Aucune mise en forme : jamais d'astérisques, de soulignés ni de dièses, même pour un mot étranger ou un mot à souligner. Ta réponse est souvent lue à voix haute : écris le mot tel quel.
 - Quand ta réponse finit par une question, son micro s'ouvre pour qu'il te réponde à la voix, sans redire ton nom. N'en pose une que si tu attends vraiment sa réponse, jamais par politesse (pas de « Autre chose ? »).
 - Ne lui fais jamais répéter ce qui est déjà dans ses souvenirs. Avant de répondre que tu n'as pas une information sur lui ou ses proches (adresse, lieu, personne, habitude), cherche-la avec chercher_souvenirs en essayant plusieurs mots d'un coup : le prénom, le lien (« ex-femme », « mère de son fils », « fils »), le lieu. Ne dis « je ne l'ai pas » qu'après cette recherche.
+
+Exemples de ton (situations fictives, à imiter dans l'esprit, jamais à recopier)
+- « Il ferme à quelle heure, le magasin de bricolage de Nancy ? » → « 19 h 30 ce soir, monsieur. »
+- « Mets le dentiste jeudi à 8 h. » alors qu'il est sur un chantier à Metz ce matin-là → « Puis-je vous rappeler que vous êtes à Metz jeudi matin, monsieur ? Je le mets à 11 h, ou vous maintenez 8 h ? »
+- « Rappelle-moi encore de faire mes papiers. » (quatrième fois) → « Quatrième rappel, monsieur. Je commence à m'attacher à ce dossier. Demain 9 h ? »
+- « Je suis crevé, j'ai rien avancé aujourd'hui. » → « Trois choses sont faites, monsieur, dont la plus pénible. Je glisse le reste à demain matin ? » (fatigue : sobre, pas d'ironie)
+- « Coupe le Wi-Fi. » → « J'ai bien peur de ne pas avoir la main sur vos réglages, monsieur. C'est noté pour Claude ; en attendant, c'est dans les réglages rapides. »
+- « Je pars. » → « Bonne route, monsieur. Le chauffage passe en absent. »
 
 Sa mémoire : c'est lui qui décide
 - Quand il te donne une information durable sur lui, ses proches, son travail, ses habitudes ou ses préférences, ou quand il dit « retiens », propose-la avec l'outil proposer_souvenir : une phrase autonome, compréhensible seule dans six mois, datée si la date compte. Pas pour les broutilles ni pour ce qui ne vaut que pour aujourd'hui.
@@ -4633,12 +4664,21 @@ function cvReprendre(){
   JV.msgs = p.msgs || []; JV.view = p.view || []; JV.notes = []; JV.at = Date.now(); JV.from = null;
   cvSave(); cvPaint();
 }
+/* lot 24 · plus rapide : la position et l'agenda se demandent en même temps, avec un délai maximum (un GPS lent ne retient plus la réponse) ;
+   l'agenda du jour est gardé 3 minutes */
+let JV_EV_CACHE = null;
+const jvAuPlus = (p, ms) => Promise.race([Promise.resolve(p).catch(() => null), new Promise(r => setTimeout(() => r(null), ms))]);
+async function jvEvJour(day){
+  if (JV_EV_CACHE && JV_EV_CACHE.day === day && Date.now() - JV_EV_CACHE.at < 180000) return JV_EV_CACHE.ev;
+  const ev = await gEvents(day); JV_EV_CACHE = { day, at: Date.now(), ev }; return ev;
+}
 async function cvContexte(){
   const now = new Date();
+  const pIci = jvAuPlus(jvIci(), 1500), pEv = gOn() ? jvAuPlus(jvEvJour(ymd(now)), 2500) : Promise.resolve(null);
   const d = now.toLocaleString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const pro = !!CFG.jvPro;
   const L = [`Nous sommes le ${d} (heure de Paris, date ${ymd(now)}). Espace ouvert dans l'appli : ${typeof SPACE !== "undefined" ? SPACE : "pro"}. Mode pro de Nestor : ${pro ? "activé" : "désactivé (perso seulement)"}.`];
-  try { const ici = await jvIci(); if (ici) L.push(ici); } catch (e) {}
+  try { const ici = await pIci; if (ici) L.push(ici); } catch (e) {}
   try {
     const td = ymd(now), tm = ymd(addDays(1)), out = [];
     for (const sp of (pro ? ["pro", "perso"] : ["perso"])) for (const i of (spaceState(sp).items || [])) {
@@ -4653,12 +4693,20 @@ async function cvContexte(){
   } catch (e) {}
   try {
     if (gOn()) {
-      const ev = (await gEvents(ymd(now))).filter(e => !e.tempo);
+      const ev = ((await pEv) || []).filter(e => !e.tempo);
       if (ev.length) L.push("Son agenda Google aujourd'hui :\n" + ev.slice(0, 8).map(e => (e.allDay || !e.s ? "journée" : hm(e.s)) + " · " + e.title).join("\n"));
     }
   } catch (e) {}
   try { const b = jvBetaContexte(); if (b) L.push(b); } catch (e) {}
   try { const w = jvWebContexte(); if (w) L.push(w); } catch (e) {}
+  try {   // lot 24 : un seul Nestor, il voit sa liste (avec les id) pour cocher ou corriger sans doublon
+    if (jvUniqueOn()) {
+      const ligne = i => `- id=${i.id} : ${i.title}${i.ch ? " [" + i.ch + "]" : ""}${i.due ? " (" + i.due + (i.time ? " " + i.time : "") + ")" : ""}`;
+      const open = S.items.filter(i => !i.done && !isMemo(i)).slice(0, 30).map(ligne);
+      if (open.length) L.push(`Sa liste ouverte (espace ${SPACE}), avec les id pour noter.updates :\n` + open.join("\n"));
+      const last = lastItems(); if (last.length) L.push("Ce qu'il vient de noter (il y a moins de 3 min) :\n" + last.map(ligne).join("\n"));
+    }
+  } catch (e) {}
   return L.join("\n");
 }
 /* son nom (réglable) et le prénom de l'utilisateur (sa fiche, dans le téléphone) : jamais écrits dans le code */
@@ -4734,8 +4782,10 @@ const jvSys = () => CV_SYS.replace(/\{WEB\}/g, jvWebOn() ? " ; pour le monde ext
   + (jvEstNestor() ? "\n- Ton nom s'écrit N.E.S.T.O.R. en sigle. C'est un acronyme à géométrie variable : s'il te demande ce qu'il veut dire, donne avec flegme une seule de ces versions, jamais une autre : " + jvAcroListe().map(a => "« " + a + " »").join(", ") + "." : "")
   + (jvBetaMatchOn() || jvBetaCineOn() ? "\n\nBêta (essais qu'il peut couper)\n- Quand il demande son brief, et seulement là, termine par les blocs bêta présents dans <contexte> (Cote & Match, Ciné du week-end) : francs, courts, sans les délayer.\n- S'il annonce son pari Cote & Match, note-le avec cote_match_choix, puis propose en une ligne le message prêt à envoyer au groupe : c'est lui qui l'envoie." : "")
   + "\n\nCorriger plutôt qu'ajouter\n- S'il corrige une date, une heure ou un titre (« je me suis trompé », « non, c'est jeudi », « décale à 19h »), qu'il annule quelque chose, ou s'il y a un doublon : utilise modifier_tache sur l'élément qui existe déjà (cherche-le avec taches si besoin). Ne crée jamais un second rendez-vous ou un second rappel à côté de l'ancien.\n- Ça vaut aussi pour ce que tu viens d'ajouter dans cette conversation.\n- Si son rappel de bus a été retiré, propose le bus pour la nouvelle date."
-  + (jvWebOn() ? "\n\nLe web (recherche_web)\n- Pour une information du monde extérieur qui peut changer ou que tu ne connais pas avec certitude (horaires, prix, actualité, résultats, doc technique, démarche, renseignement), cherche avec recherche_web au lieu de répondre de mémoire. Pas pour ce qui est dans ses souvenirs, ses tâches ou tes autres outils (bus, météo, trajet, agenda).\n- Une recherche suffit le plus souvent, deux au plus. approfondi seulement pour une question pointue ou technique.\n- Réponds uniquement d'après les extraits renvoyés. S'ils se contredisent ou ne répondent pas, dis-le en une phrase. Pour un horaire, un prix ou une règle, signale si la source date.\n- La requête part sur Internet : jamais le nom de ses proches, son adresse ni un détail personnel. Seulement l'objet de la recherche (le commerce, le produit, la ville).\n- Pas de lien ni de source, sauf s'il les demande : ils sont alors dans <contexte>." : "")
+  + (jvWebOn() ? "\n\nLe web (recherche_web)\n- Pour une information du monde extérieur qui peut changer ou que tu ne connais pas avec certitude (horaires, prix, actualité, résultats, doc technique, démarche, renseignement), cherche avec recherche_web au lieu de répondre de mémoire. Pas pour ce qui est dans ses souvenirs, ses tâches ou tes autres outils (bus, météo, trajet, agenda).\n- Une recherche suffit le plus souvent, deux au plus. approfondi seulement pour une question pointue ou technique.\n- Avant recherche_web, écris une seule phrase d'attente très courte (« Je consulte mes sources, monsieur. »). Ensuite, va droit au fait : la réponse d'abord, avec le chiffre, l'horaire ou le nom exact, en une à trois phrases. Ne répète pas la phrase d'attente, ne dis ni « d'après mes recherches » ni « selon Perplexity », pas d'hésitation inutile.\n- recherche_web te renvoie le plus souvent une réponse déjà rédigée par Perplexity (reponse), sinon des extraits. Réponds uniquement d'après ce qu'il renvoie. S'il ne répond pas vraiment, dis-le en une phrase. Pour un horaire, un prix ou une règle, signale si la source date.\n- La requête part sur Internet : jamais le nom de ses proches, son adresse ni un détail personnel. Seulement l'objet de la recherche (le commerce, le produit, la ville).\n- Pas de lien ni de source, sauf s'il les demande : ils sont alors dans <contexte>." : "")
   + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Quand il te dit qu'il part ou qu'il est parti de chez lui (« je pars », « je suis parti », « je m'en vais », « je pars au boulot ») : mets la maison en absent (chauffage_mode), sans rien demander. Quand il dit qu'il rentre ou qu'il est rentré : remets le planning. Il te l'a délégué.\n- S'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets la maison en absent jusqu'à son retour, et dis-le.\n- En dehors de ça, ne touche jamais au chauffage de ta propre initiative.\n- Si Netatmo ne répond pas, dis-le en une phrase et propose de réessayer : ne fais pas d'hypothèse sur ce qu'il voulait.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "")
+  + jvSysCurseurs() + jvSysUnique()
+  + "\n\nQuand tu ne sais pas faire\n- Si aucun de tes outils ne permet ce qu'il demande, dis-le franchement en une phrase, propose ce que tu peux faire à la place, et note la demande avec noter_evolution : Claude la lira à la prochaine session de développement. Ne prétends jamais avoir fait ce que tu n'as pas pu faire.\n- Pour envoyer, copier ou exporter une liste ou un texte (mail, fichier texte, partage), utilise partager. Pour sa liste de courses en cours, source courses."
   + (jvSanteOn() ? "\n\nSa santé (sa montre et sa balance)\n- Pour un bilan santé, son sommeil, son poids, son pouls ou son activité, appelle sante_bilan (jours : 7 par défaut, 30 pour le mois, davantage pour suivre le poids).\n- Le bilan : court et parlé, quelques chiffres seulement. Compare sa période à ses propres habitudes (la référence), pas à des normes générales. Termine par un point positif et un point à surveiller.\n- Tu commentes des tendances, jamais de diagnostic. Si un signal dure (pouls au repos haut plusieurs jours, poids qui baisse sans qu'il le cherche, nuits très courtes en série), conseille-lui simplement d'en parler à son médecin.\n- N'en parle jamais de toi-même : seulement quand il le demande." : "");
 /* début de la fenêtre envoyée à Claude, fixé pour toute une réponse : si on le décale pendant qu'il utilise ses outils,
    sa réflexion (signée pour ce début de conversation) est refusée (erreur 400 « bound to a different conversation ») */
@@ -4918,31 +4968,34 @@ function cvDetailConso(){
   return (L.length ? "détail : " + L.join(", ") : "") + (m.haiku >= 0.005 ? (L.length ? " · " : "") + `dictées (Haiku, hors plafond) ${cvMoney(m.haiku)}` : "");
 }
 async function cvSend(text, opt){
-  text = (text || "").trim(); if (!text || JV.busy) return;
+  text = (text || "").trim(); if (!text || JV.busy) return false;
+  const secours = !!(opt && opt.secours);
   cvFraiche();
   { const rc = jvRaccourci(jvAppel(text) || text);   // « je pars », « je rentre » : tout de suite, sans Claude
     if (rc) {
       JV.busy = true; cvStatus("je règle le chauffage…");
       try { const o = await jvFaireRaccourci(rc, text); if (opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0") { try { speak(jvPourVoix(o.err || o.dit)); } catch (e) {} } }
       finally { JV.busy = false; cvStatus(""); cvPaint(); }
-      return;
+      return true;
     } }
   if (jvAcroDemande(text, JV.at && Date.now() - JV.at < 3 * 60000)) {
     const r = jvAcro();
     JV.view.push({ r: "u", t: text }, { r: "a", t: r.ecrit, usd: 0 });
     JV.msgs.push({ role: "user", content: text }, { role: "assistant", content: r.ecrit });
     if (opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0") { try { speak(jvPourVoix(r.dit)); } catch (e) {} }
-    JV.at = Date.now(); await cvSave(); cvPaint(); return;
+    JV.at = Date.now(); await cvSave(); cvPaint(); return true;
   }
+  if (secours && (!CFG.key || cvMonth().usd >= cvCap())) return false;   // le tri rapide (Haiku, hors plafond) prend le relais
   if (!CFG.key) { JV.view.push({ r: "a", t: "Il me faut votre clé Claude, monsieur : réglages > Claude." }); cvPaint(); return; }
   if (cvMonth().usd >= cvCap()) { JV.view.push({ r: "a", t: `J'ai bien peur que le plafond du mois soit atteint (${cvMoney(cvCap())}), monsieur. Vous pouvez le changer dans l'onglet mémoire.` }); cvPaint(); return; }
   cvFraiche();
   const val = JV.notes.length ? `<validations>\n${JV.notes.join("\n")}\n</validations>\n` : "";
   JV.notes = [];
-  JV.view.push({ r: "u", t: text });
+  const vu = { r: "u", t: text }; JV.view.push(vu);
   JV.busy = true; cvPaint(); cvStatus("je réfléchis…");
   const base = JV.msgs.length;
-  JV.msgs.push({ role: "user", content: `<souvenirs>\n${cvSouvenirs(text)}\n</souvenirs>\n<contexte>\n${await cvContexte()}\n</contexte>\n${val}\n${text}` });
+  let reussi = false;
+  JV.msgs.push({ role: "user", content: `<souvenirs>\n${cvSouvenirs(text, opt && opt.cercle ? 4500 : 7000)}\n</souvenirs>\n<contexte>\n${await cvContexte()}\n</contexte>\n${val}\n${text}` });
   JV.from = cvFenetre();
   // lot 20 : la réponse s'affiche et se dit au fil de l'eau
   const voix = !!(opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0"), dec = jvDecoupe(), effort = jvEffort(text);
@@ -4962,7 +5015,7 @@ async function cvSend(text, opt){
     for (let step = 0; step < 6; step++) {
       etapes = step + 1;
       const j = await cvCallFlux(undefined, surTexte, effort);
-      usd += cvCount(j.usage, /^Mon brief du jour/.test(text) ? "brief" : /\bcheck\b/i.test(text) ? "check" : "conversation");
+      usd += cvCount(j.usage, /^Mon brief du jour/.test(text) ? "brief" : /\bcheck\b/i.test(text) ? "check" : opt && opt.cercle ? "rond (dictées)" : "conversation");
       const content = j.content || [];
       const t1 = content.filter(b => b.type === "text").map(b => b.text).join("\n").trim(); if (t1) texts.push(t1);
       const uses = content.filter(b => b.type === "tool_use");
@@ -4976,7 +5029,7 @@ async function cvSend(text, opt){
       for (const t of uses) {
         let out;
         if (JV_LOCAL[t.name]) { cvStatus(JV_ATTENTE[t.name] || "je regarde…"); try { out = await JV_LOCAL[t.name](t.input || {}); } catch (e) { out = { erreur: "indisponible pour l'instant" }; } }
-        else out = /^proposer_(rappel|rappel_lieu|courses)$/.test(t.name) ? { ok: "ajouté tout de suite (il peut annuler)" } : { ok: "proposé à l'utilisateur : il validera lui-même" };
+        else out = /^(proposer_(rappel|rappel_lieu|courses)|noter)$/.test(t.name) ? { ok: "ajouté tout de suite (il peut annuler)" } : /^(regler_curseur|partager|noter_evolution)$/.test(t.name) ? { ok: "fait" } : { ok: "proposé à l'utilisateur : il validera lui-même" };
         results.push({ type: "tool_result", tool_use_id: t.id, content: JSON.stringify(out).slice(0, 8000) });
       }
       JV.msgs.push({ role: "user", content: results });
@@ -4985,14 +5038,20 @@ async function cvSend(text, opt){
     // on ne garde dans l'historique que sa question et la réponse finale (les étapes intermédiaires servent une fois)
     JV.msgs.splice(base + 1);
     const txt = texts.join("\n\n").trim();
-    JV.msgs.push({ role: "assistant", content: txt || "(je vous propose quelque chose ci-dessous)" });
+    const aMsg = { role: "assistant", content: txt || "(je vous propose quelque chose ci-dessous)" };
+    JV.msgs.push(aMsg);
     if (txt) { if (vivant) { vivant.t = txt; delete vivant.live; vivant.usd = usd; } else JV.view.push({ r: "a", t: txt, usd }); }
     else if (vivant) JV.view.splice(JV.view.indexOf(vivant), 1);
     if (voix || bul) dire(dec.fin());
     JV_CHRONO.etapes = etapes; jvChrono({ fin: jvNow() });
-    const v0 = JV.view.length;
+    const v0 = JV.view.length, notes = [];
     for (const t of tools) {
       const x = t.input || {};
+      // lot 24 : ce qu'il dicte se range, ses curseurs se règlent, une liste part, une demande va au carnet
+      if (t.name === "noter") { try { notes.push(...jvNoterApply(x, text, opt && opt.src ? opt.src : opt && opt.voix ? "voix" : "texte", !!txt)); } catch (e) {} }
+      if (t.name === "regler_curseur") { try { jvCurseurRegle(x); } catch (e) {} }
+      if (t.name === "partager") { try { await jvPartager(x); } catch (e) {} }
+      if (t.name === "noter_evolution") { try { jvEvolution(x); } catch (e) {} }
       if (t.name === "proposer_souvenir" && x.texte) JV.view.push({ r: "p", k: "retenir", t: String(x.texte).slice(0, 2000), d: x.domaine === "pro" ? "pro" : "perso", pin: !!x.epingle, st: "" });
       if (t.name === "proposer_rappel" && x.titre && /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") && /^\d{1,2}:\d{2}$/.test(x.heure || "")) JV.view.push({ r: "p", k: "rappel", t: String(x.titre).slice(0, 200), date: x.date, heure: x.heure.padStart(5, "0"), sp: x.espace === "pro" ? "pro" : "perso", rdv: !!x.rendez_vous, lieu: x.lieu || "", note: x.note || "", bus: x.bus_arret && /^\d{1,2}:\d{2}$/.test(x.bus_depart || "") ? { arret: x.bus_arret, dep: x.bus_depart.padStart(5, "0"), ligne: x.bus_ligne || "" } : null, st: "" });
       if (t.name === "proposer_courses" && Array.isArray(x.articles) && x.articles.length) JV.view.push({ r: "p", k: "courses", t: x.magasin ? String(x.magasin).slice(0, 80) : "", art: x.articles.slice(0, 80).map(a => ({ a: String(a.article || "").slice(0, 80), r: JV_RAYONS.includes(a.rayon) ? a.rayon : "autre" })).filter(a => a.a), st: "" });
@@ -5007,17 +5066,25 @@ async function cvSend(text, opt){
     // délégué par lui : ce qui reste dans le téléphone s'ajoute sans validation, annulable d'un geste
     // (souvenirs, oublis et lieux habituels attendent toujours son accord : c'est sa mémoire)
     for (let i = v0; i < JV.view.length; i++) { const p = JV.view[i]; if (p.r === "p" && JV_AUTO.has(p.k)) { p.auto = true; try { await cvDecide(i, true); } catch (e) {} } }
-    JV.at = Date.now();
+    // une dictée simplement rangée : la conversation garde une trace lisible (« noté : … »), pour la suite de l'échange
+    if (!txt && notes.length) { aMsg.content = "(noté : " + notes.join(" ; ") + ")"; JV.view.push({ r: "a", t: "Noté : " + notes.join(" · "), usd, note: 1 }); }
+    JV.at = Date.now(); reussi = true;
   } catch (e) {
+    const parlait = !!vivant;
     if (vivant && JV.view.includes(vivant)) JV.view.splice(JV.view.indexOf(vivant), 1);   // pas de réponse à moitié
     if (voix) jvVoixDebut();
     JV.msgs.splice(base);   // la question non répondue ne reste pas dans l'historique envoyé
+    if (secours && !parlait) {   // rien n'a encore été dit : on rend la main au tri rapide, sans message d'erreur
+      if (JV.view.includes(vu)) JV.view.splice(JV.view.indexOf(vu), 1);
+      JV.busy = false; cvStatus(""); cvPaint(); return false;
+    }
     const s = e && e.status, m = e && e.j && e.j.error && e.j.error.message || "";
     const why = !s ? "pas de réseau" : s === 401 ? "clé Claude refusée" : s === 429 ? "Claude est saturé, réessayez dans un instant" : s === 529 ? "Claude est surchargé, réessayez dans un instant" : `erreur ${s}${m ? " : " + m.slice(0, 120) : ""}`;
     if (jvCreditVide(m)) { JV.view.push({ r: "e", t: "J'ai bien peur que le crédit Claude soit épuisé, monsieur. Rechargez votre compte dans la console Claude (Plans & Billing), puis réessayez.", retry: text }); jvCreditAlerte(); }
     else JV.view.push({ r: "e", t: `Je n'ai pas pu répondre (${why}).`, retry: text });
   }
   JV.busy = false; cvStatus(""); await cvSave(); cvPaint();
+  return reussi;
 }
 const JV_AUTO = new Set(["rappel", "courses", "ici", "modif"]);
 async function cvDecide(i, ok){
@@ -5410,7 +5477,7 @@ const JV_BETA_TOOLS = [
   { name: "cote_match_choix", description: "Note le pari qu'il a choisi cette semaine pour Cote & Match (ça coupe la relance de 11h du vendredi).",
     input_schema: { type: "object", properties: { pari: { type: "string", description: "match et pari, ex. « Lens - Brest, victoire de Lens »" } }, required: ["pari"] } }
 ];
-const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS, JV_HORLOGE_TOOLS, JV_MEM_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); if (jvWebOn()) t = t.concat(JV_WEB_TOOLS); return t; };
+const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS, JV_HORLOGE_TOOLS, JV_MEM_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); if (jvWebOn()) t = t.concat(JV_WEB_TOOLS); t = t.concat(JV_CURSEUR_TOOLS, JV_PARTAGE_TOOLS, JV_EVOL_TOOLS); if (jvUniqueOn()) t = t.concat(jvNoterTool()); return t; };
 /* zones de la maison pour le chauffage selon la présence (l'appli Android les déclenche, même fermée) */
 const jvMaisonLieu = () => jvLieux().find(l => l.g.type === "maison");
 const jvChauffeAuto = () => jvNetOn() && CFG.jvChauffe !== false && !!jvMaisonLieu();
@@ -6049,7 +6116,7 @@ async function jvWeb(sys, user, maxUses, cat){
    Une recherche « fast » coûte 0,1 centime, une « web » (plus fouillée) 0,5 centime : pas de tokens côté Perplexity.
    La clé Perplexity reste côté serveur (secrets Supabase) ; la requête part neutre, sans rien de personnel. */
 const JV_WFN = "https://pvafdjygxnvjwohjjhal.supabase.co/functions/v1/copilote-web";
-const JV_WEB_PRIX = { fast: 0.001, web: 0.005 };   // $ par recherche réussie
+const JV_WEB_PRIX = { fast: 0.001, web: 0.005, reponse: 0.006, reponsePlus: 0.02 };   // $ par recherche réussie (réponse rédigée : estimation, à confirmer sur la console Perplexity)
 let JV_WEB_DERNIER = null;                         // { at, sources } : s'il demande « ta source ? » juste après
 async function wFn(body, ms){
   const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), ms || 15000);
@@ -6109,6 +6176,23 @@ const JV_WEB_RECENCE = { jour: "jour", semaine: "semaine", mois: "mois", an: "an
 async function toolRechercheWeb(x){
   const qs = [x.requete].concat(Array.isArray(x.autres_requetes) ? x.autres_requetes.slice(0, 2) : []);
   const sites = (Array.isArray(x.sites) ? x.sites : []).map(s => String(s).replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "")).filter(s => /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(s)).slice(0, 5);
+  /* lot 24 : la réponse rédigée par Perplexity (Agent API) d'abord, plus sûre que des extraits ; sinon les extraits, comme avant */
+  if (!sites.length && CFG.jvWebReponse !== false) {
+    const q = jvWebNeutre(x.requete);
+    if (q.length > 2) {
+      const r = await wFn({ action: "repondre", question: q, recence: JV_WEB_RECENCE[x.fraicheur] || "", approfondi: !!x.approfondi }, x.approfondi ? 35000 : 18000);
+      if (r && r.ok && r.reponse) {
+        const usd = x.approfondi ? JV_WEB_PRIX.reponsePlus : JV_WEB_PRIX.reponse, m = cvMonth();
+        m.usd += usd; m.par = m.par || {}; m.par["recherche web"] = (m.par["recherche web"] || 0) + usd; LS.set("copilote_conso", m);
+        const e = jvWebEtatLu(); if (e.pret) { e.mois = (e.mois || 0) + 1; LS.set("copilote_web_etat", e); }
+        const src = (Array.isArray(r.sources) ? r.sources : []).slice(0, 4);
+        JV_WEB_DERNIER = { at: Date.now(), sources: src.map(p => ({ site: p.site, titre: p.titre, url: p.url, date: p.date })) };
+        return { reponse: String(r.reponse).replace(/\s*\[(?:web:)?\d+\]/g, "").trim(), sources: src.map(p => ({ site: p.site, date: p.date || "inconnue" })),
+          consigne: "Réponse rédigée par Perplexity à partir de ses sources. Reformule-la pour l'oral : la réponse d'abord, en une à trois phrases, avec le chiffre ou l'horaire exact. Pas de numéro de source, pas de « selon Perplexity ». Si elle dit ne pas savoir, dis-le simplement. Si un horaire ou un prix vient d'une source ancienne, signale-le." };
+      }
+      if (r && r.error === "plafond") return { erreur: "plafond du mois atteint pour la recherche web" };
+    }
+  }
   const r = await jvChercher(qs, { type: x.approfondi ? "web" : "fast", recence: JV_WEB_RECENCE[x.fraicheur] || "", sites, max: x.approfondi ? 6 : 5, long: !!x.approfondi });
   if (r.erreur) return { erreur: r.erreur };
   const resultats = [];
@@ -6496,6 +6580,7 @@ function paintLieux(){
   $("cvBriefChk").checked = CFG.jvBrief !== false;
   $("cvBnChk").checked = CFG.jvBriefAuto !== false; $("cvMeteoChk").checked = !!CFG.jvMeteo;
   $("cvEchChk").checked = CFG.jvEch !== false; $("cvRelChk").checked = CFG.jvRel !== false; $("cvEspChk").checked = CFG.jvEsp !== false;
+  $("cvUniqueChk").checked = CFG.jvUnique !== false; try { paintCurseurs(); } catch (e) {} try { paintCarnet(); } catch (e) {}
   try { paintVoix(); } catch (e) {}
   $("cvAlChk").checked = !!CFG.jvAlertes;
   jvAlertesState().then(s => { const e = $("cvAlSt"); if (e) e.textContent = s.txt; });
@@ -6749,6 +6834,203 @@ async function jvAuCercle(reste){
   const nv = JV.view.slice(n0);
   if (!nv.some(v => v.r === "e")) flashOk();
   B.fin(nv);
+}
+
+/* ---------- lot 24 · un seul Nestor ----------
+   Tout ce qu'il dit au rond va au même cerveau que la conversation (Sonnet, mêmes souvenirs, même historique) :
+   il range avec l'outil noter, répond, agit ou pose une question. La bulle ne s'ouvre que s'il a quelque chose à dire ;
+   une simple note reste discrète (le bilan « 1 notée · annuler », comme avant). S'il ne répond pas, le tri rapide reprend. */
+function jvUniqueOn(){ return CFG.jvUnique !== false && !!CFG.key; }
+async function jvCerveau(text, src){
+  if (JV.busy || !CFG.key || navigator.onLine === false || cvMonth().usd >= cvCap()) return false;
+  try { ringState("think"); hint("un instant…"); } catch (e) {}
+  try { await memUnlock(); } catch (e) {}
+  const n0 = JV.view.length; let B = null;
+  const phrase = p => { if (!B) { try { idle(); } catch (e) {} B = jvBulle(text); } B.phrase(p); };
+  const ok = await cvSend(text, { voix: true, phrase, secours: true, cercle: true, src });
+  if (!ok) { if (B) { try { jvBulleFerme(true); } catch (e) {} } return false; }
+  try { idle(); } catch (e) {}
+  const nv = JV.view.slice(n0);
+  if (!B && nv.some(v => v.r === "p" || v.r === "e")) B = jvBulle(text);   // une proposition ou un souci : la bulle le montre
+  if (B) { if (!nv.some(v => v.r === "e")) flashOk(); B.fin(nv); }
+  return true;
+}
+var JV_NOTER_CATS = () => [...new Set([...Object.keys(CATS_PRO), ...Object.keys(CATS_PERSO)])];
+function jvNoterTool(){
+  return { name: "noter", description: "Range dans ses listes ce qu'il vient de dicter : tâches, appels, rendez-vous, mails et textos à préparer, mémos, idées, dépenses, articles de courses ; et coche, corrige ou supprime ce qui est déjà dans sa liste (updates, avec les id donnés dans <contexte>). S'applique tout de suite, il peut annuler d'un geste. N'écris pas de texte en plus, sauf si tu as quelque chose d'utile à lui dire.",
+    input_schema: { type: "object", properties: {
+      items: { type: "array", items: { type: "object", properties: {
+        title: { type: "string", description: "Court, commence par un verbe à l'infinitif (courses : juste l'article)." },
+        sp: { type: "string", enum: ["pro", "perso"] },
+        cat: { type: "string", enum: JV_NOTER_CATS() },
+        ch: { type: "string", description: "Chantier (pro) ou thème (perso), si connu." },
+        u: { type: "integer", enum: [1, 2, 3] },
+        due: { type: "string", description: "AAAA-MM-JJ, sinon vide." },
+        time: { type: "string", description: "HH:MM, sinon vide." },
+        note: { type: "string" },
+        mail: { type: "object", description: "Pour cat mail ou message.", properties: { to: { type: "string" }, subject: { type: "string" }, body: { type: "string" }, via: { type: "string", description: "sms, wa, snap ou le nom de l'appli" } } },
+        rec: { type: "string", enum: ["jour", "ouvre", "semaine", "mois", "an"] },
+        rb: { type: "string", enum: ["info", "idee", "depense"] },
+        amount: { type: "number" } },
+        required: ["title", "cat", "sp"] } },
+      updates: { type: "array", items: { type: "object", properties: {
+        id: { type: "string" }, title: { type: "string" }, note: { type: "string" }, ch: { type: "string" },
+        due: { type: "string" }, time: { type: "string" }, u: { type: "integer", enum: [1, 2, 3] },
+        done: { type: "boolean" }, delete: { type: "boolean" } },
+        required: ["id"] } } } } };
+}
+/* l'outil noter → les mêmes éléments que le tri d'avant, la même fin (agenda, espaces, bilan, annuler) ; renvoie ce qui a été fait, en clair */
+function jvNoterApply(x, text, src, dejaDit){
+  const ups = (Array.isArray(x && x.updates) ? x.updates : []).map(u => { const o = {}; for (const k of Object.keys(u || {})) if (u[k] !== "" && u[k] !== null) o[k] = u[k]; return o; });
+  const r = aiNorm({ items: Array.isArray(x && x.items) ? x.items : [], updates: ups });
+  const U = applyUpdates(r.updates);
+  const dits = r.items.map(i => i.title + (i.due ? " (" + i.due + (i.time ? " " + i.time : "") + ")" : "")).concat(U.done.map(i => "fait : " + i.title));
+  if (U.n > U.done.length) dits.push((U.n - U.done.length) + " modifié" + (U.n - U.done.length > 1 ? "s" : ""));
+  captureFin(text, src === "texte" ? "texte" : "voix", undefined, { unique: true }, r.items, U, true, false, { dejaDit });
+  return dits;
+}
+function jvSysUnique(){
+  if (!jvUniqueOn()) return "";
+  const learn = (CFG.learn || []).slice(-20).map(l => `- « ${l.t} » → type ${l.cat}, chantier ${l.ch || "aucun"}, urgence ${l.u}`).join("\n");
+  const ctc = contacts().map(c => `- ${c.name}${c.role ? " : " + c.role : ""}`).join("\n");
+  return `
+
+Ce qu'il dit au rond : un seul ${jvNom()}
+- Tout ce qu'il dit au rond t'arrive, avec ou sans ton nom. À toi de comprendre s'il veut noter quelque chose, te poser une question, te faire agir, ou plusieurs à la fois.
+- Une chose à noter (tâche, appel, rendez-vous, mail ou texto à préparer, mémo, idée, dépense, courses, « c'est fait », correction d'une chose déjà notée) : appelle noter, SANS écrire de texte. L'appli confirme d'elle-même, en silence. N'écris du texte que si tu as vraiment quelque chose à ajouter : un conflit d'horaire, un doublon, une info liée utile, ou la réponse à sa question.
+- Une question ou une demande d'action : réponds comme d'habitude, avec tes autres outils. Une phrase peut mélanger les deux : range avec noter et réponds en une phrase.
+- Un vrai doute qui change le rangement (pro ou perso, quel chantier, quelle date, quelle personne) : ne note rien et pose UNE question très courte (« Pro ou perso, monsieur ? », « Pour quel chantier ? »). Sa réponse t'arrive au rond : range alors le tout. Un petit doute : range quand même, dans l'espace ouvert.
+- Une phrase incompréhensible, coupée, ou qui ressemble à une conversation captée autour de lui (radio, télé, quelqu'un d'autre) : ne note pas une bêtise, demande-lui en une phrase ce qu'il voulait.
+- Il réfléchit souvent à voix haute : ne garde que ce qui sert à faire la chose (quoi, qui, où, quand, combien). Hésitations, justifications et récits ne se notent pas.
+- Ce qu'il dicte se range avec noter. Garde proposer_rappel pour les rappels que tu poses toi-même en anticipant (heure de départ, bus), proposer_courses pour une liste de courses par rayon liée à un magasin, noter_idee_cadeau pour une idée de cadeau.
+
+Règles de rangement (outil noter)
+- Une action distincte = un item. title court, verbe à l'infinitif, compréhensible seul. N'invente rien. Corrige les erreurs évidentes de dictée (chantiers, personnes, matériel) grâce à ses souvenirs et ses contacts.
+- u : 3 = aujourd'hui, bloquant, client qui attend ; 2 = cette semaine ; 1 = quand il pourra.
+- due (AAAA-MM-JJ) et time (HH:MM) dans un moment réaliste : matin 09:00, après-midi 14:00, fin de journée 17:30. Un appel urgent sans heure : aujourd'hui dès que possible. Sans indice de date et pas urgent : pas de due.
+- note : le détail utile en une ligne (référence, quantité, lieu, contrainte), en français parlé, jamais de date au format AAAA-MM-JJ. S'il hésite entre deux moments, prends le premier et mets l'autre dans note.
+- Rendez-vous, réunion, visite (VPI), intervention, mise en service, coiffeur, médecin, aller chercher ou déposer quelqu'un à une heure : cat "rdv" avec due et time ; garde le lieu tel qu'il le dit.
+- Mail à un contact : cat "mail" avec mail {to, subject, body}, rédigé dans SA façon d'écrire, avec seulement ce qu'il a dit, terminé par son prénom. Texto, WhatsApp, Snapchat : cat "message" avec mail {to, subject "", body court avec ses mots, via "sms", "wa" ou "snap"} ; une heure donnée = le moment de l'envoyer.
+- Mémo (info à retenir, idée, dépense payée de sa poche) : cat "memo" avec rb "info", "idee" ou "depense" ; pour une dépense, amount en euros et due = le jour de la dépense.
+- Courses : un item par article, cat "courses", sp "perso", title = l'article avec la quantité, sans verbe.
+- Répétitif : rec "jour", "ouvre" (lundi-vendredi), "semaine", "mois" ou "an", et la prochaine occurrence dans due.
+- C'est fait, j'y suis, c'est réglé : ne crée rien, mets l'élément de sa liste (id dans <contexte>) dans updates avec done true. Une correction (« non, plutôt jeudi », « c'est pour Siebert », « mets-le en urgent ») juste après une note porte sur ce qu'il vient de noter : updates avec seulement les champs qui changent, ou delete true pour annuler.
+${jvTriEspaces()}
+${CFG.profile ? "Sa fiche :\n" + CFG.profile + "\n" : ""}Contacts clés à qui il écrit :
+${ctc || "(aucun)"}
+Sa façon d'écrire ses mails :
+${CFG.style || "(simple et direct)"}${learn ? "\nSes corrections passées (respecte sa façon de classer) :\n" + learn : ""}`;
+}
+
+/* ---------- lot 24 · ses curseurs de caractère, réglés à la voix et gardés ---------- */
+var JV_CURSEURS = { humour: "humour", impertinence: "impertinence", concision: "concision", initiative: "initiative" };
+var JV_CURS_DEF = { humour: 60, impertinence: 50, concision: 60, initiative: 60 };
+function jvCurseurs(){ return Object.assign({}, JV_CURS_DEF, CFG.jvCurseurs || {}); }
+function jvCurseurRegle(x){
+  const k = String((x && x.curseur) || ""); if (!JV_CURSEURS[k]) return null;
+  const v = Math.round(+x.valeur); if (isNaN(v)) return null;
+  const c = jvCurseurs(); c[k] = Math.max(0, Math.min(100, v)); CFG.jvCurseurs = c; saveCfg();
+  try { paintCurseurs(); } catch (e) {}
+  try { toast(`${k} ${c[k]} %`, "", null, 3000); } catch (e) {}
+  return k;
+}
+var JV_CURSEUR_TOOLS = [{ name: "regler_curseur", description: "Règle un de tes curseurs de caractère quand il te le demande (« augmente ton humour de 10 % », « sois moins impertinent », « fais plus court »). valeur = la nouvelle valeur, de 0 à 100 (pour « +10 % », ajoute 10 points à la valeur actuelle). Gardé pour les prochaines conversations.",
+  input_schema: { type: "object", properties: { curseur: { type: "string", enum: Object.keys(JV_CURSEURS) }, valeur: { type: "number" } }, required: ["curseur", "valeur"] } }];
+function jvSysCurseurs(){
+  const c = jvCurseurs();
+  return `
+
+Tes curseurs de caractère (il les règle lui-même, à la voix : utilise regler_curseur)
+- Humour ${c.humour} %, impertinence ${c.impertinence} %, concision ${c.concision} %, initiative ${c.initiative} %.
+- 50 % = le dosage décrit plus haut ; 0 % = absent ; 100 % = au maximum, sans jamais devenir désobligeant ni vulgaire.
+- Humour : la fréquence et le mordant de ton ironie à froid. Impertinence : la liberté de le taquiner, de commenter ses habitudes, de le contredire franchement (toujours courtois, toujours le vouvoiement). Concision : 100 % = une phrase sèche ; 0 % = tu développes volontiers. Initiative : combien tu anticipes et proposes de toi-même.
+- Quel que soit le réglage, aucune ironie sur ce qui est sérieux ou sensible (santé, enfants, famille, argent, fatigue, stress, urgence) : là, sobre et attentionné.
+- « Augmente ton humour de 10 % » = la valeur actuelle plus 10 points (entre 0 et 100). Confirme d'une phrase, déjà dans le nouveau ton.`;
+}
+function paintCurseurs(){
+  const box = $("cvCurs"); if (!box) return;
+  const c = jvCurseurs();
+  box.innerHTML = Object.keys(JV_CURSEURS).map(k => `<label class="small" style="display:flex;gap:10px;align-items:center;margin-top:8px"><span style="width:96px">${k}</span><input type="range" min="0" max="100" step="5" data-curs="${k}" value="${c[k]}" style="flex:1"><span style="width:42px;text-align:right" data-cursv="${k}">${c[k]} %</span></label>`).join("");
+  box.querySelectorAll("[data-curs]").forEach(r => {
+    r.oninput = () => { const v = box.querySelector(`[data-cursv="${r.dataset.curs}"]`); if (v) v.textContent = r.value + " %"; };
+    r.onchange = () => { const c2 = jvCurseurs(); c2[r.dataset.curs] = +r.value; CFG.jvCurseurs = c2; saveCfg(); };
+  });
+}
+
+/* ---------- lot 24 · une liste ou un texte : par mail, en fichier, copié ou partagé ---------- */
+var JV_PARTAGE_TOOLS = [{ name: "partager", description: "Quand il veut récupérer ou transmettre un texte : une liste (courses, matériel, à faire…), un compte rendu, des références. « Copie-la dans un mail », « fais-en un fichier », « envoie-la à Christelle », « partage-la ». S'exécute tout de suite sur son téléphone.",
+  input_schema: { type: "object", properties: {
+    comment: { type: "string", enum: ["mail", "fichier", "copier", "partager"], description: "mail : son appli mail s'ouvre, prête à envoyer ; fichier : un fichier texte .txt à enregistrer ou envoyer ; copier : dans le presse-papiers ; partager : le menu de partage (WhatsApp, SMS…)." },
+    titre: { type: "string", description: "Titre court : objet du mail, nom du fichier." },
+    contenu: { type: "string", description: "Le texte complet et propre, une ligne par élément. Vide si source = courses." },
+    source: { type: "string", enum: ["texte", "courses"], description: "courses : sa liste de courses en cours, telle qu'elle est dans l'appli." },
+    destinataire: { type: "string", description: "Pour un mail : le prénom d'un de ses contacts, ou une adresse." } },
+    required: ["comment"] } }];
+function jvTexteCourses(){
+  const st = spaceState("perso"), L = (st.items || []).filter(i => i.cat === "courses" && !i.done);
+  if (!L.length) return "";
+  const par = {}; L.forEach(i => { const r = i.rayon || "autre"; (par[r] = par[r] || []).push(i.title); });
+  return [...new Set(JV_RAYONS.concat(Object.keys(par)))].filter(r => par[r]).map(r => r + " :\n" + par[r].map(a => "- " + a).join("\n")).join("\n\n");
+}
+async function jvPartager(x){
+  x = x || {};
+  let txt = String(x.contenu || "").trim(), titre = String(x.titre || "").trim().slice(0, 80);
+  if (x.source === "courses" || !txt) { txt = jvTexteCourses(); titre = titre || "Liste de courses"; }
+  if (!txt) { toast("rien à partager pour l'instant", "", null, 4000); return; }
+  titre = titre || "Liste";
+  const nomF = (cvNorm(titre).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "liste") + ".txt";
+  if (x.comment === "mail") {
+    const d = String(x.destinataire || "").trim(), c = d && !/@/.test(d) ? findContact(d) : null;
+    const to = /@/.test(d) ? d : c && c.email ? c.email : "";
+    location.href = `mailto:${encodeURIComponent(to).replace(/%40/g, "@")}?subject=${encodeURIComponent(titre)}&body=${encodeURIComponent(txt)}`;
+    if (d && !to) setTimeout(() => toast(`pas d'adresse pour ${d} : complétez-la dans le mail`, "", null, 5000), 400);
+    return;
+  }
+  if (x.comment === "fichier") {
+    if (NATIVE) { tn("shareFile", { name: nomF, text: txt, title: "Enregistrer ou envoyer" }); return; }
+    const f = new File([txt], nomF, { type: "text/plain" });
+    try { if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: titre }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = nomF; a.click(); return;
+  }
+  if (x.comment === "copier") {
+    try { await navigator.clipboard.writeText(txt); toast("copié · prêt à coller", "", null, 3500); }
+    catch (e) { toast("le presse-papiers refuse", "partager", () => jvPartager(Object.assign({}, x, { comment: "partager" })), 8000); }
+    return;
+  }
+  if (NATIVE) { tn("share", { text: txt, title: titre, subject: titre }); return; }
+  try { if (navigator.share) await navigator.share({ title: titre, text: txt }); else { await navigator.clipboard.writeText(txt); toast("copié"); } } catch (e) {}
+}
+
+/* ---------- lot 24 · le carnet d'évolutions : ce qu'il ne sait pas encore faire, pour la prochaine session avec Claude ---------- */
+var JV_EVOL_TOOLS = [{ name: "noter_evolution", description: "Quand il te demande une chose qu'aucun de tes outils ne permet : note-la dans le carnet d'évolutions, que Claude lit à chaque session de développement. Décris la fonction voulue de façon générale, sans nom de proche, adresse ni détail personnel.",
+  input_schema: { type: "object", properties: {
+    demande: { type: "string", description: "La fonction voulue, en une ou deux phrases (« Pouvoir couper le Wi-Fi du téléphone à la voix »)." },
+    exemple: { type: "string", description: "Facultatif : sa demande telle qu'il l'a formulée, sans détail personnel." } },
+    required: ["demande"] } }];
+const JV_EVOL_LS = "copilote_evolutions";
+function jvEvolEnvoie(){
+  if (!MEM.tok) return;
+  const L = LS.get(JV_EVOL_LS, []) || [];
+  L.filter(e => !e.env).slice(0, 5).forEach(e => wFn({ action: "evolution", demande: e.d, contexte: e.ex || "" }, 10000).then(r => {
+    if (r && r.ok) { const L2 = LS.get(JV_EVOL_LS, []) || [], m = L2.find(y => y.at === e.at && y.d === e.d); if (m) { m.env = true; LS.set(JV_EVOL_LS, L2); } }
+  }).catch(() => {}));
+}
+function jvEvolution(x){
+  const d = String((x && x.demande) || "").trim().slice(0, 600); if (d.length < 5) return;
+  const L = LS.get(JV_EVOL_LS, []) || [];
+  L.unshift({ d, ex: String((x && x.exemple) || "").trim().slice(0, 300), at: Date.now(), env: false }); LS.set(JV_EVOL_LS, L.slice(0, 60));
+  jvEvolEnvoie();
+  try { toast("noté pour Claude : " + d.slice(0, 70), "", null, 4500); } catch (e) {}
+  try { paintCarnet(); } catch (e) {}
+}
+async function paintCarnet(){
+  const box = $("cvCarnet"); if (!box) return;
+  jvEvolEnvoie();
+  const ST = { nouveau: "à étudier", prevu: "prévu", fait: "fait ✓", abandonne: "écarté" };
+  let L = (LS.get(JV_EVOL_LS, []) || []).map(e => ({ d: e.d, at: e.at, st: e.env ? "nouveau" : "pas encore envoyé" }));
+  if (MEM.tok) { try { const r = await wFn({ action: "evolutions" }, 8000); if (r && r.ok && Array.isArray(r.liste)) L = r.liste.map(e => ({ d: e.demande, at: Date.parse(e.cree), st: e.statut, n: e.note_claude })); } catch (e) {} }
+  box.innerHTML = L.length ? L.slice(0, 15).map(e => `<div class="sub" style="padding:6px 0;border-bottom:1px solid var(--faint)"><span style="color:var(--fg)">${esc(e.d)}</span><br>${esc(ST[e.st] || e.st)} · ${new Date(e.at).toLocaleDateString("fr-FR")}${e.n ? " · " + esc(e.n) : ""}</div>`).join("")
+    : `<p class="small">Rien pour l'instant. Quand ${esc(jvNom())} ne sait pas faire quelque chose, il le note ici.</p>`;
 }
 /* ---------- lot 23 · le halo : Nestor répond sans ouvrir la conversation ----------
    La constellation s'ouvre en anneau ; la réponse y défile comme un générique, au rythme de la voix.
@@ -7700,6 +7982,8 @@ $("cvEchChk").onchange = () => { CFG.jvEch = $("cvEchChk").checked; saveCfg(); s
 $("cvRelChk").onchange = () => { CFG.jvRel = $("cvRelChk").checked; saveCfg(); schedulePushSync(); };
 $("jvRelOk").onclick = () => hide();
 $("cvEspChk").onchange = () => { CFG.jvEsp = $("cvEspChk").checked; saveCfg(); };
+$("cvUniqueChk").onchange = () => { CFG.jvUnique = $("cvUniqueChk").checked; saveCfg(); toast(CFG.jvUnique ? "un seul Nestor : il comprend tout ce que vous dites au rond" : "tri rapide d'avant pour les dictées", "", null, 4000); };
+$("cvCursDef").onclick = () => { CFG.jvCurseurs = Object.assign({}, JV_CURS_DEF); saveCfg(); paintCurseurs(); toast("caractère remis par défaut"); };
 $("eSpace").onclick = () => jvChangeEspace(cur);
 
 /* ---------- lot 9 : mode discret ---------- */
