@@ -345,7 +345,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <div class="menu" id="regHome">
     <button data-p="nestor">Nestor<span class="regSub" id="regSub-nestor">son caractère, ce qu'il a appris, la bêta, le carnet</span></button>
     <button data-p="voix">Voix et dictée<span class="regSub" id="regSub-voix">sa voix, quand il parle, la dictée</span></button>
-    <button data-p="memoire">Mémoire et journal<span class="regSub" id="regSub-memoire">vos lieux, vos souvenirs, le journal de bord</span></button>
+    <button data-p="memoire">Mémoire et journal<span class="regSub" id="regSub-memoire">vos lieux, vos proches, vos souvenirs, le journal de bord</span></button>
     <button data-p="journee">Ma journée<span class="regSub" id="regSub-journee">briefs, rituels, relances, focus, rappels</span></button>
     <button data-p="moi">Moi<span class="regSub" id="regSub-moi">qui je suis, signature, chantiers ou thèmes, contacts</span></button>
     <button data-p="connexions">Connexions<span class="regSub" id="regSub-connexions">Claude, Google, Outlook, Gmail, téléphone, chauffage, santé</span></button>
@@ -411,6 +411,8 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <div class="foot" style="margin-top:12px"><select id="cvLieuType" style="width:auto"><option value="maison">maison</option><option value="arret">arrêt de bus</option><option value="golf">golf</option><option value="medecin">médecin</option><option value="magasin">magasin</option><option value="relais">relais colis</option><option value="autre" selected>autre</option></select><button class="ok" id="cvLieuGo">ajouter</button></div>
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:16px"><input type="checkbox" id="cvAlChk" style="width:auto"> me prévenir quand j'arrive à un lieu (bus, colis, choses à faire)</label>
     <p class="small" id="cvAlSt" style="margin-top:4px"></p>
+    <div class="lab">Mes proches</div>
+    <div id="cvProches"></div>
     <div class="lab">Mes souvenirs</div>
     <input id="cvQ" placeholder="chercher dans ma mémoire…" style="margin-top:4px">
     <div id="cvMemList" style="margin-top:6px"></div>
@@ -534,7 +536,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <div class="foot" style="flex-wrap:wrap;gap:16px"><div class="l" style="flex-wrap:wrap"><button id="sExp">sauvegarder</button><button id="sImp">restaurer</button><button id="sForget">oublier mes corrections</button></div></div>
   <input type="file" id="sFile" accept=".json" hidden>
   </div>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v66 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v67 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -724,7 +726,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 66;
+const TEMPO_BUILD = 67;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -814,7 +816,7 @@ function contactOf(it){
 }
 const findContact = n => {
   const all = contacts(), f = norm(n).trim(), k = f.split(" ")[0];
-  return all.find(c => norm(c.name) === f) || all.find(c => f.includes(norm(c.name))) || all.find(c => norm(c.name).split(" ")[0] === k) || null;
+  return all.find(c => norm(c.name) === f) || (typeof jvProcheContact === "function" ? jvProcheContact(n) : null) || all.find(c => f.includes(norm(c.name))) || all.find(c => norm(c.name).split(" ")[0] === k) || null;
 };
 const contactIn = n => { const all = contacts(); return all.find(c => c.name.includes(" ") && n.includes(norm(c.name))) || all.find(c => n.includes(norm(c.name).split(" ")[0])) || null; };
 function localMail(seg, title){
@@ -4454,6 +4456,7 @@ async function memRememberMany(list, src, onStep){
     if (x.g) o.g = x.g;
     if (x.an) o.an = x.an;
     if (x.cad) o.cad = x.cad;
+    if (x.pe) o.pe = x.pe;
     rows.push(await memSeal(id, o)); MEM.items.set(id, Object.assign(o, { id })); ids.push(id);
     if (onStep && (i % 10 === 9 || i === list.length - 1)) onStep(i + 1);
   }
@@ -4802,6 +4805,7 @@ async function cvContexte(){
     }
   } catch (e) {}
   try { const m = await pMsg; if (m.length) L.push("Messages des 12 dernières heures (déjà triés) :\n" + m.join("\n")); } catch (e) {}
+  try { const p = jvProchesListe(40); if (p) L.push("Ses proches (surnom = nom, lien) :\n" + p); } catch (e) {}
   try { const sa = jvEtatSante(); if (sa) L.push("Santé (n'en parle que s'il en parle, ou si ça change ta réponse) : " + sa); } catch (e) {}
   try { const b = jvBetaContexte(); if (b) L.push(b); } catch (e) {}
   try { const w = jvWebContexte(); if (w) L.push(w); } catch (e) {}
@@ -4904,7 +4908,7 @@ function cvFenetre(){
 /* économies (27/11) : ses souvenirs et le contexte ne sont envoyés qu'avec sa dernière question (plus répétés à chaque message de l'historique),
    et les consignes + outils restent en mémoire chez Claude une heure au lieu de 5 minutes. Niveau 2 : tout ; 1 : consignes 1 h ; 0 : sans */
 let JV_CACHE = 2;
-const cvSansBlocs = t => String(t).replace(/<souvenirs>[\s\S]*?<\/souvenirs>\n?/, "").replace(/<contexte>[\s\S]*?<\/contexte>\n?/, "").replace(/<validations>[\s\S]*?<\/validations>\n?/, "").replace(/^\n+/, "");
+const cvSansBlocs = t => String(t).replace(/<proches>[\s\S]*?<\/proches>\n?/, "").replace(/<pistes>[\s\S]*?<\/pistes>\n?/, "").replace(/<souvenirs>[\s\S]*?<\/souvenirs>\n?/, "").replace(/<contexte>[\s\S]*?<\/contexte>\n?/, "").replace(/<validations>[\s\S]*?<\/validations>\n?/, "").replace(/^\n+/, "");
 function cvCorps(from, niv){
   const M = JV.msgs.slice(from); let last = -1;
   M.forEach((m, i) => { if (m.role === "user" && typeof m.content === "string") last = i; });
@@ -4922,8 +4926,10 @@ const jvEffort = t => CFG.cvEffort || (String(t || "").length > 400 || /\b(bilan
 async function cvCallFlux(extras, surTexte, effort){
   const niv = cvNiv(extras);
   const from = JV.from != null && JV.from < JV.msgs.length ? JV.from : cvFenetre(), c = cvCorps(from, niv);
-  const body = { model: CV_MODEL, max_tokens: 4000, system: c.system, tools: jvOutils(), messages: c.messages, stream: CFG.cvFlux !== false };
-  if (niv >= 1) body.output_config = { effort: effort || "low" };
+  const fc = jvFcOn();
+  const body = fc ? { model: JV_FC_MODEL, max_tokens: 900, system: niv >= 1 ? [{ type: "text", text: JV_FC_SYS, cache_control: { type: "ephemeral" } }] : JV_FC_SYS, tools: JV_FC_TOOLS, messages: c.messages, stream: CFG.cvFlux !== false }
+    : { model: CV_MODEL, max_tokens: 4000, system: c.system, tools: jvOutils(), messages: c.messages, stream: CFG.cvFlux !== false };
+  if (niv >= 1 && !fc) body.output_config = { effort: effort || "low" };
   if (niv >= 2) body.cache_control = { type: "ephemeral" };
   const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
     headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
@@ -5108,15 +5114,16 @@ function jvChronoTxt(){
   const d = L[L.length - 1], f = v => v == null ? "—" : String(v).replace(".", ",") + " s";
   return `dernière réponse : premier mot ${f(d.premier)}, complète ${f(d.total)}${d.voix != null ? ", voix " + f(d.voix) : ""}` + (jvVJTxt() ? " · " + jvVJTxt() : "");
 }
-function cvCount(u, cat){
+function cvCount(u, cat, P){
   if (!u) return 0;
+  const CV_PRICE_ = P || CV_PRICE;
   const c1h = (u.cache_creation && u.cache_creation.ephemeral_1h_input_tokens) || 0, cw = (u.cache_creation_input_tokens || 0) - c1h;
-  const usd = ((u.input_tokens || 0) * CV_PRICE.in + cw * CV_PRICE.cw + c1h * CV_PRICE.cw1h + (u.cache_read_input_tokens || 0) * CV_PRICE.cr + (u.output_tokens || 0) * CV_PRICE.out) / 1e6;
+  const usd = ((u.input_tokens || 0) * CV_PRICE_.in + cw * CV_PRICE_.cw + c1h * CV_PRICE_.cw1h + (u.cache_read_input_tokens || 0) * CV_PRICE_.cr + (u.output_tokens || 0) * CV_PRICE_.out) / 1e6;
   const m = cvMonth(); m.usd += usd; m.n++; m.par = m.par || {}; const k = cat || "autre"; m.par[k] = (m.par[k] || 0) + usd; LS.set("copilote_conso", m);
   return usd;
 }
 /* les dictées rangées par Haiku : comptées à part (hors plafond Sonnet), pour voir l'ensemble */
-const CV_PRIX_HAIKU = { in: 0.10, cw: 0.125, cr: 0.01, out: 0.50 };
+const CV_PRIX_HAIKU = { in: 0.10, cw: 0.125, cw1h: 0.20, cr: 0.01, out: 0.50 };
 function jvCountHaiku(u){
   if (!u) return 0;
   const usd = ((u.input_tokens || 0) * CV_PRIX_HAIKU.in + (u.cache_creation_input_tokens || 0) * CV_PRIX_HAIKU.cw + (u.cache_read_input_tokens || 0) * CV_PRIX_HAIKU.cr + (u.output_tokens || 0) * CV_PRIX_HAIKU.out) / 1e6;
@@ -5133,20 +5140,22 @@ async function cvSend(text, opt){
   text = (text || "").trim(); if (!text || JV.busy) return false;
   const secours = !!(opt && opt.secours);
   cvFraiche();
-  { const rc = jvRaccourci(jvAppel(text) || text);   // « je pars », « je rentre » : tout de suite, sans Claude
+  { const rc = !jvFcOn() && jvRaccourci(jvAppel(text) || text);   // « je pars », « je rentre » : tout de suite, sans Claude
     if (rc) {
       JV.busy = true; cvStatus("je m'en occupe…");
       try { const o = await jvFaireRaccourci(rc, text); if (opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0") { try { speak(jvPourVoix(o.err || o.dit)); } catch (e) {} } }
       finally { JV.busy = false; cvStatus(""); cvPaint(); }
       return true;
     } }
-  if (jvAcroDemande(text, JV.at && Date.now() - JV.at < 3 * 60000)) {
+  if (!jvFcOn() && jvAcroDemande(text, JV.at && Date.now() - JV.at < 3 * 60000)) {
     const r = jvAcro();
     JV.view.push({ r: "u", t: text }, { r: "a", t: r.ecrit, usd: 0 });
     JV.msgs.push({ role: "user", content: text }, { role: "assistant", content: r.ecrit });
     if (opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0") { try { speak(jvPourVoix(r.dit)); } catch (e) {} }
     JV.at = Date.now(); await cvSave(); cvPaint(); return true;
   }
+  if (!jvFcOn() && jvFcDemande(text)) jvFcDebut();   // lot 28 : « faisons connaissance » → l'entretien, mené par Haiku
+  if (jvFcOn()) JV_FC.at = Date.now();
   if (secours && (!CFG.key || cvMonth().usd >= cvCap())) return false;   // le tri rapide (Haiku, hors plafond) prend le relais
   if (!CFG.key) { JV.view.push({ r: "a", t: "Il me faut votre clé Claude, monsieur : réglages > Claude." }); cvPaint(); return; }
   if (cvMonth().usd >= cvCap()) { JV.view.push({ r: "a", t: `J'ai bien peur que le plafond du mois soit atteint (${cvMoney(cvCap())}), monsieur. Vous pouvez le changer dans l'onglet mémoire.` }); cvPaint(); return; }
@@ -5157,8 +5166,11 @@ async function cvSend(text, opt){
   JV.busy = true; cvPaint(); cvStatus("je réfléchis…");
   const base = JV.msgs.length;
   let reussi = false;
-  JV.msgs.push({ role: "user", content: `<souvenirs>\n${cvSouvenirs(text, opt && opt.cercle ? 4500 : 7000)}\n</souvenirs>\n<contexte>\n${await cvContexte()}\n</contexte>\n${val}\n${text}` });
-  JV.from = cvFenetre();
+  const fcm = jvFcOn();
+  JV.msgs.push({ role: "user", content: fcm
+    ? `<proches>\n${jvProchesListe() || "(aucune fiche encore)"}\n</proches>\n<pistes>\n${jvFcPistes()}\n</pistes>\n<souvenirs>\n${cvSouvenirs("famille sœur frère parents enfants ami amis golf collègue voisin médecin", 2500)}\n</souvenirs>\n${text}`
+    : `<souvenirs>\n${cvSouvenirs(text, opt && opt.cercle ? 4500 : 7000)}\n</souvenirs>\n<contexte>\n${await cvContexte()}\n</contexte>\n${val}\n${text}` });
+  JV.from = fcm ? Math.max(JV_FC.from, cvFenetre()) : cvFenetre();
   // lot 20 : la réponse s'affiche et se dit au fil de l'eau
   const voix = !!(opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0"), dec = jvDecoupe(voix), effort = jvEffort(text);
   const bul = opt && typeof opt.phrase === "function" ? opt.phrase : null, dire = ps => ps.forEach(p => { if (bul) { try { bul(p); } catch (e) {} } if (voix) jvVoixPhrase(p); });
@@ -5177,12 +5189,12 @@ async function cvSend(text, opt){
     for (let step = 0; step < 6; step++) {
       etapes = step + 1;
       const j = await cvCallFlux(undefined, surTexte, effort);
-      usd += cvCount(j.usage, /^Mon brief du jour/.test(text) ? "brief" : /\bcheck\b/i.test(text) ? "check" : opt && opt.cercle ? "rond (dictées)" : "conversation");
+      usd += fcm ? cvCount(j.usage, "faire connaissance", CV_PRIX_HAIKU) : cvCount(j.usage, /^Mon brief du jour/.test(text) ? "brief" : /\bcheck\b/i.test(text) ? "check" : opt && opt.cercle ? "rond (dictées)" : "conversation");
       const content = j.content || [];
       const t1 = content.filter(b => b.type === "text").map(b => b.text).join("\n").trim(); if (t1) texts.push(t1);
       const uses = content.filter(b => b.type === "tool_use");
       for (const t of uses) if (!JV_LOCAL[t.name]) { const k = t.name + JSON.stringify(t.input || {}); if (!seen.has(k)) { seen.add(k); tools.push(t); } }
-      if (j.stop_reason !== "tool_use" || !uses.some(t => JV_LOCAL[t.name])) break;
+      if (j.stop_reason !== "tool_use" || !uses.some(t => JV_LOCAL[t.name]) && !(fcm && !t1 && uses.length)) break;   // l'entretien : une fiche rangée sans question, on lui laisse enchaîner
       if (t1 && vivant) vivant.t += "\n\n";
       if (voix || bul) dire(dec.fin());   // la phrase d'attente (« je regarde ton agenda ») se dit tout de suite
       // il a besoin d'une info (bus, météo) : on la calcule ici et on la lui rend
@@ -5191,7 +5203,7 @@ async function cvSend(text, opt){
       for (const t of uses) {
         let out;
         if (JV_LOCAL[t.name]) { cvStatus(JV_ATTENTE[t.name] || "je regarde…"); try { out = await JV_LOCAL[t.name](t.input || {}); } catch (e) { out = { erreur: "indisponible pour l'instant" }; } }
-        else out = /^(proposer_(rappel|rappel_lieu|courses)|noter)$/.test(t.name) ? { ok: "ajouté tout de suite (il peut annuler)" } : /^(regler_curseur|partager|noter_evolution|regle_tri|retenir_mot)$/.test(t.name) ? { ok: "fait" } : { ok: "proposé à l'utilisateur : il validera lui-même" };
+        else out = /^(proposer_(rappel|rappel_lieu|courses)|noter)$/.test(t.name) ? { ok: "ajouté tout de suite (il peut annuler)" } : /^(regler_curseur|partager|noter_evolution|regle_tri|retenir_mot|fiche_proche|gout_humour|fin_entretien)$/.test(t.name) ? { ok: "fait" } : { ok: "proposé à l'utilisateur : il validera lui-même" };
         results.push({ type: "tool_result", tool_use_id: t.id, content: JSON.stringify(out).slice(0, 8000) });
       }
       JV.msgs.push({ role: "user", content: results });
@@ -5217,6 +5229,8 @@ async function cvSend(text, opt){
       if (t.name === "regle_tri") { try { jvRegleApply(x); } catch (e) {} }
       if (t.name === "retenir_mot") { try { jvMotApply(x); } catch (e) {} }
       if (t.name === "gout_humour") { try { jvHumourApply(x); } catch (e) {} }
+      if (t.name === "fiche_proche") { try { if (await jvProcheApply(x)) JV_FC.n++; } catch (e) {} }
+      if (t.name === "fin_entretien") jvFcFin();
       if (t.name === "proposer_souvenir" && x.texte) JV.view.push({ r: "p", k: "retenir", t: String(x.texte).slice(0, 2000), d: x.domaine === "pro" ? "pro" : "perso", pin: !!x.epingle, st: "" });
       if (t.name === "proposer_rappel" && x.titre && /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") && /^\d{1,2}:\d{2}$/.test(x.heure || "")) JV.view.push({ r: "p", k: "rappel", t: String(x.titre).slice(0, 200), date: x.date, heure: x.heure.padStart(5, "0"), sp: x.espace === "pro" ? "pro" : "perso", rdv: !!x.rendez_vous, lieu: x.lieu || "", note: x.note || "", bus: x.bus_arret && /^\d{1,2}:\d{2}$/.test(x.bus_depart || "") ? { arret: x.bus_arret, dep: x.bus_depart.padStart(5, "0"), ligne: x.bus_ligne || "" } : null, st: "" });
       if (t.name === "proposer_courses" && Array.isArray(x.articles) && x.articles.length) JV.view.push({ r: "p", k: "courses", t: x.magasin ? String(x.magasin).slice(0, 80) : "", art: x.articles.slice(0, 80).map(a => ({ a: String(a.article || "").slice(0, 80), r: JV_RAYONS.includes(a.rayon) ? a.rayon : "autre" })).filter(a => a.a), st: "" });
@@ -5391,6 +5405,7 @@ function jvHisto(list){
     const at = Date.parse(e.at) || Date.now(), k = [e.kind, e.who, e.num, String(e.body || "").slice(0, 80), Math.round(at / 60000)].join("|");
     if (seen.has(k)) continue; seen.add(k);
     H.push({ k, kind: e.kind, who: e.who || "", num: e.num || "", app: e.app || "", body: String(e.body || "").slice(0, 600), at });
+    if (["sms", "whatsapp", "appel"].includes(e.kind)) { try { jvFreqNote(e.who); } catch (er) {} }
   }
   LS.set("copilote_histo", H.filter(h => h.at > lim).sort((a, b) => a.at - b.at).slice(-300));
 }
@@ -5646,7 +5661,7 @@ const JV_BETA_TOOLS = [
   { name: "cote_match_choix", description: "Note le pari qu'il a choisi cette semaine pour Cote & Match (ça coupe la relance de 11h du vendredi).",
     input_schema: { type: "object", properties: { pari: { type: "string", description: "match et pari, ex. « Lens - Brest, victoire de Lens »" } }, required: ["pari"] } }
 ];
-const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS, JV_HORLOGE_TOOLS, JV_MEM_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); if (jvWebOn()) t = t.concat(JV_WEB_TOOLS); t = t.concat(JV_CURSEUR_TOOLS, JV_PARTAGE_TOOLS, JV_EVOL_TOOLS, JV_REGLE_TOOLS, JV_JOURNAL_TOOLS); if (NATIVE) t = t.concat(JV_TEL_TOOLS); if (jvUniqueOn()) t = t.concat(jvNoterTool()); return t; };
+const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS, JV_HORLOGE_TOOLS, JV_MEM_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); if (jvWebOn()) t = t.concat(JV_WEB_TOOLS); t = t.concat(JV_CURSEUR_TOOLS, JV_PARTAGE_TOOLS, JV_EVOL_TOOLS, JV_REGLE_TOOLS, JV_JOURNAL_TOOLS, JV_PROCHE_TOOLS); if (NATIVE) t = t.concat(JV_TEL_TOOLS); if (jvUniqueOn()) t = t.concat(jvNoterTool()); return t; };
 /* zones de la maison pour le chauffage selon la présence (l'appli Android les déclenche, même fermée) */
 const jvMaisonLieu = () => jvLieux().find(l => l.g.type === "maison");
 const jvChauffeAuto = () => jvNetOn() && CFG.jvChauffe !== false && !!jvMaisonLieu();
@@ -7018,7 +7033,9 @@ async function jvCerveau(text, src){
   try { await memUnlock(); } catch (e) {}
   const n0 = JV.view.length; let B = null;
   const phrase = p => { if (!B) { try { idle(); } catch (e) {} B = jvBulle(text); } B.phrase(p); };
-  const ok = await cvSend(text, { voix: true, phrase, secours: true, cercle: true, src });
+  const fc = jvFcOn() || jvFcDemande(text);   // lot 28 : pendant l'entretien, sa réponse ne repart jamais au tri rapide
+  const ok = await cvSend(text, { voix: true, phrase, secours: !fc, cercle: true, src });
+  if (!ok && fc && JV.view.length > n0) { try { idle(); } catch (e) {} B = B || jvBulle(text); B.fin(JV.view.slice(n0)); return true; }
   if (!ok) { if (B) { try { jvBulleFerme(true); } catch (e) {} } return false; }
   try { idle(); } catch (e) {}
   const nv = JV.view.slice(n0);
@@ -7257,7 +7274,7 @@ function jvMotApply(x){
 }
 function jvSysApprend(){
   const r = jvReglesTxt(), m = (CFG.jvLexique || []).join(", ");
-  return "\n\nCe qu'il t'apprend\n- S'il te donne une règle pour ses messages, notifications ou mails (« Vinted, seulement l'arrivée avec le code », « ignore… », « toujours important… »), retiens-la avec regle_tri et confirme d'une phrase.\n- S'il te corrige un mot mal compris par la dictée, ou te demande de retenir un nom, retiens-le avec retenir_mot.\n- Pour un check, un brief ou un point : les colis comptent seulement quand ils sont à retirer (avec le code) ; ne cite jamais les étapes intermédiaires (expédié, en transit, en cours de livraison)."
+  return jvSysProches() + "\n\nCe qu'il t'apprend\n- S'il te donne une règle pour ses messages, notifications ou mails (« Vinted, seulement l'arrivée avec le code », « ignore… », « toujours important… »), retiens-la avec regle_tri et confirme d'une phrase.\n- S'il te corrige un mot mal compris par la dictée, ou te demande de retenir un nom, retiens-le avec retenir_mot.\n- Pour un check, un brief ou un point : les colis comptent seulement quand ils sont à retirer (avec le code) ; ne cite jamais les étapes intermédiaires (expédié, en transit, en cours de livraison)."
     + (r ? "\n\nSes règles de tri (à respecter partout : check, brief, messages)\n" + r : "")
     + (m ? "\n\nSon vocabulaire (la dictée peut l'écorcher : reconnais-le)\n" + m : "");
 }
@@ -7495,6 +7512,144 @@ JV_RACCOURCIS.push(
   jvTelR("silence", /^(?:mets|passe)(?: le (?:telephone|portable))? en (?:mode )?(?:silencieux|silence)$/, "sonnerie", "silence"),
   jvTelR("sonnerie", /^(?:remets|reactive) (?:la )?sonnerie$/, "sonnerie", "normal")
 );
+/* ---------- lot 28 · ses proches : des fiches, l'entretien « faisons connaissance » (Haiku), et les questions au fil de l'eau ----------
+   Une fiche = un souvenir chiffré avec pe = { nom, surnom, lien, cat, tel, anniv, notes }. Les numéros viennent de ses contacts, jamais dictés. */
+const JV_FC_MODEL = "claude-haiku-5-5";
+const JV_PROCHE_CATS = ["famille", "ami", "golf", "travail", "quotidien", "autre"];
+function jvProches(){ return [...MEM.items.values()].filter(i => i && i.pe && i.pe.nom); }
+function jvProcheTxt(pe){ return `${pe.nom}${pe.surnom ? ` (« ${pe.surnom} »)` : ""} : ${pe.lien || pe.cat || "un proche"}${pe.tel ? ` · tél. ${pe.tel}` : ""}${pe.anniv ? ` · anniversaire le ${pe.anniv}` : ""}${pe.notes ? ` · ${pe.notes}` : ""}`; }
+function jvProcheTrouve(n){
+  const k = busKey(n); if (!k) return null; const L = jvProches(), p1 = s => busKey(s || "").split(" ")[0];
+  return L.find(i => busKey(i.pe.nom) === k || busKey(i.pe.surnom || "") === k)
+    || L.find(i => k.length > 2 && (p1(i.pe.nom) === k || p1(i.pe.surnom) === k)) || null;
+}
+/* « Titi », « ma sœur Julie » : pour appeler ou écrire, le nom complet et le numéro de sa fiche */
+function jvProcheContact(n){
+  try { const i = jvProcheTrouve(String(n || "").replace(/^(?:ma|mon|a|à)\s+/i, "")); return i && i.pe.tel ? { name: i.pe.nom, email: "", phone: i.pe.tel, role: i.pe.lien || "" } : null; } catch (e) { return null; }
+}
+function jvAnnivLit(s){
+  s = cvNorm(String(s || "")).trim(); if (!s) return null;
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); if (m) return { j: +m[3], m: +m[2] };
+  m = s.match(/^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-]\d{2,4})?$/); if (m) return { j: +m[1], m: +m[2] };
+  m = s.match(/^(\d{1,2})(?:er)?\s+([a-z]+)/); if (m && jvMoisNum(m[2]) > 0) return { j: +m[1], m: jvMoisNum(m[2]) };
+  return null;
+}
+async function jvProcheApply(x){
+  if (!MEM.key || !x) return null;
+  const nom = String(x.nom || "").trim().slice(0, 80); if (nom.length < 2) return null;
+  const old = jvProcheTrouve(nom) || (x.surnom ? jvProcheTrouve(x.surnom) : null);
+  if (x.action === "ignorer") { CFG.jvFcIgnore = [...new Set([...(CFG.jvFcIgnore || []), nom])].slice(-80); saveCfg(); return "ignoré"; }
+  if (x.action === "retirer") { if (old) { await memForget([old.id]); try { paintProches(); } catch (e) {} } return old ? "retiré" : null; }
+  const pe = Object.assign({}, old ? old.pe : {});
+  const prend = (k, v, n) => { v = String(v == null ? "" : v).trim().slice(0, n); if (v) pe[k] = v; };
+  // « Juju » ou « Julie » complète la fiche de Julie Martin sans la renommer ; « Julie Martin » complète celle de « Julie »
+  pe.nom = !old ? nom : nom.length > old.pe.nom.length && busKey(nom).includes(busKey(old.pe.nom).split(" ")[0]) ? nom : old.pe.nom;
+  prend("surnom", x.surnom, 40); prend("lien", x.lien, 80); prend("notes", [pe.notes, x.notes].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(" ; "), 300);
+  if (JV_PROCHE_CATS.includes(x.categorie)) pe.cat = x.categorie;
+  const tel = String(x.telephone || "").replace(/[^\d+]/g, ""); if (tel.length >= 8) pe.tel = tel;
+  const a = jvAnnivLit(x.anniversaire); if (a && a.j >= 1 && a.j <= 31 && a.m >= 1 && a.m <= 12) pe.anniv = `${a.j} ${JV_MOIS[a.m - 1]}`;
+  const an = a ? { nom: pe.surnom || pe.nom, j: a.j, m: a.m } : old && old.an ? old.an : null;
+  const row = { t: jvProcheTxt(pe), d: x.espace === "pro" || pe.cat === "travail" ? "pro" : "perso", pin: old ? !!old.p : false, pe };
+  if (an) row.an = an;
+  if (old) await memForget([old.id]);
+  await memRememberMany([row], "proches");
+  try { paintProches(); } catch (e) {}
+  return old ? "fiche complétée" : "fiche créée";
+}
+/* les gens qui lui écrivent ou l'appellent le plus : de quoi commencer l'entretien */
+function jvFreqNote(who){
+  const w = String(who || "").trim(); if (w.length < 2 || /^\+?[\d\s.()-]+$/.test(w)) return;
+  const F = LS.get("copilote_freq", {}) || {}, k = busKey(w); if (!k) return;
+  const e = F[k] || { w, n: 0 }; e.n++; e.at = Date.now(); F[k] = e;
+  const keys = Object.keys(F); if (keys.length > 250) keys.sort((p, q) => (F[p].at || 0) - (F[q].at || 0)).slice(0, keys.length - 250).forEach(x => delete F[x]);
+  LS.set("copilote_freq", F);
+}
+function jvFcPistes(){
+  const F = LS.get("copilote_freq", {}) || {}, ign = new Set((CFG.jvFcIgnore || []).map(busKey)), out = [];
+  Object.values(F).sort((p, q) => q.n - p.n).forEach(e => { if (out.length < 8 && !ign.has(busKey(e.w)) && !jvProcheTrouve(e.w)) out.push(`${e.w} (${e.n} message${e.n > 1 ? "s" : ""} ou appel${e.n > 1 ? "s" : ""})`); });
+  try { contacts().forEach(c => { if (out.length < 12 && c.name && !ign.has(busKey(c.name)) && !jvProcheTrouve(c.name)) out.push(`${c.name} (dans ses contacts clés)`); }); } catch (e) {}
+  return out.join("\n") || "(aucune piste : pars des thèmes)";
+}
+function jvProchesListe(max){
+  return jvProches().slice(0, max || 60).map(i => `${i.pe.surnom ? i.pe.surnom + " = " : ""}${i.pe.nom} (${i.pe.lien || i.pe.cat || "proche"}${i.pe.tel ? ", tél. connu" : ""}${i.pe.anniv ? ", anniversaire " + i.pe.anniv : ""})`).join("\n");
+}
+/* l'entretien : une question à la fois, Haiku, une fiche par personne ; « on arrête » pour finir */
+const JV_FC = { on: false, from: 0, at: 0, n: 0 };
+const jvFcOn = () => JV_FC.on && Date.now() - JV_FC.at < 6 * 60e3;   // six minutes sans réponse : l'entretien se referme tout seul
+const jvFcDemande = t => /\b(?:faisons|on fait|faire|fais) (?:plus ample )?connaissance\b|\bapprends? a me connaitre\b|\bparlons de mes proches\b/.test(cvNorm(t));
+function jvFcDebut(){ Object.assign(JV_FC, { on: true, from: JV.msgs.length, at: Date.now(), n: 0 }); }
+function jvFcFin(){ JV_FC.on = false; try { paintProches(); } catch (e) {} }
+const JV_FC_SYS = `Tu es Nestor, son majordome : vouvoiement, « monsieur », phrases courtes, à l'oral, flegme britannique. C'est l'entretien « Faisons connaissance » : tu apprends qui sont ses proches pour mieux l'aider ensuite.
+Comment tu mènes l'entretien
+- Une seule question courte à la fois, et elle finit toujours par un point d'interrogation : son micro se rouvre tout seul pour qu'il réponde.
+- Après chaque réponse, range ce que tu as appris avec fiche_proche, une fiche par personne : nom complet si tu l'as, surnom (comment il l'appelle), lien (« ma sœur aînée », « meilleur ami depuis le lycée »), catégorie, anniversaire s'il le dit, et les détails utiles pour plus tard (comment il lui écrit, quand l'appeler, ce qu'elle aime). Puis enchaîne sur la question suivante dans la même réponse.
+- Le numéro : ne le fais jamais dicter. Cherche la personne avec chercher_contact (prénom ou nom). Un seul résultat évident : demande juste « C'est bien X, dans vos contacts ? » et range le numéro s'il confirme. Plusieurs : propose les deux plus probables. Aucun : n'insiste pas.
+- Ne redemande jamais ce qui est déjà dans <proches> ou dans <souvenirs>. Commence par les <pistes> (les gens qui lui écrivent le plus et qu'il ne t'a pas encore présentés) : « X vous écrit souvent. Qui est-ce pour vous ? ». S'il dit que ça ne l'intéresse pas, fiche_proche avec action ignorer.
+- Puis les thèmes, dans cet ordre : sa famille, ses amis proches, le golf, le travail, le quotidien (médecin, garage, voisins, artisans), et enfin ses habitudes avec eux.
+- Il réfléchit à voix haute : ignore les hésitations et les mots mal transcrits, comprends l'intention.
+- S'il dit « on arrête », « stop », « ça suffit » ou « c'est bon pour aujourd'hui », appelle fin_entretien et termine par une phrase qui dit combien de fiches sont faites, sans question.
+- S'il te demande tout autre chose (un rappel, une tâche, un message, une question sans rapport), ce n'est pas pour toi : appelle fin_entretien et dis seulement « Je referme l'entretien, monsieur. Vous me redites cela ? ».
+- Toutes les huit réponses environ, propose d'arrêter ou de continuer.
+- Pas de liste, pas de mise en forme, aucune balise d'émotion.`;
+const JV_PROCHE_TOOLS = [
+  { name: "fiche_proche", description: "Crée ou complète la fiche d'un de ses proches (famille, amis, golf, collègues, médecin, artisans…) : nom, surnom, lien, catégorie, numéro trouvé dans ses contacts, anniversaire, détails utiles. action ignorer : il ne veut pas en parler (on ne le lui redemandera plus) ; retirer : oublier la fiche.",
+    input_schema: { type: "object", properties: {
+      nom: { type: "string", description: "Nom complet si connu (« Julie Martin »), sinon le prénom." },
+      surnom: { type: "string", description: "Comment il l'appelle (« Titi », « ma grande »)." },
+      lien: { type: "string", description: "Qui c'est pour lui, en quelques mots." },
+      categorie: { type: "string", enum: JV_PROCHE_CATS },
+      telephone: { type: "string", description: "Seulement un numéro trouvé avec chercher_contact et confirmé." },
+      anniversaire: { type: "string", description: "JJ/MM, ou « 12 mars »." },
+      notes: { type: "string", description: "Détails utiles pour plus tard." },
+      espace: { type: "string", enum: ["perso", "pro"] },
+      action: { type: "string", enum: ["ajouter", "ignorer", "retirer"] } },
+      required: ["nom"] } },
+  { name: "chercher_contact", description: "Cherche une personne dans les contacts de son téléphone (prénom ou nom) et rend les noms et numéros trouvés.",
+    input_schema: { type: "object", properties: { nom: { type: "string" } }, required: ["nom"] } }
+];
+const JV_FC_TOOLS = JV_PROCHE_TOOLS.concat([{ name: "fin_entretien", description: "Termine l'entretien « Faisons connaissance » quand il veut arrêter.", input_schema: { type: "object", properties: {} } }]);
+JV_LOCAL.chercher_contact = async x => {
+  if (!NATIVE) return { erreur: "seulement dans l'appli Android" };
+  const q = String((x && x.nom) || "").trim().split(/\s+/)[0]; if (q.length < 2) return { erreur: "nom trop court" };
+  const r = await tn("searchContacts", { q }), L = ((r && r.contacts) || []).filter(c => c.phones && c.phones.length).slice(0, 5);
+  return L.length ? { contacts: L.map(c => ({ nom: c.name, telephone: c.phones[0] })) } : { contacts: [], remarque: "personne de ce nom dans ses contacts" };
+};
+JV_ATTENTE.chercher_contact = "je regarde vos contacts…";
+function jvSysProches(){
+  return "\n\nSes proches\n- Le <contexte> liste ses proches avec leurs surnoms : un surnom (« Titi »), « ma sœur », « mon pote du golf » désignent quelqu'un de cette liste. Pour appeler ou écrire, sers-toi de son nom complet.\n- Quand il te dit quelque chose d'utile sur quelqu'un (qui c'est, son surnom, son anniversaire, une habitude), range-le avec fiche_proche ; pour son numéro, chercher_contact, jamais dicté.\n- Au fil de l'eau : quand un prénom absent de cette liste revient dans ses messages ou ses dictées et que ça compte, demande-lui une seule fois, en fin de réponse, « Qui est X, monsieur ? », puis range sa réponse (« laisse tomber » : fiche_proche avec action ignorer). Une seule question de ce genre par conversation, jamais pendant une urgence.\n- « Faisons connaissance » lance un entretien à part, mené par une autre partie de Nestor : n'y réponds pas toi-même.";
+}
+/* réglages → Mémoire et journal → Mes proches */
+let JV_PR_EDIT = null;
+function paintProches(){
+  const box = $("cvProches"); if (!box) return;
+  const L = jvProches().sort((a, b) => (JV_PROCHE_CATS.indexOf(a.pe.cat) - JV_PROCHE_CATS.indexOf(b.pe.cat)) || a.pe.nom.localeCompare(b.pe.nom));
+  box.innerHTML = `<div class="foot" style="margin-top:4px"><p class="small" style="margin:0;flex:1;min-width:0">${L.length ? `${L.length} fiche${L.length > 1 ? "s" : ""}.` : "Aucune fiche pour l'instant."} Le plus simple : un entretien à la voix, une question à la fois.</p><button class="ok" id="cvFcGo">faire connaissance</button></div>`
+    + (L.length ? L.map(i => `<div class="it" style="padding:9px 0"><span class="dot" style="opacity:.6"></span><div class="tx" style="flex:1;min-width:0"><div class="tt" style="font-size:15.5px">${esc(i.pe.nom)}${i.pe.surnom ? ` <span style="color:var(--mut)">« ${esc(i.pe.surnom)} »</span>` : ""}</div><div class="sub">${esc([i.pe.lien || i.pe.cat, i.pe.tel, i.pe.anniv ? "anniv. " + i.pe.anniv : "", i.pe.notes].filter(Boolean).join(" · "))}</div><div class="sub" style="margin-top:4px"><button data-pre="${i.id}">modifier</button> <button data-prd="${i.id}" style="margin-left:14px">oublier</button></div></div></div>`).join("") : "")
+    + `<div class="lab" style="margin-top:14px">${JV_PR_EDIT ? "Modifier la fiche" : "Ajouter un proche"}</div>
+      <input id="cvPrNom" placeholder="nom (ex. Julie Martin)"><input id="cvPrSur" placeholder="surnom (comment vous l'appelez)" style="margin-top:6px"><input id="cvPrLien" placeholder="qui c'est pour vous (ex. ma sœur aînée)" style="margin-top:6px">
+      <div class="two"><div><input id="cvPrTel" placeholder="téléphone" inputmode="tel" style="margin-top:6px"></div><div><input id="cvPrAn" placeholder="anniversaire (JJ/MM)" style="margin-top:6px"></div></div>
+      <select id="cvPrCat" style="margin-top:6px">${JV_PROCHE_CATS.map(c => `<option value="${c}">${c}</option>`).join("")}</select>
+      <div class="foot" style="margin-top:10px"><div class="l">${NATIVE ? '<button id="cvPrPick">depuis mes contacts</button>' : ""}${JV_PR_EDIT ? '<button id="cvPrNo">annuler</button>' : ""}</div><button class="ok" id="cvPrOk">${JV_PR_EDIT ? "enregistrer" : "ajouter"}</button></div>`;
+  const e = JV_PR_EDIT && MEM.items.get(JV_PR_EDIT);
+  if (e && e.pe) { $("cvPrNom").value = e.pe.nom || ""; $("cvPrSur").value = e.pe.surnom || ""; $("cvPrLien").value = e.pe.lien || ""; $("cvPrTel").value = e.pe.tel || ""; $("cvPrAn").value = e.an ? `${pad(e.an.j)}/${pad(e.an.m)}` : ""; $("cvPrCat").value = e.pe.cat || "autre"; }
+  $("cvFcGo").onclick = () => jvFcLance();
+  box.querySelectorAll("[data-pre]").forEach(b => b.onclick = () => { JV_PR_EDIT = b.dataset.pre; paintProches(); try { $("cvPrNom").focus(); } catch (er) {} });
+  box.querySelectorAll("[data-prd]").forEach(b => b.onclick = () => { if (b.dataset.sure) memForget([b.dataset.prd]).then(paintProches); else { b.dataset.sure = "1"; b.textContent = "sûr ? touchez encore"; } });
+  const no = $("cvPrNo"); if (no) no.onclick = () => { JV_PR_EDIT = null; paintProches(); };
+  const pk = $("cvPrPick"); if (pk) pk.onclick = async () => { try { const k = await tn("pickContact"); if (k && !k.cancelled && k.name) { $("cvPrNom").value = k.name; if (k.phone) $("cvPrTel").value = k.phone; } } catch (er) {} };
+  $("cvPrOk").onclick = async () => {
+    const x = { nom: $("cvPrNom").value, surnom: $("cvPrSur").value, lien: $("cvPrLien").value, telephone: $("cvPrTel").value, anniversaire: $("cvPrAn").value, categorie: $("cvPrCat").value };
+    if (String(x.nom).trim().length < 2) return toast("il me faut au moins un nom");
+    const ed = JV_PR_EDIT && MEM.items.get(JV_PR_EDIT); if (ed) await memForget([ed.id]);
+    JV_PR_EDIT = null; const r = await jvProcheApply(x); if (r) toast(r);
+  };
+}
+/* le bouton : Nestor ouvre l'entretien à la voix, comme si vous lui aviez dit « faisons connaissance » */
+async function jvFcLance(){
+  if (!CFG.key) return toast("il faut votre clé Claude");
+  try { hide(); } catch (e) {}
+  setTimeout(async () => { try { const ok = await jvCerveau("Faisons connaissance.", "voix"); if (!ok) { openConv(); setTimeout(() => cvSend("Faisons connaissance."), 300); } } catch (e) {} }, 120);
+}
 /* ---------- lot 23 · le halo : Nestor répond sans ouvrir la conversation ----------
    La constellation s'ouvre en anneau ; la réponse y défile comme un générique, au rythme de la voix.
    Dessous : ce qu'il a fait ou propose (avec son bouton), puis deux symboles : ouvrir en grand, répondre.
@@ -8000,6 +8155,7 @@ function cvPaint(){
 }
 function paintMem(){
   try { paintLieux(); } catch (e) {}
+  try { paintProches(); } catch (e) {}
   const q = $("cvQ").value.trim();
   const all = [...MEM.items.values()].sort((a, b) => (b.p - a.p) || ((Date.parse(b.q) || 0) - (Date.parse(a.q) || 0)));
   const list = q ? memSearch(q, 50) : all;
