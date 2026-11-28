@@ -99,7 +99,7 @@ import org.json.JSONObject;
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 16;
+    static final int NATIVE_BUILD = 17;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -438,6 +438,97 @@ public class TempoNativePlugin extends Plugin {
     @PluginMethod
     public void openAppSettings(PluginCall call) {
         startSafely(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getContext().getPackageName())), call);
+    }
+
+    // ------------------------------------------------------------------ lot 27 · Nestor agit sur le téléphone
+
+    /** Ne pas déranger, sonnerie, volume, lampe, musique, panneaux de réglage, batterie. Rien d'irréversible, rien qui sorte du téléphone. */
+    @PluginMethod
+    public void agir(PluginCall call) {
+        String quoi = call.getString("quoi", ""), v = call.getString("valeur", "");
+        Context c = getContext();
+        JSObject r = new JSObject();
+        try {
+            android.media.AudioManager am = (android.media.AudioManager) c.getSystemService(Context.AUDIO_SERVICE);
+            android.app.NotificationManager nm = (android.app.NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+            switch (quoi) {
+                case "ne_pas_deranger": {
+                    boolean on = !"off".equals(v);
+                    if (nm != null && nm.isNotificationPolicyAccessGranted()) {
+                        nm.setInterruptionFilter(on ? android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY : android.app.NotificationManager.INTERRUPTION_FILTER_ALL);
+                    } else if (TempoNotifListener.INSTANCE != null) {
+                        TempoNotifListener.INSTANCE.requestInterruptionFilter(on ? android.service.notification.NotificationListenerService.INTERRUPTION_FILTER_PRIORITY : android.service.notification.NotificationListenerService.INTERRUPTION_FILTER_ALL);
+                    } else { r.put("besoin", "ndp"); break; }
+                    r.put("ok", true);
+                    break;
+                }
+                case "sonnerie": {
+                    int m = "silence".equals(v) ? android.media.AudioManager.RINGER_MODE_SILENT : "vibreur".equals(v) ? android.media.AudioManager.RINGER_MODE_VIBRATE : android.media.AudioManager.RINGER_MODE_NORMAL;
+                    try { am.setRingerMode(m); r.put("ok", true); } catch (SecurityException e) { r.put("besoin", "ndp"); }
+                    break;
+                }
+                case "volume": {
+                    int s = android.media.AudioManager.STREAM_MUSIC, max = am.getStreamMaxVolume(s), cur = am.getStreamVolume(s), pas = Math.max(1, max / 8), n;
+                    if ("plus".equals(v)) n = Math.min(max, cur + pas);
+                    else if ("moins".equals(v)) n = Math.max(0, cur - pas);
+                    else { String d = v.replaceAll("[^0-9]", ""); if (d.isEmpty()) { call.reject("valeur"); return; } n = Math.round(Math.min(100, Math.max(0, Integer.parseInt(d))) * max / 100f); }
+                    am.setStreamVolume(s, n, android.media.AudioManager.FLAG_SHOW_UI);
+                    r.put("ok", true); r.put("niveau", max > 0 ? Math.round(n * 100f / max) : 0);
+                    break;
+                }
+                case "lampe": {
+                    android.hardware.camera2.CameraManager cm = (android.hardware.camera2.CameraManager) c.getSystemService(Context.CAMERA_SERVICE);
+                    String id = null;
+                    for (String cid : cm.getCameraIdList()) {
+                        Boolean fl = cm.getCameraCharacteristics(cid).get(android.hardware.camera2.CameraCharacteristics.FLASH_INFO_AVAILABLE);
+                        if (fl != null && fl) { id = cid; break; }
+                    }
+                    if (id == null) { r.put("erreur", "pas de flash"); break; }
+                    cm.setTorchMode(id, !"off".equals(v));
+                    r.put("ok", true);
+                    break;
+                }
+                case "musique": {
+                    int k = "pause".equals(v) ? android.view.KeyEvent.KEYCODE_MEDIA_PAUSE : "suivant".equals(v) ? android.view.KeyEvent.KEYCODE_MEDIA_NEXT
+                        : "precedent".equals(v) ? android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS : "lecture".equals(v) ? android.view.KeyEvent.KEYCODE_MEDIA_PLAY : android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE;
+                    am.dispatchMediaKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, k));
+                    am.dispatchMediaKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, k));
+                    r.put("ok", true);
+                    break;
+                }
+                case "reglage": {
+                    boolean p = Build.VERSION.SDK_INT >= 29;
+                    String a = "wifi".equals(v) ? (p ? Settings.Panel.ACTION_WIFI : Settings.ACTION_WIFI_SETTINGS)
+                        : "internet".equals(v) ? (p ? Settings.Panel.ACTION_INTERNET_CONNECTIVITY : Settings.ACTION_WIRELESS_SETTINGS)
+                        : "bluetooth".equals(v) ? Settings.ACTION_BLUETOOTH_SETTINGS
+                        : "son".equals(v) ? (p ? Settings.Panel.ACTION_VOLUME : Settings.ACTION_SOUND_SETTINGS)
+                        : "batterie".equals(v) ? Settings.ACTION_BATTERY_SAVER_SETTINGS
+                        : "localisation".equals(v) ? Settings.ACTION_LOCATION_SOURCE_SETTINGS
+                        : "affichage".equals(v) ? Settings.ACTION_DISPLAY_SETTINGS
+                        : "ne_pas_deranger".equals(v) ? Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
+                        : Settings.ACTION_SETTINGS;
+                    Intent i = new Intent(a);
+                    if (getActivity() != null) getActivity().startActivity(i);
+                    else { i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); c.startActivity(i); }
+                    r.put("ok", true);
+                    break;
+                }
+                case "batterie": {
+                    android.os.BatteryManager bm = (android.os.BatteryManager) c.getSystemService(Context.BATTERY_SERVICE);
+                    r.put("niveau", bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY));
+                    r.put("charge", bm.isCharging());
+                    r.put("ok", true);
+                    break;
+                }
+                default:
+                    call.reject("action");
+                    return;
+            }
+        } catch (Exception e) {
+            call.reject(String.valueOf(e.getMessage()));
+            return;
+        }
+        call.resolve(r);
     }
 
     // ------------------------------------------------------------------ position et alertes de lieu (Jarvis)

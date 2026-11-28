@@ -84,6 +84,15 @@ public class TempoNotifListener extends NotificationListenerService {
         return c == null ? "" : c.toString().trim();
     }
 
+    /** lot 27 : le service connecté, pour que Nestor puisse régler Ne pas déranger (un écouteur de notifications y a droit) */
+    static volatile TempoNotifListener INSTANCE = null;
+
+    @Override
+    public void onListenerConnected() { INSTANCE = this; }
+
+    @Override
+    public void onListenerDisconnected() { if (INSTANCE == this) INSTANCE = null; }
+
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         try {

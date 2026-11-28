@@ -426,7 +426,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v62 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v63 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -696,7 +696,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 62;
+const TEMPO_BUILD = 63;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -5072,7 +5072,7 @@ async function cvSend(text, opt){
   cvFraiche();
   { const rc = jvRaccourci(jvAppel(text) || text);   // « je pars », « je rentre » : tout de suite, sans Claude
     if (rc) {
-      JV.busy = true; cvStatus("je règle le chauffage…");
+      JV.busy = true; cvStatus("je m'en occupe…");
       try { const o = await jvFaireRaccourci(rc, text); if (opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0") { try { speak(jvPourVoix(o.err || o.dit)); } catch (e) {} } }
       finally { JV.busy = false; cvStatus(""); cvPaint(); }
       return true;
@@ -5582,7 +5582,7 @@ const JV_BETA_TOOLS = [
   { name: "cote_match_choix", description: "Note le pari qu'il a choisi cette semaine pour Cote & Match (ça coupe la relance de 11h du vendredi).",
     input_schema: { type: "object", properties: { pari: { type: "string", description: "match et pari, ex. « Lens - Brest, victoire de Lens »" } }, required: ["pari"] } }
 ];
-const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS, JV_HORLOGE_TOOLS, JV_MEM_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); if (jvWebOn()) t = t.concat(JV_WEB_TOOLS); t = t.concat(JV_CURSEUR_TOOLS, JV_PARTAGE_TOOLS, JV_EVOL_TOOLS, JV_REGLE_TOOLS, JV_JOURNAL_TOOLS); if (jvUniqueOn()) t = t.concat(jvNoterTool()); return t; };
+const jvOutils = () => { let t = (jvNetOn() ? CV_TOOLS.concat(JV_NET_TOOLS) : CV_TOOLS).concat(JV_CADEAU_TOOLS, JV_HORLOGE_TOOLS, JV_MEM_TOOLS); if (jvBetaMatchOn()) t = t.concat(JV_BETA_TOOLS); if (jvSanteOn()) t = t.concat(JV_SANTE_TOOLS); if (jvWebOn()) t = t.concat(JV_WEB_TOOLS); t = t.concat(JV_CURSEUR_TOOLS, JV_PARTAGE_TOOLS, JV_EVOL_TOOLS, JV_REGLE_TOOLS, JV_JOURNAL_TOOLS); if (NATIVE) t = t.concat(JV_TEL_TOOLS); if (jvUniqueOn()) t = t.concat(jvNoterTool()); return t; };
 /* zones de la maison pour le chauffage selon la présence (l'appli Android les déclenche, même fermée) */
 const jvMaisonLieu = () => jvLieux().find(l => l.g.type === "maison");
 const jvChauffeAuto = () => jvNetOn() && CFG.jvChauffe !== false && !!jvMaisonLieu();
@@ -7360,6 +7360,55 @@ $("cvJrIn").onchange = async () => {
   catch (e) { toast("fichier illisible"); }
   paintJournal();
 };
+/* ---------- lot 27 · Nestor agit sur le téléphone ----------
+   Ouvrir une appli marche avec toutes les versions ; le reste (Ne pas déranger, sonnerie, volume, lampe, musique, réglages, batterie)
+   demande l'appli Android 0.4.0 (APK 17). Le Wi-Fi et le Bluetooth ne se coupent plus depuis une appli (Android 10+) : il ouvre leur panneau. */
+const JV_TEL_ALIAS = { maps: "maps", "google maps": "maps", garmin: "garmin connect", whatsapp: "whatsapp", photos: "photos", appareil: "appareil photo", camera: "appareil photo", agenda: "agenda", calendrier: "agenda", horloge: "horloge" };
+async function jvTelApp(nom){
+  const r = await tn("getApps"), L = (r && r.apps) || [], k0 = busKey(nom), k = busKey(JV_TEL_ALIAS[k0] || k0); if (!k) return null;
+  const lab = a => busKey(a.label || "");
+  return L.find(a => lab(a) === k) || L.find(a => lab(a).startsWith(k)) || L.find(a => lab(a).includes(k)) || L.find(a => k.includes(lab(a)) && lab(a).length > 3) || null;
+}
+const JV_TEL_DIT = {
+  ne_pas_deranger: v => v === "off" ? "Ne pas déranger coupé." : "Ne pas déranger activé.",
+  sonnerie: v => v === "silence" ? "Téléphone en silencieux." : v === "vibreur" ? "Téléphone en vibreur." : "Sonnerie remise.",
+  lampe: v => v === "off" ? "Lampe éteinte." : "Lampe allumée.",
+  musique: v => v === "pause" ? "Musique en pause." : v === "suivant" ? "Morceau suivant." : v === "precedent" ? "Morceau précédent." : "Musique relancée.",
+  reglage: v => "Je vous ouvre le panneau " + ({ wifi: "Wi-Fi", internet: "Internet", bluetooth: "Bluetooth", son: "du son", batterie: "de la batterie", localisation: "de localisation", affichage: "d'affichage", ne_pas_deranger: "d'autorisation" }[v] || "des réglages") + "."
+};
+async function jvTel(action, valeur){
+  if (!NATIVE) return { erreur: "seulement dans l'appli Android" };
+  const v = cvNorm(String(valeur == null ? "" : valeur)).trim().replace(/^(?:active|allume|on|oui|marche)$/, "on").replace(/^(?:coupe|desactive|eteins|off|non|arret)$/, "off").replace(/^silencieux$/, "silence").replace(/^precedente?$/, "precedent").replace(/^(?:reprise|play|relance)$/, "lecture");
+  if (action === "ouvrir") {
+    const a = await jvTelApp(valeur || ""); if (!a) return { erreur: `appli « ${valeur} » introuvable sur le téléphone` };
+    return (await tnOk("openApp", { pkg: a.pkg })) ? { ok: true, dit: `${a.label} ouverte.` } : { erreur: `impossible d'ouvrir ${a.label}` };
+  }
+  if ((await jvNative()) < 17) return { erreur: "il faut la nouvelle appli Android (0.4.0) pour ça : elle se propose à l'ouverture, ou Réglages → appli Android" };
+  let r = null; try { r = await tn("agir", { quoi: action, valeur: v }); } catch (e) { return { erreur: "le téléphone a refusé (" + String((e && e.message) || e).slice(0, 60) + ")" }; }
+  if (r && r.besoin === "ndp") { try { await tn("agir", { quoi: "reglage", valeur: "ne_pas_deranger" }); } catch (e) {} return { erreur: "Android veut d'abord que vous autorisiez Nestor pour Ne pas déranger : je vous ouvre l'écran, activez Nestor puis redemandez." }; }
+  if (!r || !r.ok) return { erreur: (r && r.erreur) || "le téléphone n'a pas répondu" };
+  if (action === "volume") return { ok: true, dit: `Volume à ${r.niveau} %.` };
+  if (action === "batterie") return { ok: true, dit: `Batterie à ${r.niveau} %${r.charge ? ", en charge" : ""}.` };
+  return { ok: true, dit: (JV_TEL_DIT[action] || (() => "C'est fait."))(v) };
+}
+const JV_TEL_TOOLS = [{ name: "telephone", description: "Agir sur son téléphone Android, tout de suite quand il le demande : ouvrir une appli (Waze, Spotify, Garmin…), Ne pas déranger (on/off), sonnerie (normal, vibreur, silence), volume du son (0 à 100, plus, moins), lampe torche (on/off), musique (lecture, pause, suivant, precedent), ouvrir un panneau de réglage (wifi, bluetooth, internet, son, batterie, localisation, affichage), lire la batterie. Le Wi-Fi et le Bluetooth ne se coupent pas depuis une appli : ouvre leur panneau et dis-le. Confirme en quelques mots.", input_schema: { type: "object", properties: {
+  action: { type: "string", enum: ["ouvrir", "ne_pas_deranger", "sonnerie", "volume", "lampe", "musique", "reglage", "batterie"] },
+  valeur: { type: "string", description: "nom de l'appli ; on/off ; normal/vibreur/silence ; 0-100, plus, moins ; lecture/pause/suivant/precedent ; wifi/bluetooth/internet/son/batterie/localisation/affichage" } }, required: ["action"] } }];
+JV_LOCAL.telephone = x => jvTel(String(x.action || ""), x.valeur); JV_ATTENTE.telephone = "je m'en occupe…";
+/* les ordres directs : instantanés, sans passer par Claude */
+const jvTelR = (nom, rx, action, valeur) => ({ nom, rx, pret: () => NATIVE, faire: async () => { const o = await jvTel(action, valeur); return o.erreur ? { err: o.erreur } : { dit: "Très bien, monsieur. " + o.dit }; } });
+JV_RACCOURCIS.push(
+  jvTelR("lampe", /^(?:(?:allume|mets|active) (?:la )?(?:lampe(?: torche)?|torche)|lampe torche)$/, "lampe", "on"),
+  jvTelR("lampe off", /^(?:eteins|coupe|arrete|desactive) (?:la )?(?:lampe(?: torche)?|torche)$/, "lampe", "off"),
+  jvTelR("ndp", /^(?:mets|active|passe en) (?:le )?(?:mode )?ne pas deranger$/, "ne_pas_deranger", "on"),
+  jvTelR("ndp off", /^(?:coupe|desactive|enleve|retire|arrete|sors du) (?:le )?(?:mode )?ne pas deranger$/, "ne_pas_deranger", "off"),
+  jvTelR("pause", /^(?:pause|mets (?:la musique )?en pause|(?:arrete|coupe|stoppe) la musique)$/, "musique", "pause"),
+  jvTelR("suivant", /^(?:(?:musique|chanson|morceau|titre) suivante?|suivant|passe au (?:morceau|titre) suivant)$/, "musique", "suivant"),
+  jvTelR("lecture", /^(?:(?:remets|reprends|relance|lance) la musique|lecture)$/, "musique", "lecture"),
+  jvTelR("vibreur", /^(?:mets|passe)(?: le (?:telephone|portable))? en (?:mode )?vibreur$/, "sonnerie", "vibreur"),
+  jvTelR("silence", /^(?:mets|passe)(?: le (?:telephone|portable))? en (?:mode )?(?:silencieux|silence)$/, "sonnerie", "silence"),
+  jvTelR("sonnerie", /^(?:remets|reactive) (?:la )?sonnerie$/, "sonnerie", "normal")
+);
 /* ---------- lot 23 · le halo : Nestor répond sans ouvrir la conversation ----------
    La constellation s'ouvre en anneau ; la réponse y défile comme un générique, au rythme de la voix.
    Dessous : ce qu'il a fait ou propose (avec son bouton), puis deux symboles : ouvrir en grand, répondre.

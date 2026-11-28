@@ -8,8 +8,8 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // NATIVE_BUILD (TempoNativePlugin.java) et version.json "apk" doivent suivre ce numéro
-        versionCode 16
-        versionName "0.3.9"
+        versionCode 17
+        versionName "0.4.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
