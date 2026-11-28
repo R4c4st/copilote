@@ -7,3 +7,4 @@ Aucune clé, aucune donnée personnelle : les noms sont fictifs.
 - Créer `/tmp/nt` (captures d'écran) puis lancer un script : `cd outils/tests && python3 test.py`.
 - Chaque script affiche un JSON ; le champ `errors` (erreurs JavaScript de la page) doit être vide.
 - `test17.py` couvre le fond d'écran animé (lots 29 à 33).
+- `test18.py` couvre les coulisses (lot 34) : aiguilleur, secrétaire, boîte noire, chrono, rapport technique, « ça c'est raté ».

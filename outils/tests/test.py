@@ -19,7 +19,7 @@ async def main():
             if "api.anthropic.com" in url:
                 body = json.loads(r.request.post_data or "{}")
                 state["bodies"].append(body)
-                if body.get("model","").startswith("claude-haiku"):
+                if body.get("model","").startswith("claude-haiku") and not body.get("tools") and body.get("max_tokens") != 3:   # le tri rapide (le secrétaire, lui, a ses outils ; l'aiguilleur répond d'une lettre)
                     return await r.fulfill(status=200, content_type="application/json", body=json.dumps(HAIKU))
                 m = state["mode"]
                 if m == "fail": return await r.fulfill(status=529, content_type="application/json", body=json.dumps({"error":{"type":"overloaded_error","message":"overloaded"}}))

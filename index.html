@@ -349,6 +349,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button data-p="journee">Ma journée<span class="regSub" id="regSub-journee">briefs, rituels, relances, focus, rappels</span></button>
     <button data-p="moi">Moi<span class="regSub" id="regSub-moi">qui je suis, signature, chantiers ou thèmes, contacts</span></button>
     <button data-p="connexions">Connexions<span class="regSub" id="regSub-connexions">Claude, Google, Outlook, Gmail, téléphone, chauffage, santé</span></button>
+    <button data-p="coulisses">Coulisses<span class="regSub" id="regSub-coulisses">ses spécialistes, le chrono, la boîte noire, le rapport du dimanche</span></button>
     <button data-p="appli">Appli<span class="regSub" id="regSub-appli">mise à jour, widget, sauvegarde</span></button>
   </div>
   <div class="regP" id="regP-nestor" style="display:none">
@@ -518,6 +519,23 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="cvSanteBriefChk" style="width:auto"> dans le brief du matin, seulement ce qui sort de mes habitudes</label>
     <div class="foot" style="margin-top:10px"><button id="cvSanteOff" style="color:var(--mut);display:none">couper</button><button id="cvSanteGerer" style="display:none">autorisations</button><button class="ok" id="cvSanteGo">relier ma montre et ma balance</button></div>
   </div>
+  <div class="regP" id="regP-coulisses" style="display:none">
+    <div class="lab">Ses spécialistes</div>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:4px"><input type="checkbox" id="couAigChk" style="width:auto"> l'aiguilleur confie tâches, rappels et agenda au secrétaire (plus vif, bien moins cher) et le reste au majordome · même voix, mêmes souvenirs</label>
+    <p class="small" id="couAigSt" style="margin-top:6px"></p>
+    <div class="lab">Le chrono</div>
+    <div id="couChrono"></div>
+    <div class="lab">La boîte noire</div>
+    <p class="small" style="margin:4px 0 6px">Ses ratés : erreurs, lenteurs, corrections, annulations, incompris. Dites « Nestor, ça c'est raté » pour en signaler un.</p>
+    <div id="couBN"></div>
+    <div class="foot" style="margin-top:8px"><div class="l"><button id="couBNVide" style="color:var(--mut)">vider la boîte noire</button></div></div>
+    <div class="lab">Le rapport technique</div>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:4px"><input type="checkbox" id="couRapChk" style="width:auto"> le préparer chaque dimanche soir</label>
+    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:8px"><input type="checkbox" id="couExtChk" style="width:auto"> y joindre les extraits des ratés (ce que j'ai dit, ce qu'il a répondu)</label>
+    <p class="small" style="margin-top:6px">Un fichier .txt, sans texte de dictée ni donnée de santé : à envoyer à Claude pour une séance de réglages.</p>
+    <p class="small" id="couRapAtt" style="margin-top:6px;display:none">Le rapport de la semaine vous attend.</p>
+    <div class="foot" style="margin-top:10px"><div class="l"><button id="couRapGo" style="color:var(--fg)">envoyer le rapport de la semaine</button></div></div>
+  </div>
   <div class="regP" id="regP-appli" style="display:none">
   <div id="appBox">
     <div class="lab">Appli Android</div>
@@ -534,7 +552,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <div class="foot" style="flex-wrap:wrap;gap:16px"><div class="l" style="flex-wrap:wrap"><button id="sExp">sauvegarder</button><button id="sImp">restaurer</button><button id="sForget">oublier mes corrections</button></div></div>
   <input type="file" id="sFile" accept=".json" hidden>
   </div>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v73 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v74 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -724,7 +742,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 73;
+const TEMPO_BUILD = 74;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -3381,7 +3399,7 @@ function startListenSR(opts){
   clearTimeout(nsT);
   if (opts.noSpeech) nsT = setTimeout(() => { if (listening && !finalTxt && !interim) { stopListen(); idle(); } }, opts.noSpeech);
   rec.onresult = e => {
-    clearTimeout(nsT);
+    clearTimeout(nsT); JV_SR_DER = Date.now();
     kickT = performance.now(); const R = $("ring"); R.classList.add("kick"); clearTimeout(R._k); R._k = setTimeout(() => R.classList.remove("kick"), 160);
     interim = "";
     for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -3408,6 +3426,7 @@ function stopListen(){ listening = false; clearTimeout(silT); clearTimeout(nsT);
 function validate(){
   if (typing) { const t = $("typed").value; idle(); capture(t, "texte"); return; }
   const o = LISTEN_OPTS || {}, ctx = o.cr ? { cr: o.cr } : undefined;
+  try { jvEcouteFin(VOICE ? VOICE.lastLoud : JV_SR_DER, VOICE ? "voxtral" : "google"); } catch (e) {}   // lot 34 : le chrono de l'écoute
   if (VOICE) { listening = false; clearTimeout(silT); $("acts").classList.remove("show"); vib(8); stopRec().then(r => sendVox(r, o)); return; }
   const t = (finalTxt + " " + interim).trim(); stopListen(); $("acts").classList.remove("show"); capture(t, "voix", undefined, ctx);
 }
@@ -3550,6 +3569,7 @@ async function sendVox(r, o, forceWav){
     return;
   }
   idle();
+  try { jvBN("erreur", "écoute", "Voxtral : " + (!j ? "réseau" : j.capped ? "plafond du mois" : j.error || "serveur")); } catch (e) {}
   if (j && j.capped) { toast("Voxtral : plafond du mois atteint · je repasse sur Google", "redire", () => startListen(o), 9000); return; }
   LAST_AUDIO = { r, o };
   if (j && (j.error === "mistral_limit" || j.error === "key")) {
@@ -4871,19 +4891,20 @@ const cvNivSuivant = (niv, j) => /output_config|effort/i.test(JSON.stringify(j |
 const jvNow = () => typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
 const jvEffort = t => CFG.cvEffort || (String(t || "").length > 400 || /\b(bilan|analys|compar|expliqu|pourquoi|strat[ée]gi|recherche|prépare|rédige|redige)/i.test(t || "") ? "medium" : "low");
 async function cvCallFlux(extras, surTexte, effort){
-  const niv = cvNiv(extras);
+  const R = jvFcOn() ? null : jvRouteAutre(), niv = R ? (extras === false ? 0 : typeof extras === "number" ? extras : JV_CACHE_R) : cvNiv(extras);   // lot 34 : le spécialiste a son modèle
   const from = JV.from != null && JV.from < JV.msgs.length ? JV.from : cvFenetre(), c = cvCorps(from, niv);
   const fc = jvFcOn();
   const body = fc ? { model: JV_FC_MODEL, max_tokens: 900, system: niv >= 1 ? [{ type: "text", text: JV_FC_SYS, cache_control: { type: "ephemeral" } }] : JV_FC_SYS, tools: JV_FC_TOOLS, messages: c.messages, stream: CFG.cvFlux !== false }
-    : { model: CV_MODEL, max_tokens: 4000, system: c.system, tools: jvOutils(), messages: c.messages, stream: CFG.cvFlux !== false };
-  if (niv >= 1 && !fc) body.output_config = { effort: effort || "low" };
+    : { model: R ? R.model : CV_MODEL, max_tokens: R ? 2000 : 4000, system: c.system, tools: jvOutilsRoute(), messages: c.messages, stream: CFG.cvFlux !== false };
+  if (niv >= 1 && !fc && !R) body.output_config = { effort: effort || "low" };
   if (niv >= 2) body.cache_control = { type: "ephemeral" };
   const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
     headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
     body: JSON.stringify(body) });
   if (!r.ok) {
     let j = null; try { j = await r.json(); } catch (e) {}
-    if (niv > 0 && r.status === 400 && /cache_control|output_config|effort|ttl/i.test(JSON.stringify(j || ""))) { JV_CACHE = cvNivSuivant(niv, j); return cvCallFlux(JV_CACHE, surTexte, effort); }
+    if (niv > 0 && r.status === 400 && /cache_control|output_config|effort|ttl/i.test(JSON.stringify(j || ""))) { if (R) { JV_CACHE_R = cvNivSuivant(niv, j); return cvCallFlux(JV_CACHE_R, surTexte, effort); } JV_CACHE = cvNivSuivant(niv, j); return cvCallFlux(JV_CACHE, surTexte, effort); }
+    if (R && r.status !== 401) { try { jvBN("erreur", "réflexion", `${R.nom} ${r.status} → majordome`); } catch (e) {} JV_ROUTE = jvAgent("majordome", "repli"); if (JV_CHRONO) { JV_CHRONO.ag = "majordome"; JV_CHRONO.mo = jvModeleCourt(CV_MODEL); } return cvCallFlux(extras, surTexte, effort); }   // le spécialiste ne répond pas : le majordome reprend
     throw { status: r.status, j };
   }
   // pas de flux (réglage, ou réponse déjà entière) : comme avant
@@ -5049,17 +5070,24 @@ async function jvVoixSuite(g){
 }
 /* le chronomètre : où passe le temps (Claude, voix) */
 let JV_CHRONO = null;
+const JV_CHR_LS = "copilote_chrono";
+/* lot 34 : chaque réponse garde ses étapes (écoute, préparation, réflexion, outils, voix) et le spécialiste qui l'a faite */
 function jvChrono(x){
   if (!JV_CHRONO) return;
   for (const k of Object.keys(x)) if (JV_CHRONO[k] == null) JV_CHRONO[k] = x[k];
-  const c = JV_CHRONO, s = v => v == null ? null : Math.round((v - c.t0) / 100) / 10;
-  const L = (LS.get("copilote_chrono", null) || []).filter(e => e.id !== c.id);
-  L.push({ id: c.id, at: Date.now(), premier: s(c.premier), total: s(c.fin), voix: s(c.voix), etapes: c.etapes || 1 }); LS.set("copilote_chrono", L.slice(-20));
+  const c = JV_CHRONO, s = v => v == null ? null : Math.round((v - c.t0) / 100) / 10, now = Date.now();
+  const L = (LS.get(JV_CHR_LS, null) || []).filter(e => e.id !== c.id && now - (e.at || e.id || 0) < 35 * 864e5);
+  const e = { id: c.id, at: c.at || c.id, premier: s(c.premier), total: s(c.fin), voix: s(c.voix), etapes: c.etapes || 1, ag: c.ag || "", pq: c.pq || "", mo: c.mo || "", src: c.src || "",
+    ec: c.ec == null ? null : c.ec, av: c.av == null ? null : c.av, dic: c.dic || "", tri: c.tri || 0, ou: c.ou ? Math.round(c.ou / 100) / 10 : 0, on: c.on ? [...new Set(c.on)].join(" ") : "", usd: c.usd || 0, ok: c.ok !== false };
+  const d = e.voix != null ? e.voix : e.premier != null ? e.premier : e.total;   // une simple note, sans un mot : jusqu'à ce qu'elle soit rangée
+  e.pe = d == null ? null : Math.round(((e.ec || 0) + (e.av || 0) + d) * 10) / 10;   // perçu : de la fin de sa phrase au premier son (ou au premier mot, ou à la note rangée)
+  L.push(e); LS.set(JV_CHR_LS, L.slice(-900));
+  try { if (e.ok) jvLenteur(e, c); } catch (er) {}
 }
 function jvChronoTxt(){
-  const L = (LS.get("copilote_chrono", null) || []).filter(e => e.total != null); if (!L.length) return "";
+  const L = (LS.get(JV_CHR_LS, null) || []).filter(e => e.total != null); if (!L.length) return "";
   const d = L[L.length - 1], f = v => v == null ? "—" : String(v).replace(".", ",") + " s";
-  return `dernière réponse : premier mot ${f(d.premier)}, complète ${f(d.total)}${d.voix != null ? ", voix " + f(d.voix) : ""}` + (jvVJTxt() ? " · " + jvVJTxt() : "");
+  return `dernière réponse : premier mot ${f(d.premier)}, complète ${f(d.total)}${d.voix != null ? ", voix " + f(d.voix) : ""}${d.pe != null ? ", perçu " + f(d.pe) : ""}` + (jvVJTxt() ? " · " + jvVJTxt() : "");
 }
 function cvCount(u, cat, P){
   if (!u) return 0;
@@ -5114,6 +5142,7 @@ async function cvSend(text, opt){
   const base = JV.msgs.length;
   let reussi = false;
   const fcm = jvFcOn();
+  JV_ROUTE = null; const pAig = fcm ? null : jvAiguillage(text, opt).catch(() => null);   // lot 34 : l'aiguilleur, pendant que le contexte se prépare
   JV.msgs.push({ role: "user", content: fcm
     ? `<proches>\n${jvProchesListe() || "(aucune fiche encore)"}\n</proches>\n<pistes>\n${jvFcPistes()}\n</pistes>\n<souvenirs>\n${cvSouvenirs("famille sœur frère parents enfants ami amis golf collègue voisin médecin", 2500)}\n</souvenirs>\n${text}`
     : `<souvenirs>\n${cvSouvenirs(text, opt && opt.cercle ? 4500 : 7000)}\n</souvenirs>\n<contexte>\n${await cvContexte()}\n</contexte>\n${val}\n${text}` });
@@ -5122,7 +5151,8 @@ async function cvSend(text, opt){
   const voix = !!(opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0"), dec = jvDecoupe(voix), effort = jvEffort(text);
   const bul = opt && typeof opt.phrase === "function" ? opt.phrase : null, dire = ps => ps.forEach(p => { if (bul) { try { bul(p); } catch (e) {} } if (voix) jvVoixPhrase(p); });
   if (voix) jvVoixDebut();
-  JV_CHRONO = { id: Date.now(), t0: jvNow() };
+  try { await pAig; } catch (e) {}
+  JV_CHRONO = Object.assign({ id: Date.now(), t0: jvNow(), at: Date.now() }, jvChronoDebut(opt, fcm));
   let vivant = null, peint = 0, etapes = 0;
   const surTexte = t => {
     if (JV_CHRONO && JV_CHRONO.premier == null) { JV_CHRONO.premier = jvNow(); cvStatus(""); }
@@ -5136,10 +5166,11 @@ async function cvSend(text, opt){
     for (let step = 0; step < 6; step++) {
       etapes = step + 1;
       const j = await cvCallFlux(undefined, surTexte, effort);
-      usd += fcm ? cvCount(j.usage, "faire connaissance", CV_PRIX_HAIKU) : cvCount(j.usage, /^Mon brief du jour/.test(text) ? "brief" : /\bcheck\b/i.test(text) ? "check" : opt && opt.cercle ? "rond (dictées)" : "conversation");
+      usd += fcm ? cvCount(j.usage, "faire connaissance", CV_PRIX_HAIKU) : jvRouteAutre() ? cvCount(j.usage, JV_ROUTE.nom, CV_PRIX_HAIKU) : cvCount(j.usage, /^Mon brief du jour/.test(text) ? "brief" : /\bcheck\b/i.test(text) ? "check" : opt && opt.cercle ? "rond (dictées)" : "conversation");
       const content = j.content || [];
       const t1 = content.filter(b => b.type === "text").map(b => b.text).join("\n").trim(); if (t1) texts.push(t1);
       const uses = content.filter(b => b.type === "tool_use");
+      if (JV_CHRONO && uses.length) (JV_CHRONO.on = JV_CHRONO.on || []).push(...uses.map(u => u.name));
       for (const t of uses) if (!JV_LOCAL[t.name]) { const k = t.name + JSON.stringify(t.input || {}); if (!seen.has(k)) { seen.add(k); tools.push(t); } }
       if (j.stop_reason !== "tool_use" || !uses.some(t => JV_LOCAL[t.name]) && !(fcm && !t1 && uses.length)) break;   // l'entretien : une fiche rangée sans question, on lui laisse enchaîner
       if (t1 && vivant) vivant.t += "\n\n";
@@ -5149,7 +5180,7 @@ async function cvSend(text, opt){
       const results = [];
       for (const t of uses) {
         let out;
-        if (JV_LOCAL[t.name]) { cvStatus(JV_ATTENTE[t.name] || "je regarde…"); try { out = await JV_LOCAL[t.name](t.input || {}); } catch (e) { out = { erreur: "indisponible pour l'instant" }; } }
+        if (JV_LOCAL[t.name]) { cvStatus(JV_ATTENTE[t.name] || "je regarde…"); const o0 = jvNow(); try { out = await JV_LOCAL[t.name](t.input || {}); } catch (e) { out = { erreur: "indisponible pour l'instant" }; } if (JV_CHRONO) JV_CHRONO.ou = (JV_CHRONO.ou || 0) + jvNow() - o0; if (out && out.erreur) { try { jvBN("erreur", "outil", t.name + " : " + out.erreur); } catch (e) {} } }
         else out = /^(proposer_(rappel|rappel_lieu|courses)|noter)$/.test(t.name) ? { ok: "ajouté tout de suite (il peut annuler)" } : /^(regler_curseur|partager|noter_evolution|regle_tri|retenir_mot|fiche_proche|gout_humour|fin_entretien)$/.test(t.name) ? { ok: "fait" } : { ok: "proposé à l'utilisateur : il validera lui-même" };
         results.push({ type: "tool_result", tool_use_id: t.id, content: JSON.stringify(out).slice(0, 8000) });
       }
@@ -5164,7 +5195,8 @@ async function cvSend(text, opt){
     if (txt) { if (vivant) { vivant.t = txt; delete vivant.live; vivant.usd = usd; } else JV.view.push({ r: "a", t: txt, usd }); }
     else if (vivant) JV.view.splice(JV.view.indexOf(vivant), 1);
     if (voix || bul) dire(dec.fin());
-    JV_CHRONO.etapes = etapes; jvChrono({ fin: jvNow() });
+    JV_CHRONO.etapes = etapes; JV_CHRONO.usd = usd; jvChrono({ fin: jvNow() });
+    try { jvApresReponse(txt); } catch (e) {}
     const v0 = JV.view.length, notes = [];
     for (const t of tools) {
       const x = t.input || {};
@@ -5197,6 +5229,7 @@ async function cvSend(text, opt){
     JV.at = Date.now(); reussi = true;
   } catch (e) {
     const parlait = !!vivant;
+    try { jvBN("erreur", "réflexion", (e && e.status ? "erreur " + e.status : "pas de réseau") + (secours && !parlait ? " · repli sur le tri rapide" : "")); if (JV_CHRONO) { JV_CHRONO.ok = false; jvChrono({ fin: jvNow() }); } } catch (e2) {}
     if (vivant && JV.view.includes(vivant)) JV.view.splice(JV.view.indexOf(vivant), 1);   // pas de réponse à moitié
     if (voix) jvVoixDebut();
     JV.msgs.splice(base);   // la question non répondue ne reste pas dans l'historique envoyé
@@ -6685,6 +6718,7 @@ async function jvJournalier(){
   try { await jvRangerAttente(); } catch (e) {}
   try { await jvMailNestor(); } catch (e) {}
   try { await jvPropositions(); } catch (e) {}
+  try { jvRapportDimanche(); } catch (e) {}
 }
 /* branché sur l'agenda : chaque création ou modification d'une tâche passe par calSync */
 function jvSortieCheck(it){
@@ -8961,6 +8995,347 @@ async function jvAssistFin(a){
   }
   JV_ASSIST = null;
 }
+
+
+/* ======================================================================
+   lot 34 · les coulisses : l'aiguilleur, le secrétaire, la boîte noire, le chrono, le rapport technique du dimanche
+   Un seul Nestor : chaque spécialiste a la même voix, les mêmes consignes, les mêmes souvenirs et le même fil de conversation.
+   L'aiguilleur trie sur le téléphone ; le petit modèle n'est consulté qu'en cas de doute ; un seul passage de main.
+   ====================================================================== */
+var JV_SR_DER = 0, JV_ECOUTE = null, JV_ROUTE = null, JV_ROUTE_DER = null, JV_CACHE_R = 2, JV_RATE_ATT = null, JV_SRC34 = "";
+const JV_BN_LS = "copilote_bn";
+const JV_HAIKU = "claude-haiku-5-5";
+const JV_AGENTS = {
+  majordome: { nom: "majordome", model: null, outils: null, role: "conversation, conseils, actions" },
+  secretaire: { nom: "secrétaire", model: JV_HAIKU, role: "tâches, rappels, agenda",
+    outils: ["noter", "taches", "modifier_tache", "agenda", "proposer_rappel", "proposer_rappel_lieu", "proposer_courses", "proposer_lieu", "proposer_souvenir", "chercher_souvenirs", "chercher_contact", "noter_idee_cadeau", "idees_cadeaux", "regler_reveil", "lancer_minuteur", "retenir_mot", "regle_tri", "noter_evolution"] }
+};
+const jvAgentActif = k => !!JV_AGENTS[k] && (!JV_AGENTS[k].actif || JV_AGENTS[k].actif());
+function jvAgent(k, pq, tri){ const a = JV_AGENTS[k] || JV_AGENTS.majordome; return { ag: JV_AGENTS[k] ? k : "majordome", nom: a.nom, model: a.model, outils: a.outils ? new Set(a.outils) : null, effort: a.effort || null, pq: pq || "", tri: tri || 0 }; }
+const jvRouteAutre = () => JV_ROUTE && JV_ROUTE.model && JV_ROUTE.model !== CV_MODEL ? JV_ROUTE : null;
+function jvOutilsRoute(){ const T = jvOutils(), o = JV_ROUTE && JV_ROUTE.outils; if (!o) return T; const L = T.filter(t => o.has(t.name)); return L.length ? L : T; }
+const jvModeleCourt = m => /haiku/.test(m || "") ? "haiku" : /sonnet/.test(m || "") ? "sonnet" : /opus/.test(m || "") ? "opus" : /fable/.test(m || "") ? "fable" : String(m || "");
+const jvNorm34 = t => cvNorm(String(t || "")).replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();   // apostrophes comprises : « qu'est-ce » → « qu est ce »
+
+/* ---------- l'aiguilleur : le tri sur le téléphone ---------- */
+const JV_TRI = {
+  q: /^(?:(?:et|mais|alors|au fait|dis moi|dis|bon|ok|euh) )*(?:est ce qu|qu est ce|qu est ce|comment|pourquoi|combien|quel|quelle|quels|quelles|qui |ou est|ou sont|ou en|quand est ce|a quelle heure|c est quoi|c est qui|tu (?:penses|crois|sais|connais|peux me dire|pourrais|as vu|en penses|me conseilles|ferais|preferes)|que (?:penses|ferais|dois je|faire|me conseilles)|explique|raconte|conseille|aide moi a|ton avis|j aimerais savoir|je me demande|y a t il|est il|est elle|il fait|ca va)/,
+  emo: /\b(?:je suis (?:fatigue|creve|epuise|stresse|deprime|triste|en colere|perdu|demotive|deborde|a bout|las)|j en ai marre|j ai pas le moral|je n ai pas le moral|je n en peux plus|j ai besoin de parler|motive moi|je procrastine|je n y arrive pas|j y arrive pas|je galere|ca me saoule|je doute|je stresse)\b/,
+  salut: /^(?:bonjour|salut|bonsoir|coucou|merci|bonne nuit|bonne journee|hello|hey|ok merci|super merci|parfait|top|genial|bravo)\b/,
+  act: /^(?:appelle|rappelle (?!moi|toi|nous)|telephone a|envoie|ecris|lis|lance|ouvre|cherche|trouve|montre|donne moi|fais moi|prepare moi|redige|allume|eteins|baisse|monte|traduis|resume|calcule|joue|regle le chauffage|mets le chauffage)/,
+  conseil: /\b(?:tu (?:penses|crois|me conseilles|ferais quoi)|ton avis|je devrais|vaut il mieux|vaut mieux|qu en penses tu)\b/,
+  agenda: /\b(?:qu est ce que j ai|j ai quoi|j ai quelque chose|mon agenda|mes rendez vous|mes rdv|mes taches|ma liste|mes rappels|qu est ce qui m attend|suis je libre|je suis libre|mon programme)\b/,
+  s: [/^(?:rappelle moi|rappelle toi|rappelle nous|pense a|pensez a|penser a|n oublie pas|noublie pas|faut pas oublier|il ne faut pas oublier|note|notes|note moi|ajoute|rajoute|inscris|programme|planifie|prends note|prend note|il faut que je|il faut que j |je dois|faut que je|faut que j |a faire|tache|memo|idee|depense|reveille moi|minuteur|mets (?:moi )?(?:un |une )?(?:rappel|rdv|rendez vous|tache|alarme|reveil)|mets .{1,40} (?:sur|dans) (?:la|ma) liste)\b/,
+      /^(?:acheter|appeler|rappeler|envoyer|commander|payer|prendre|passer|reserver|ecrire|repondre|relancer|verifier|preparer|faire|aller|recuperer|deposer|chercher|ramener|emmener|nettoyer|ranger|reparer|changer|installer|contacter|telephoner|imprimer|signer|renouveler|resilier|demander|finir|terminer|confirmer|valider|planifier|organiser|regler|laver|sortir|donner|rendre|porter|amener)\b/,
+      /\b(?:c est fait|c est regle|j ai (?:fini|fait|appele|envoye|paye|commande|achete|recupere|depose|termine|reserve|rappele)|coche|decoche|decale|deplace|reporte|supprime|efface)\b/],
+  quand: /\b(?:demain|apres demain|ce soir|ce matin|cet apres midi|cette semaine|la semaine prochaine|le mois prochain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|dans (?:une|deux|trois|\d+) (?:heure|minute|jour|semaine|mois)s?|a \d{1,2} ?h|\d{1,2} ?h(?: ?\d{2})?\b|le \d{1,2}\b|avant (?:midi|ce soir|vendredi|lundi))/,
+  rdv: /\b(?:rendez vous|rdv|reunion|dentiste|medecin|kine|ophtalmo|garage|controle technique|courses|liste de courses|pharmacie|coiffeur|anniversaire)\b/
+};
+function jvTriLocal(text){
+  const brut = String(text || "").trim(), n = jvNorm34(brut), mots = n ? n.split(" ").length : 0;
+  let q = 0, s = 0; const sig = [];
+  if (/\?\s*$/.test(brut)) { q += 3; sig.push("?"); }
+  if (JV_TRI.q.test(n)) { q += 3; sig.push("question"); }
+  if (JV_TRI.emo.test(n)) { q += 4; sig.push("émotion"); }
+  if (JV_TRI.salut.test(n) && mots <= 6) { q += 2; sig.push("politesse"); }
+  if (JV_TRI.act.test(n)) { q += 2; sig.push("action"); }
+  const qq = q;   // le « ? » et la tournure de question
+  if (JV_TRI.conseil.test(n)) { q += 5; sig.push("conseil"); }
+  if (JV_TRI.agenda.test(n)) { s += 6; q -= qq; sig.push("agenda"); }   // « qu'est-ce que j'ai demain ? » : une question pour le secrétaire
+  const n2 = n.replace(/^(?:(?:bon|alors|euh|ok|et|donc|puis|ensuite|aussi|demain|apres demain|ce soir|ce matin|aujourd hui|tout a l heure|cet apres midi|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|matin|soir) )+/, "");   // « bon alors demain, il faut que… »
+  if (JV_TRI.s.some(r => r.test(n) || r.test(n2))) { s += 3; sig.push("tâche"); }
+  if (JV_TRI.quand.test(n)) { s += 1; sig.push("date"); }
+  if (JV_TRI.rdv.test(n)) { s += 1; sig.push("rdv"); }
+  for (const k of Object.keys(JV_TRI_PLUS)) { const p = JV_TRI_PLUS[k]; if (jvAgentActif(k) && p.rx.test(n)) { sig.push(k); return { q, s, sig, mots, n, spe: k, sp: p.poids }; } }
+  return { q, s, sig, mots, n };
+}
+const JV_TRI_PLUS = {};   // lot 35 : les autres spécialistes y déclarent leurs signaux
+function jvTriDecide(T){
+  if (T.spe && T.sp >= 3 && T.s < 6) return { ag: T.spe, sur: .9 };
+  if (T.spe) return { ag: null, sur: 0 };
+  const d = T.s - T.q;
+  if (T.s >= 2 && T.q === 0) return { ag: "secretaire", sur: 1 };
+  if (T.q >= 1 && T.s === 0) return { ag: "majordome", sur: 1 };
+  if (d >= 3) return { ag: "secretaire", sur: .8 };
+  if (d <= -3) return { ag: "majordome", sur: .8 };
+  if (!T.s && !T.q) return T.mots <= 3 ? { ag: "majordome", sur: .6 } : { ag: null, sur: 0 };
+  return { ag: null, sur: 0 };
+}
+/* il répond à une question que le spécialiste vient de lui poser : la suite reste chez lui */
+function jvTriSuite(){
+  const d = JV_ROUTE_DER; if (!d || Date.now() - d.at > 3 * 60000) return null;
+  for (let i = JV.view.length - 2; i >= 0; i--) { const v = JV.view[i]; if (v.r === "u") return null; if (v.r === "a") return /\?\s*\**\s*$/.test(String(v.t || "")) ? d.ag : null; }
+  return null;
+}
+const JV_TRI_SYS = () => "Tu tries une demande dictée à un assistant personnel. Réponds par une seule lettre, sans rien d'autre :\n"
+  + "S : une chose à noter ou à gérer dans ses listes (tâche, rappel, rendez-vous, agenda, courses, mémo, « c'est fait », correction d'une tâche, ce qu'il a de prévu)\n"
+  + Object.keys(JV_TRI_PLUS).filter(jvAgentActif).map(k => JV_TRI_PLUS[k].lettre + " : " + JV_TRI_PLUS[k].sys + "\n").join("")
+  + "M : tout le reste (question, conversation, conseil, émotion, action immédiate sur le téléphone, message à écrire)";
+async function jvTriModele(text){
+  let ctl = null; try { ctl = new AbortController(); } catch (e) {}
+  const to = setTimeout(() => { try { ctl && ctl.abort(); } catch (e) {} }, 1800);
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", signal: ctl ? ctl.signal : undefined,
+      headers: { "content-type": "application/json", "x-api-key": CFG.key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      body: JSON.stringify({ model: JV_HAIKU, max_tokens: 3, system: JV_TRI_SYS(), messages: [{ role: "user", content: String(text).slice(0, 700) }] }) });
+    if (!r.ok) { jvBN("erreur", "tri", "petit modèle " + r.status, { ag: "aiguilleur" }); return null; }
+    const j = await r.json();
+    try { cvCount(j.usage, "aiguilleur", CV_PRIX_HAIKU); } catch (e) {}
+    const c = (String(((j.content || []).find(b => b.type === "text") || {}).text || "").trim().toUpperCase().match(/[A-Z]/) || [])[0];
+    if (c === "S") return "secretaire";
+    if (c === "M") return "majordome";
+    return Object.keys(JV_TRI_PLUS).find(k => JV_TRI_PLUS[k].lettre === c) || null;
+  } catch (e) { jvBN("lenteur", "tri", "petit modèle hors délai", { ag: "aiguilleur" }); return null; }
+  finally { clearTimeout(to); }
+}
+async function jvAiguillage(text, opt){
+  const t0 = Date.now(); let k = null, pq = "";
+  if (CFG.jvAiguille === false) { k = "majordome"; pq = "aiguilleur coupé"; }
+  else if (/^(?:Mon brief du jour|Faisons connaissance)/i.test(String(text || ""))) { k = "majordome"; pq = "rituel"; }
+  else {
+    const st = jvTriSuite();
+    if (st) { k = st; pq = "suite"; }
+    else {
+      const T = jvTriLocal(text), d = jvTriDecide(T);
+      if (d.ag) { k = d.ag; pq = "local"; }
+      else if (CFG.key && navigator.onLine !== false) { k = await jvTriModele(text); pq = k ? "petit modèle" : "repli"; }
+    }
+  }
+  if (!k || !jvAgentActif(k)) { k = "majordome"; pq = pq || "repli"; }
+  JV_ROUTE = jvAgent(k, pq, Date.now() - t0);
+  JV_ROUTE_DER = { ag: JV_ROUTE.ag, at: Date.now() };
+  return JV_ROUTE;
+}
+
+/* ---------- le chrono : de la fin de sa phrase au premier son ---------- */
+function jvEcouteFin(t, mode){ const n = Date.now(); JV_ECOUTE = { fin: t && n - t >= 0 && n - t < 60000 ? t : n, mode: mode || "", pret: 0 }; }
+function jvEcoutePrete(){ const e = JV_ECOUTE; if (e && !e.pret && Date.now() - e.fin < 120000) e.pret = Date.now(); }
+function jvChronoDebut(opt, fcm){
+  const R = JV_ROUTE, e = JV_ECOUTE, n = Date.now();
+  const o = { ag: fcm ? "entretien" : R ? R.ag : "majordome", pq: fcm ? "" : R ? R.pq : "", mo: jvModeleCourt(fcm ? JV_FC_MODEL : R && R.model || CV_MODEL), tri: R ? R.tri || 0 : 0,
+    src: opt && (opt.cercle || opt.phrase) ? (opt.src === "texte" ? "rond (tapé)" : "rond") : opt && opt.voix ? "conversation (voix)" : "conversation" };
+  if (e && e.pret && n - e.pret < 20000) { o.ec = Math.round((e.pret - e.fin) / 100) / 10; o.av = Math.round((n - e.pret) / 100) / 10; o.dic = e.mode; JV_ECOUTE = null; }
+  return o;
+}
+const JV_SEUILS = { "écoute": 5, "réflexion": 6, "voix": 4 };
+function jvLenteur(e, c){
+  c.bnL = c.bnL || {};
+  const vo = e.voix != null && e.premier != null ? Math.round((e.voix - e.premier) * 10) / 10 : null;
+  for (const [k, v] of [["écoute", e.ec], ["réflexion", e.premier], ["voix", vo]])
+    if (v != null && v > JV_SEUILS[k] && !c.bnL[k]) { c.bnL[k] = 1; jvBN("lenteur", k, String(v).replace(".", ",") + " s", { ag: e.ag }); }
+}
+const jvQuant = (a, q) => { const b = a.filter(v => v != null && isFinite(v)).sort((x, y) => x - y); return b.length ? b[Math.min(b.length - 1, Math.round(q * (b.length - 1)))] : null; };
+const jvS = v => v == null ? "—" : String(Math.round(v * 10) / 10).replace(".", ",");
+const jvVoixPure = e => e && e.voix != null && e.premier != null ? Math.max(0, Math.round((e.voix - e.premier) * 10) / 10) : null;
+
+/* ---------- la boîte noire : ses ratés, sans le texte de ses dictées (sauf extraits gardés sur le téléphone) ---------- */
+function jvBN(k, etape, detail, extra){
+  try {
+    const now = Date.now(), L = (LS.get(JV_BN_LS, null) || []).filter(x => now - x.at < 35 * 864e5);
+    const d = String(detail == null ? "" : detail).replace(/\s+/g, " ").trim().slice(0, 140), ex = extra || {};
+    const ag = ex.ag != null ? ex.ag : JV_CHRONO && now - (JV_CHRONO.at || 0) < 120000 ? JV_CHRONO.ag || "" : "";
+    const der = L[L.length - 1];
+    if (der && der.k === k && der.e === (etape || "") && der.d === d && !ex.x && !ex.q && now - der.at < 90000) { der.n = (der.n || 1) + 1; der.at = now; LS.set(JV_BN_LS, L); return der; }
+    const x = Object.assign({ id: uid(), k, e: etape || "", d, at: now, v: TEMPO_BUILD }, ex, { ag });
+    if (x.ref == null && JV_CHRONO && now - (JV_CHRONO.at || 0) < 120000) x.ref = JV_CHRONO.id;
+    if (x.ref == null) delete x.ref;
+    L.push(x); LS.set(JV_BN_LS, L.slice(-500));
+    return x;
+  } catch (er) { return null; }
+}
+{ const f = jvFriction; jvFriction = function(k, t){
+  try { jvBN(k, k === "correction" ? "rangement" : k === "annulé" ? "action" : "réflexion", "", { x: String(t || "").replace(/\s+/g, " ").slice(0, 160) }); } catch (e) {}
+  return f.apply(this, arguments);
+}; }
+{ const f = jvSecours; jvSecours = function(t, then, why){ try { if (jvVoixMistral()) jvBN("erreur", "voix", why ? "repli voix du téléphone : " + why : "repli voix du téléphone"); } catch (e) {} return f.apply(this, arguments); }; }
+const JV_INCOMPRIS_RX = /(?:je n'ai pas (?:bien )?(?:compris|saisi|entendu)|pouvez-vous (?:r[ée]p[ée]ter|reformuler|pr[ée]ciser ce que)|que vouliez-vous (?:dire|faire)|qu'entendez-vous|je ne suis pas s[ûu]r de (?:bien )?(?:vous )?comprendre|vous pouvez r[ée]p[ée]ter)/i;
+function jvApresReponse(txt){ if (txt && txt.length < 400 && JV_INCOMPRIS_RX.test(txt)) jvBN("incompris", "compréhension", ""); }
+
+/* « Nestor, ça c'est raté » : la dernière réponse part dans la boîte noire, avec ce qu'il attendait */
+function jvRateDemande(text, cercle){
+  let n = jvNorm34(text); if (!n || n.length > 70) return false;
+  let nom = false;
+  const noms = [...new Set([jvNom(), "nestor", "jarvis"].map(jvNorm34).filter(Boolean))].join("|");
+  n = n.replace(new RegExp("^(?:dis |eh |he |hey |bon |alors )?(?:" + noms + ") "), () => { nom = true; return ""; }).replace(new RegExp(" (?:" + noms + ")$"), () => { nom = true; return ""; }).trim();
+  const rx = /^(?:(?:et|bon|alors|non|mais|eh bien|bah|ben) )*(?:(?:ca|ca la|la|cela|ce coup ci|cette fois) )?(?:c est|c est|c etait|t as|t as|tu as) (?:(?:completement|encore|vraiment|franchement|un peu|tout) )?(?:rate|faux|nul|a cote(?: de la plaque)?|pas ca|pas bon)(?: (?:la|ca|ce coup ci|cette fois|monsieur))?$|^(?:ca |ca c est |c est )?rate$|^mauvaise reponse$|^tu t es (?:plante|trompe)$|^tu (?:n as pas|as mal) compris$|^(?:note|signale|enregistre) (?:un|ce|le) rate$/;
+  if (!rx.test(n)) return false;
+  return nom || !cercle || !!(JV.at && Date.now() - JV.at < 3 * 60000);
+}
+const jvRateAttOn = () => !!JV_RATE_ATT && Date.now() < JV_RATE_ATT.until;
+function jvNestorDit(question, msg, src, ecoute){
+  const parleOn = CFG.jvParle !== false && CFG.vSay !== "0";
+  if (cvVisible()) {
+    JV.view.push({ r: "u", t: question, rate: 1 }, { r: "a", t: msg, usd: 0, rate: 1 });
+    try { cvSave(); } catch (e) {} try { cvPaint(); } catch (e) {}
+    if (src === "voix" && parleOn) { try { speak(jvPourVoix(msg)); } catch (e) {} }
+    return;
+  }
+  try { idle(); } catch (e) {}
+  const B = jvBulle(question); B.dire(msg); B.fin([]);
+  const ouvre = () => { if (ecoute && src === "voix") { try { jvSuiteEcoute(null); } catch (e) {} } };
+  if (parleOn) { try { speak(jvPourVoix(msg), ouvre); } catch (e) { ouvre(); } } else setTimeout(ouvre, 500);
+}
+async function jvRate(src, question){
+  const now = Date.now(), V = JV.view;
+  const chs = LS.get(JV_CHR_LS, null) || [], ch = chs[chs.length - 1], sur = ch && now - (ch.at || ch.id || 0) < 20 * 60000 ? ch : null;
+  const li = typeof lastItems === "function" ? (lastItems() || []) : [], tLi = li.reduce((m, i) => Math.max(m, i.created || 0), 0);
+  const viaSur = !!(sur && li.length && tLi >= (sur.at || 0) - 1000 && tLi - (sur.at || 0) < 120000);   // rangé par la réponse elle-même (outil noter)
+  const capt = li.length && !viaSur && (!sur || tLi > (sur.at || 0)) ? li : [];
+  let iu = -1; for (let i = V.length - 1; i >= 0; i--) if (V[i].r === "u" && !V[i].rate) { iu = i; break; }
+  const ex = { ag: sur && !capt.length ? sur.ag || "" : capt.length ? "tri rapide" : "" };
+  if (sur && !capt.length) { ex.ref = sur.id; if (iu >= 0) { ex.q = String(V[iu].t || "").slice(0, 300); ex.r = V.slice(iu + 1).filter(v => (v.r === "a" || v.r === "e") && !v.rate).map(v => String(v.t || "")).join(" ").slice(0, 400); } }
+  if (viaSur) ex.r = ((ex.r ? ex.r + " · " : "") + "rangé : " + li.map(i => `${i.cat}${i.due ? " " + i.due : ""}${i.time ? " " + i.time : ""} : ${i.title}`).join(" · ")).slice(0, 500);
+  if (capt.length) { ex.q = capt.map(i => i.raw || i.title).filter(Boolean).join(" · ").slice(0, 300); ex.r = capt.map(i => `${i.cat}${i.due ? " " + i.due : ""}${i.time ? " " + i.time : ""} : ${i.title}`).join(" · ").slice(0, 400); }
+  const det = capt.length ? `${capt.length} élément${capt.length > 1 ? "s" : ""} rangé${capt.length > 1 ? "s" : ""} (${[...new Set(capt.map(i => i.cat))].join(", ")})`
+    : sur ? `${sur.etapes || 1} étape${(sur.etapes || 1) > 1 ? "s" : ""}${sur.on ? " · outils : " + sur.on : ""} · ${sur.mo || ""}` : "rien de récent";
+  const x = jvBN("raté", capt.length ? "rangement" : sur ? "réponse" : "inconnu", det, ex);
+  JV_RATE_ATT = x ? { id: x.id, until: now + 120000 } : null;
+  jvNestorDit(question || "ça c'est raté", "C'est consigné dans ma boîte noire, monsieur. Dites-moi ce que vous attendiez : je l'y ajoute.", src, true);
+  return true;
+}
+function jvRateAttendu(text, src){
+  const a = JV_RATE_ATT; JV_RATE_ATT = null;
+  const t = String(text || "").trim(), n = jvNorm34(t);
+  if (/^(?:non|rien|laisse tomber|laisse|oublie|pas grave|c est bon|annule|ca ira|non merci|tant pis)\b/.test(n) && n.split(" ").length <= 4) { jvNestorDit(t, "Entendu, monsieur. Le raté reste noté tel quel.", src); return true; }
+  try { const L = LS.get(JV_BN_LS, null) || [], x = a && L.find(e => e.id === a.id); if (x) { x.att = t.slice(0, 300); LS.set(JV_BN_LS, L); } } catch (e) {}
+  jvNestorDit(t, "Bien noté, monsieur. J'en tiendrai compte à la prochaine séance de réglages.", src);
+  return true;
+}
+{ const f = jvCommandeVoix; jvCommandeVoix = function(text){ if (jvRateDemande(text, true)) { jvRate(JV_SRC34 || "voix", text); return true; } return f.apply(this, arguments); }; }
+{ const f = capture; capture = async function(text, src, kind, ctx){
+  JV_SRC34 = src || "";
+  if (src === "voix") jvEcoutePrete();
+  if (!kind && !(ctx && ctx.cr) && (src === "voix" || src === "texte") && String(text || "").trim() && jvRateAttOn() && typeof jvSuiteOn === "function" && jvSuiteOn()) { JV_SUITE = null; return jvRateAttendu(text, src); }
+  return f.apply(this, arguments);
+}; }
+{ const f = cvSend; cvSend = async function(text, opt){
+  const t = String(text || "").trim(), conv = !(opt && (opt.cercle || opt.phrase));
+  if (t && conv && !JV.busy && !/^(?:Mon brief du jour|Faisons connaissance)/i.test(t)) {
+    if (jvRateAttOn() && cvVisible()) return jvRateAttendu(t, opt && opt.voix ? "voix" : "texte");
+    if (jvRateDemande(t, false)) return jvRate(opt && opt.voix ? "voix" : "texte", t);
+  }
+  return f.apply(this, arguments);
+}; }
+
+/* ---------- le rapport technique : un .txt chaque dimanche soir, à envoyer à Claude (rien de ses dictées par défaut) ---------- */
+const jvDt34 = t => new Date(t).toLocaleString("fr-FR", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+function jvCompte(L, f){ const o = {}; L.forEach(e => { const k = f(e) || "?"; o[k] = (o[k] || 0) + 1; }); return o; }
+const jvPct = (n, t) => t ? Math.round(n * 100 / t) + " %" : "—";
+async function jvRapportTech(jours){
+  jours = jours || 7;
+  const now = Date.now(), dep = now - jours * 864e5, ext = CFG.jvRapportExtraits === true;
+  const C = (LS.get(JV_CHR_LS, null) || []).filter(e => (e.at || e.id) >= dep), B = (LS.get(JV_BN_LS, null) || []).filter(e => e.at >= dep);
+  let inf = null; try { if (NATIVE) inf = await tn("info"); } catch (e) {}
+  const L = [], d0 = new Date(dep), j = x => x.toLocaleDateString("fr-FR");
+  L.push("NESTOR · RAPPORT TECHNIQUE", `Du ${j(d0)} au ${j(new Date())} (${jours} jours) · généré le ${jvDt34(now)}`,
+    `Nestor v${TEMPO_BUILD}${inf && inf.versionName ? " · appli " + inf.versionName : ""}${inf && inf.native ? " · natif " + inf.native : ""}`,
+    "Mesures prises sur le téléphone. " + (ext ? "EXTRAITS INCLUS : ses phrases et les réponses des ratés figurent ci-dessous." : "Sans texte de dictée ni donnée de santé."), "");
+  // 1. volume
+  const parAg = jvCompte(C, e => e.ag || "majordome"), usdAg = {}; C.forEach(e => { usdAg[e.ag || "majordome"] = (usdAg[e.ag || "majordome"] || 0) + (e.usd || 0); });
+  const pq = jvCompte(C.filter(e => e.ag !== "entretien"), e => e.pq || "avant le lot 34");
+  L.push("1. VOLUME", `- ${C.length} réponse${C.length > 1 ? "s" : ""} de Claude` + (C.length ? " · " + Object.entries(parAg).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${(JV_AGENTS[k] || {}).nom || k} ${v} (${jvPct(v, C.length)})`).join(" · ") : ""));
+  if (C.length) {
+    L.push("- aiguillage : " + Object.entries(pq).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(" · "));
+    L.push("- coût estimé : " + cvMoney(C.reduce((a, e) => a + (e.usd || 0), 0)) + " (" + Object.entries(usdAg).map(([k, v]) => `${(JV_AGENTS[k] || {}).nom || k} ${cvMoney(v)}`).join(", ") + ")");
+    L.push(`- étapes par réponse : ${jvS(C.reduce((a, e) => a + (e.etapes || 1), 0) / C.length)} en moyenne · réponses en échec : ${C.filter(e => e.ok === false).length}`);
+    const outs = {}; C.forEach(e => String(e.on || "").split(" ").filter(Boolean).forEach(o => { outs[o] = (outs[o] || 0) + 1; }));
+    if (Object.keys(outs).length) L.push("- outils appelés : " + Object.entries(outs).sort((a, b) => b[1] - a[1]).slice(0, 14).map(([k, v]) => `${k} ${v}`).join(" · "));
+  }
+  // 2. temps
+  L.push("", "2. TEMPS (médiane / 90 %, en secondes)");
+  const ligne = (lib, f, F) => { const a = (F || C).map(f); const n = a.filter(v => v != null).length; return `- ${lib.padEnd(38, " ")} ${jvS(jvQuant(a, .5))} / ${jvS(jvQuant(a, .9))}  (${n} mesure${n > 1 ? "s" : ""})`; };
+  if (C.length) {
+    L.push(ligne("écoute (fin de sa phrase → texte)", e => e.ec), ligne("préparation (texte → envoi, tri compris)", e => e.av), ligne("tri de l'aiguilleur", e => e.tri ? e.tri / 1000 : 0),
+      ligne("réflexion (envoi → premier mot)", e => e.premier), ligne("outils (pendant la réflexion)", e => e.ou || 0), ligne("voix (premier mot → premier son)", jvVoixPure),
+      ligne("réponse complète (envoi → dernier mot)", e => e.total), ligne("PERÇU (fin de sa phrase → premier son)", e => e.pe));
+    const dic = jvCompte(C.filter(e => e.dic), e => e.dic); if (Object.keys(dic).length) L.push("- dictée : " + Object.entries(dic).map(([k, v]) => `${k} ${v}`).join(" · ") + ` · silence de fin réglé à ${jvS(+CFG.silence || 0)} s`);
+    for (const k of Object.keys(parAg)) { const F = C.filter(e => (e.ag || "majordome") === k); L.push(`- ${(JV_AGENTS[k] || {}).nom || k} : perçu ${jvS(jvQuant(F.map(e => e.pe), .5))} · réflexion ${jvS(jvQuant(F.map(e => e.premier), .5))} · complète ${jvS(jvQuant(F.map(e => e.total), .5))}`); }
+    const lents = C.filter(e => e.pe != null || e.total != null).sort((a, b) => (b.pe || b.total || 0) - (a.pe || a.total || 0)).slice(0, 6);
+    if (lents.length) { L.push("- les plus lentes :"); lents.forEach(e => L.push(`  ${jvDt34(e.at || e.id)} · ${(JV_AGENTS[e.ag] || {}).nom || e.ag || "?"} (${e.mo || "?"}, ${e.pq || "-"}) · ${e.etapes || 1} étape${(e.etapes || 1) > 1 ? "s" : ""}${e.on ? " [" + e.on + "]" : ""} · écoute ${jvS(e.ec)} · prépa ${jvS(e.av)} · réflexion ${jvS(e.premier)} · outils ${jvS(e.ou)} · voix ${jvS(jvVoixPure(e))} · perçu ${jvS(e.pe)} · ${e.src || ""}`)); }
+  } else L.push("- aucune mesure sur la période");
+  // 3. boîte noire
+  L.push("", "3. BOÎTE NOIRE");
+  const nb = {}; B.forEach(e => { nb[e.k] = (nb[e.k] || 0) + (e.n || 1); });
+  L.push("- " + (B.length ? ["raté", "erreur", "lenteur", "incompris", "correction", "annulé", "à ranger"].filter(k => nb[k]).map(k => `${k} ${nb[k]}`).join(" · ") : "rien à signaler"));
+  B.slice(-80).forEach(e => {
+    let l = `  ${jvDt34(e.at)} · ${e.k}${e.n > 1 ? " ×" + e.n : ""} · ${e.e || "-"}${e.d ? " · " + e.d : ""}${e.ag ? " · " + ((JV_AGENTS[e.ag] || {}).nom || e.ag) : ""} · v${e.v || "?"}`;
+    if (e.k === "raté") l += ext ? `\n      il a dit : « ${e.q || "—"} »\n      Nestor : « ${e.r || "—"} »\n      attendu : « ${e.att || "—"} »` : ` · attendu ${e.att ? "renseigné" : "non précisé"} (extraits désactivés)`;
+    else if (ext && e.x) l += `\n      « ${e.x} »`;
+    L.push(l);
+  });
+  // 4. réglages
+  const m = cvMonth();
+  L.push("", "4. RÉGLAGES",
+    `- modèles : majordome ${CV_MODEL} · ` + Object.keys(JV_AGENTS).filter(k => k !== "majordome").map(k => `${JV_AGENTS[k].nom} ${JV_AGENTS[k].model}${jvAgentActif(k) ? "" : " (inactif)"}`).join(" · ") + ` · tri ${JV_HAIKU}`,
+    `- aiguilleur ${CFG.jvAiguille === false ? "coupé" : "actif"} · flux ${CFG.cvFlux === false ? "non" : "oui"} · effort ${CFG.cvEffort || "auto"} · dictée ${CFG.vMode || "google"} · voix ${typeof jvVoixMistral === "function" && jvVoixMistral() ? "Mistral" : "téléphone"} · un seul Nestor ${CFG.jvUnique === false ? "non" : "oui"}`,
+    `- Claude ce mois : ${cvMoney(m.usd)} sur ${cvMoney(cvCap())}${m.haiku ? " · dictées Haiku " + cvMoney(m.haiku) : ""}`,
+    `- seuils de lenteur : écoute ${JV_SEUILS["écoute"]} s · réflexion ${JV_SEUILS["réflexion"]} s · voix ${JV_SEUILS.voix} s`);
+  L.push("", "5. POUR LA SÉANCE DE RÉGLAGES", "- Fichier à analyser avec Claude : en tirer les corrections par lot, à faire valider avant toute modification de Nestor.");
+  return L.join("\n");
+}
+async function jvRapportEnvoi(jours){
+  LS.set("copilote_rapport_attente", "");
+  let txt = ""; try { txt = await jvRapportTech(jours || 7); } catch (e) { toast("le rapport n'a pas pu être préparé"); return; }
+  const nom = "nestor-technique-" + ymd(new Date()) + ".txt";
+  if (NATIVE) { tn("shareFile", { name: nom, text: txt, title: "Envoyer le rapport technique" }); return txt; }
+  try { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], { type: "text/plain" })); a.download = nom; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); } catch (e) {}
+  return txt;
+}
+function jvRapportDimanche(){
+  if (CFG.jvRapport === false) return;
+  const n = new Date(); if (n.getDay() !== 0 || n.getHours() < 19) return;
+  const cle = jvSemaineCle(n); if (LS.get("copilote_rapport_sem", "") === cle) return;
+  LS.set("copilote_rapport_sem", cle); LS.set("copilote_rapport_attente", cle); LS.set("copilote_rapport_vu", 0);
+  jvRapportSignale();
+}
+function jvRapportSignale(){
+  if (!LS.get("copilote_rapport_attente", "") || document.hidden) return;
+  const vu = +LS.get("copilote_rapport_vu", 0) || 0; if (vu >= 2) return;
+  LS.set("copilote_rapport_vu", vu + 1);
+  toast("Votre rapport technique de la semaine est prêt, monsieur", "envoyer", () => jvRapportEnvoi(7), 15000);
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(() => { try { jvRapportSignale(); } catch (e) {} }, 4000); });
+
+/* ---------- réglages · les coulisses ---------- */
+REG_P.coulisses = "Coulisses";
+function jvCoulissesPeins(){
+  if (!$("couChrono")) return;
+  $("couAigChk").checked = CFG.jvAiguille !== false; $("couRapChk").checked = CFG.jvRapport !== false; $("couExtChk").checked = CFG.jvRapportExtraits === true;
+  const now = Date.now(), C = (LS.get(JV_CHR_LS, null) || []).filter(e => now - (e.at || e.id) < 7 * 864e5), B = (LS.get(JV_BN_LS, null) || []).filter(e => now - e.at < 7 * 864e5);
+  // spécialistes
+  const R = C.filter(e => e.pq), pa = jvCompte(R, e => e.ag), loc = R.filter(e => e.pq === "local" || e.pq === "suite").length, pm = R.filter(e => e.pq === "petit modèle").length;
+  $("couAigSt").textContent = R.length ? "sur 7 jours : " + Object.entries(pa).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${(JV_AGENTS[k] || {}).nom || k} ${jvPct(v, R.length)}`).join(", ") + ` · tri sur le téléphone ${jvPct(loc, R.length)}, petit modèle ${jvPct(pm, R.length)}` : "Pas encore de demande aiguillée cette semaine.";
+  // chrono
+  const d = C.slice().reverse().find(e => e.total != null);
+  let h = "";
+  if (d) {
+    const seg = [["écoute", d.ec, "rgba(var(--glow),.35)"], ["préparation", d.av, "var(--u1)"], ["réflexion", d.premier, "rgb(var(--glow))"], ["voix", jvVoixPure(d), "var(--u2)"]].filter(s => s[1] != null && s[1] > 0);
+    const tot = seg.reduce((a, s) => a + s[1], 0) || 1;
+    h += `<p class="small" style="margin:4px 0 6px">Dernière réponse · ${esc((JV_AGENTS[d.ag] || {}).nom || d.ag || "majordome")} (${esc(d.mo || "")}) · ${d.etapes || 1} étape${(d.etapes || 1) > 1 ? "s" : ""}${d.ou ? " · outils " + jvS(d.ou) + " s" : ""}</p>`;
+    h += `<div style="display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--faint)">${seg.map(s => `<i style="display:block;flex:${s[1] / tot};background:${s[2]}"></i>`).join("")}</div>`;
+    h += `<p class="small" style="margin:6px 0 0">${seg.map(s => `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${s[2]};margin-right:4px"></span>${s[0]} ${jvS(s[1])} s`).join(" · ")}${d.pe != null ? ` · <b>perçu ${jvS(d.pe)} s</b>` : ` · complète ${jvS(d.total)} s`}</p>`;
+    const pe = C.map(e => e.pe);
+    h += `<p class="small" style="margin:8px 0 0">Sur 7 jours (${C.length} réponse${C.length > 1 ? "s" : ""}) : perçu médian ${jvS(jvQuant(pe, .5))} s, 90 % sous ${jvS(jvQuant(pe, .9))} s · réflexion ${jvS(jvQuant(C.map(e => e.premier), .5))} s · voix ${jvS(jvQuant(C.map(jvVoixPure), .5))} s</p>`;
+    const ags = Object.keys(jvCompte(C, e => e.ag || "majordome"));
+    if (ags.length > 1) h += `<p class="small" style="margin:4px 0 0">${ags.map(k => `${esc((JV_AGENTS[k] || {}).nom || k)} ${jvS(jvQuant(C.filter(e => (e.ag || "majordome") === k).map(e => e.pe != null ? e.pe : e.total), .5))} s`).join(" · ")}</p>`;
+  } else h = `<p class="small" style="margin:4px 0 0">Aucune réponse chronométrée pour l'instant.</p>`;
+  $("couChrono").innerHTML = h;
+  // boîte noire
+  const nb = {}; B.forEach(e => { nb[e.k] = (nb[e.k] || 0) + (e.n || 1); });
+  const res = ["raté", "erreur", "lenteur", "incompris", "correction", "annulé", "à ranger"].filter(k => nb[k]).map(k => `${k} ${nb[k]}`).join(" · ");
+  $("couBN").innerHTML = `<p class="small" style="margin:0">${res ? "Sur 7 jours : " + esc(res) : "Rien à signaler cette semaine."}</p>` + B.slice(-6).reverse().map(e => `<p class="small" style="margin:4px 0 0;color:var(--mut)">${esc(jvDt34(e.at))} · ${esc(e.k)}${e.n > 1 ? " ×" + e.n : ""} · ${esc(e.e || "")}${e.d ? " · " + esc(e.d) : ""}${e.k === "raté" ? (e.att ? " · attendu précisé" : "") : ""}</p>`).join("");
+  $("couRapAtt").style.display = LS.get("copilote_rapport_attente", "") ? "" : "none";
+}
+{ const f = regPage; regPage = function(p){ const r = f.apply(this, arguments); if (REG_CUR === "coulisses") { try { jvCoulissesPeins(); } catch (e) {} } return r; }; }
+{ const f = regSubs; regSubs = function(){ const r = f.apply(this, arguments);
+  try { const C = (LS.get(JV_CHR_LS, null) || []).filter(e => Date.now() - (e.at || e.id) < 7 * 864e5), B = (LS.get(JV_BN_LS, null) || []).filter(e => Date.now() - e.at < 7 * 864e5 && e.k === "raté");
+    if (C.length) $("regSub-coulisses").textContent = `perçu médian ${jvS(jvQuant(C.map(e => e.pe), .5))} s · ${B.length} raté${B.length > 1 ? "s" : ""} signalé${B.length > 1 ? "s" : ""} · le rapport du dimanche`; } catch (e) {}
+  return r; }; }
+$("couAigChk").onchange = () => { CFG.jvAiguille = $("couAigChk").checked; saveCfg(); jvCoulissesPeins(); };
+$("couRapChk").onchange = () => { CFG.jvRapport = $("couRapChk").checked; saveCfg(); };
+$("couExtChk").onchange = () => { CFG.jvRapportExtraits = $("couExtChk").checked; saveCfg(); };
+$("couRapGo").onclick = () => jvRapportEnvoi(7);
+$("couBNVide").onclick = () => { const b = $("couBNVide"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "sûr ? touchez encore"; return; } delete b.dataset.sure; b.textContent = "vider la boîte noire"; LS.set(JV_BN_LS, []); jvCoulissesPeins(); };
 </script>
 </body>
 </html>
