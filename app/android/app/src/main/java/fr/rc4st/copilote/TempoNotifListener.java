@@ -87,6 +87,27 @@ public class TempoNotifListener extends NotificationListenerService {
     /** lot 27 : le service connecté, pour que Nestor puisse régler Ne pas déranger (un écouteur de notifications y a droit) */
     static volatile TempoNotifListener INSTANCE = null;
 
+    /** lot 30 : messages en attente (SMS, WhatsApp, appels manqués encore affichés), pour le fond d'écran */
+    static int enAttente() {
+        TempoNotifListener l = INSTANCE;
+        if (l == null) return 0;
+        try {
+            StatusBarNotification[] a = l.getActiveNotifications();
+            if (a == null) return 0;
+            int n = 0;
+            for (StatusBarNotification sbn : a) {
+                String p = sbn.getPackageName();
+                if (p == null || !(SMS.contains(p) || WA.contains(p) || DIALER.contains(p))) continue;
+                if (sbn.isOngoing()) continue;
+                if ((sbn.getNotification().flags & android.app.Notification.FLAG_GROUP_SUMMARY) != 0) continue;
+                n++;
+            }
+            return n;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     @Override
     public void onListenerConnected() { INSTANCE = this; }
 

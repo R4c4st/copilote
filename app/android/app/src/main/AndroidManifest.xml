@@ -83,15 +83,9 @@
             </intent-filter>
         </activity-alias>
 
-        <!-- widget constellation -->
+        <!-- lot 30 : plus de widget, le fond d'écran animé de Nestor prend le relais -->
         <receiver android:name=".GeoReceiver" android:exported="false" />
 
-        <receiver android:name=".TempoWidget" android:exported="true" android:label="@string/app_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/tempo_widget_info" />
-        </receiver>
 
         <!-- lot 29 : le fond d'écran animé de Nestor (boucle vidéo choisie dans les réglages) -->
         <service

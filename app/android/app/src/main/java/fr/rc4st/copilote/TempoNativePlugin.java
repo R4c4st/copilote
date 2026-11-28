@@ -99,7 +99,7 @@ import org.json.JSONObject;
 public class TempoNativePlugin extends Plugin {
 
     static final String PREFS = "tempo_native";
-    static final int NATIVE_BUILD = 18;
+    static final int NATIVE_BUILD = 19;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -1058,31 +1058,6 @@ public class TempoNativePlugin extends Plugin {
 
     // ------------------------------------------------------------------ widget
 
-    @PluginMethod
-    public void updateWidget(PluginCall call) {
-        SharedPreferences.Editor e = prefs().edit();
-        Integer bg = call.getInt("bgAlpha"), img = call.getInt("imgAlpha");
-        if (bg != null) e.putInt("w_bg", bg);
-        if (img != null) e.putInt("w_img", img);
-        String tone = call.getString("tone");
-        if (tone != null) e.putString("w_tone", tone);
-        e.apply();
-        String png = call.getString("png");
-        if (png != null && !png.isEmpty()) {
-            try {
-                byte[] bytes = android.util.Base64.decode(png, android.util.Base64.DEFAULT);
-                File f = new File(getContext().getFilesDir(), TempoWidget.PNG), tmp = new File(f.getAbsolutePath() + ".tmp");
-                try (OutputStream o = new FileOutputStream(tmp)) {
-                    o.write(bytes);
-                }
-                if (f.exists()) f.delete();
-                tmp.renameTo(f);
-            } catch (Exception ignored) {}
-        }
-        TempoWidget.refresh(getContext());
-        call.resolve();
-    }
-
     // ------------------------------------------------------------------ contacts du téléphone
 
     @PluginMethod
@@ -1462,6 +1437,64 @@ public class TempoNativePlugin extends Plugin {
 
     /* ---------- lot 29 : le fond d'écran animé ---------- */
 
+    /** Lot 30 : télécharge le décor et la scène du fond réactif (files/fond/decor.jpg et scene.json), tout ou rien */
+    @PluginMethod
+    public void fondScene(PluginCall call) {
+        final String decor = call.getString("decor", ""), scene = call.getString("scene", ""), nom = call.getString("nom", "");
+        if (!decor.startsWith("https://") || !scene.startsWith("https://")) { call.reject("adresse invalide"); return; }
+        new Thread(() -> {
+            try {
+                File dir = NestorFond.dossier(getContext());
+                if (!dir.exists() && !dir.mkdirs()) throw new Exception("dossier impossible");
+                File td = new File(dir, "decor.part"), ts = new File(dir, "scene.part");
+                long a = telecharge(decor, td), b = telecharge(scene, ts);
+                if (a < 50000 || b < 50) throw new Exception("fichier incomplet");
+                byte[] lu = new byte[(int) ts.length()];
+                try (InputStream in = new java.io.FileInputStream(ts)) { int k = 0; while (k < lu.length) { int n = in.read(lu, k, lu.length - k); if (n < 0) break; k += n; } }
+                new org.json.JSONObject(new String(lu, StandardCharsets.UTF_8));   // la scène doit se lire
+                if (!td.renameTo(NestorFond.decor(getContext())) || !ts.renameTo(NestorFond.scene(getContext()))) throw new Exception("rangement impossible");
+                prefs().edit().putString("fond_nom", nom).apply();
+                JSObject r = new JSObject();
+                r.put("ok", true);
+                r.put("taille", a + b);
+                call.resolve(r);
+            } catch (Exception e) {
+                call.reject("téléchargement : " + e.getMessage());
+            }
+        }).start();
+    }
+
+    private static long telecharge(String url, File vers) throws Exception {
+        HttpURLConnection cx = (HttpURLConnection) new URL(url).openConnection();
+        try {
+            cx.setConnectTimeout(15000);
+            cx.setReadTimeout(30000);
+            cx.setInstanceFollowRedirects(true);
+            int code = cx.getResponseCode();
+            if (code != 200) throw new Exception("HTTP " + code);
+            long total = 0;
+            try (InputStream in = cx.getInputStream(); OutputStream out = new FileOutputStream(vers)) {
+                byte[] b = new byte[65536];
+                int n;
+                while ((n = in.read(b)) > 0) { out.write(b, 0, n); total += n; }
+            }
+            return total;
+        } finally {
+            cx.disconnect();
+        }
+    }
+
+    /** Lot 30 : ce que le fond montre de Nestor — les choses réglées (dates) et les rappels à venir (dates) */
+    @PluginMethod
+    public void fondNestor(PluginCall call) {
+        JSArray or = call.getArray("or"), rappels = call.getArray("rappels");
+        SharedPreferences.Editor e = prefs().edit();
+        if (or != null) e.putString("fond_or", or.toString());
+        if (rappels != null) e.putString("fond_rappels", rappels.toString());
+        e.apply();
+        call.resolve();
+    }
+
     /** Télécharge la boucle choisie (hébergée avec l'appli) et la range pour le fond d'écran : files/fond/actuel.mp4 */
     @PluginMethod
     public void fondInstaller(PluginCall call) {
@@ -1535,6 +1568,7 @@ public class TempoNativePlugin extends Plugin {
         } catch (Exception ignored) {}
         r.put("actif", actif);
         r.put("fichier", NestorFond.fichier(c).exists());
+        r.put("scene", NestorFond.scene(c).exists() && NestorFond.decor(c).exists());
         r.put("nom", prefs().getString("fond_nom", ""));
         call.resolve(r);
     }

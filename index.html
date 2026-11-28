@@ -186,10 +186,6 @@ body.tiroir-ouvert .t-res{display:none}
 #edit,#pp,#ack{z-index:45}
 .foot .l{flex-wrap:wrap;row-gap:10px}
 input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
-.wPrev{position:relative;width:150px;height:150px;margin:6px auto 4px;border-radius:24px;overflow:hidden;background:linear-gradient(135deg,#6f7fd0,#a596e0 55%,#c7b3ea)}
-.wPrev i{position:absolute;inset:8px;border-radius:22px;background:linear-gradient(180deg,#e6f6f7,#fff)}
-.wPrev i.dark{background:linear-gradient(180deg,#1b3640,#0f2229)}
-.wPrev img{position:absolute;inset:8px;width:134px;height:134px}
 .ritH{font-size:30px;font-weight:200;margin-top:6px}
 .rpTop{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mut)}
 .rpT{font-weight:200;font-size:30px;margin:6px 0 4px}
@@ -528,14 +524,6 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <p class="small" id="appState"></p>
     <div class="foot" style="margin-top:10px"><div class="l"><button id="appGet" style="color:var(--fg)">installer l'appli</button><button id="appUpd">mettre à jour</button></div></div>
   </div>
-  <div id="wBox" style="display:none">
-    <div class="lab">Widget de l'écran d'accueil</div>
-    <div class="wPrev" title="aperçu sur un fond d'écran"><i id="wPrevBg"></i><img id="wPrevImg" alt=""></div>
-    <div class="two"><div><div class="lab">Fond · <span id="wBgV"></span></div><input type="range" id="wBg" min="0" max="100" step="5"></div><div><div class="lab">Éclat · <span id="wImgV"></span></div><input type="range" id="wImg" min="20" max="100" step="5"></div></div>
-    <div class="two"><div><div class="lab">Teinte du fond</div><select id="wTone"><option value="clair">clair</option><option value="sombre">sombre</option></select></div><div><div class="lab">Points</div><select id="wCol"><option value="blanc">blancs</option><option value="espace">couleur de l'espace</option><option value="turquoise">turquoise</option><option value="nuit">bleu nuit</option><option value="or">dorés</option></select></div></div>
-    <label class="small" style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" id="wStars" style="width:auto"> les étoiles dorées de la semaine</label>
-    <p class="small">Fond à 0 % : la constellation flotte directement sur votre fond d'écran. Un appui sur le widget = Nestor vous écoute.</p>
-  </div>
   <div id="fdBox" style="display:none">
     <div class="lab">Fond d'écran animé</div>
     <div id="fdList" class="fdList"></div>
@@ -546,7 +534,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
   <div class="foot" style="flex-wrap:wrap;gap:16px"><div class="l" style="flex-wrap:wrap"><button id="sExp">sauvegarder</button><button id="sImp">restaurer</button><button id="sForget">oublier mes corrections</button></div></div>
   <input type="file" id="sFile" accept=".json" hidden>
   </div>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v68 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v69 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -736,7 +724,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 68;
+const TEMPO_BUILD = 69;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -1475,7 +1463,7 @@ function render(fresh){
   $("glance").innerHTML = SLOTS.filter(([k]) => APERCU.includes(k)).map(([k]) => { const a = open.filter(i => bucket(i) === k); return a.length ? `<button class="gl${a.some(i => i.u === 3) ? " hot" : ""}" data-g="${k}"><b>${a.length}</b>${GL[k]}</button>` : ""; }).join("") + (colisOpen().length ? `<button class="gl${colisOpen().some(colisHot) ? " hot" : ""}" data-g="colis"><b>${colisOpen().length}</b>colis</button>` : "") + (memoN ? `<button class="gl" data-g="memos"><b>${toPay ? eur(toPay).replace(",00", "") : memoN}</b>${toPay ? "frais" : "mem"}</button>` : "");
   $("glance").classList.toggle("serre", $("glance").children.length > 6);   // rare : au-delà de six, tout se resserre pour rester sur une ligne
   try { tiroirMaj(open, fresh); } catch (e) {}
-  paintPoint(); scheduleBrief(); refreshStars(); if (NATIVE) widgetSync();
+  paintPoint(); scheduleBrief(); refreshStars(); if (NATIVE) fondSync();
   if (fresh.length) requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll(".it[style]").forEach((e, n) => setTimeout(() => e.removeAttribute("style"), n * 70))));
   if (!listening && !typing) idleHint();
 }
@@ -1556,56 +1544,6 @@ const tirLache = () => {
 };
 window.addEventListener("pointerup", tirLache); window.addEventListener("pointercancel", tirLache);
 let tirRz = null; window.addEventListener("resize", () => { clearTimeout(tirRz); tirRz = setTimeout(() => { try { if (!typing && !listening && !document.body.classList.contains("tiroir-ouvert")) render(); } catch (e) {} }, 300); });
-/* appli : le widget = la constellation seule (pas de texte), fond et transparence réglables */
-const WDEF = { bg: 0, img: 100, tone: "clair", col: "blanc", stars: true };
-const wCfg = () => Object.assign({}, WDEF, CFG.widget || {});
-const W_RGB = { blanc: "255,255,255", turquoise: "46,184,196", nuit: "31,58,92", or: "214,158,58" };
-function widgetPng(W){
-  cvInit();
-  const N = 512, k = N / 320, c = document.createElement("canvas"); c.width = c.height = N;
-  const x = c.getContext("2d"), col = W.col === "espace" ? glowRGB : (W_RGB[W.col] || W_RGB.blanc);
-  const g = x.createRadialGradient(N / 2, N / 2, 0, N / 2, N / 2, 150 * k);
-  g.addColorStop(0, `rgba(${col},.16)`); g.addColorStop(1, `rgba(${col},0)`); x.fillStyle = g; x.fillRect(0, 0, N, N);
-  const P = PTS.map(p => ({ x: (CC + Math.cos(p.a) * p.r) * k, y: (CC + Math.sin(p.a) * p.r) * k, s: p.s }));
-  x.lineWidth = 1.3;
-  for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) {
-    const d = Math.hypot(P[i].x - P[j].x, P[i].y - P[j].y), m = 34 * k;
-    if (d < m) { x.strokeStyle = `rgba(${col},${.5 * (1 - d / m)})`; x.beginPath(); x.moveTo(P[i].x, P[i].y); x.lineTo(P[j].x, P[j].y); x.stroke(); }
-  }
-  for (const p of P) {
-    if (p.s > 1.6) { x.fillStyle = `rgba(${col},.2)`; x.beginPath(); x.arc(p.x, p.y, p.s * k * 2.6, 0, 6.283); x.fill(); }
-    x.fillStyle = `rgba(${col},.95)`; x.beginPath(); x.arc(p.x, p.y, p.s * k * 1.05, 0, 6.283); x.fill();
-  }
-  if (W.stars && STARS.length) {
-    x.lineWidth = 1.6;
-    for (let i = 1; i < STARS.length; i++) { const a = STARS[i - 1], b = STARS[i], d = Math.hypot(a.x - b.x, a.y - b.y); if (d < 120) { x.strokeStyle = `rgba(${STAR_RGB},${.25 + .4 * (1 - d / 120)})`; x.beginPath(); x.moveTo(a.x * k, a.y * k); x.lineTo(b.x * k, b.y * k); x.stroke(); } }
-    for (const st of STARS) {
-      const sx = st.x * k, sy = st.y * k, r = (st.u === 3 ? 2.6 : 2.1) * k;
-      x.fillStyle = `rgba(${STAR_RGB},.2)`; x.beginPath(); x.arc(sx, sy, r * 3.2, 0, 6.283); x.fill();
-      x.strokeStyle = `rgba(${STAR_RGB},.8)`; x.lineWidth = 1.4; x.beginPath(); x.moveTo(sx - r * 2.4, sy); x.lineTo(sx + r * 2.4, sy); x.moveTo(sx, sy - r * 2.4); x.lineTo(sx, sy + r * 2.4); x.stroke();
-      x.fillStyle = `rgb(${STAR_RGB})`; x.beginPath(); x.arc(sx, sy, r, 0, 6.283); x.fill();
-    }
-  }
-  x.fillStyle = `rgba(${col},.35)`; x.beginPath(); x.arc(N / 2, N / 2, 16, 0, 6.283); x.fill();
-  x.fillStyle = `rgb(${col})`; x.beginPath(); x.arc(N / 2, N / 2, 7, 0, 6.283); x.fill();
-  return c.toDataURL("image/png");
-}
-let wLast = "";
-function widgetSync(force){
-  if (!NATIVE) return;
-  const W = wCfg(), key = JSON.stringify(W) + "|" + (W.col === "espace" ? glowRGB : "") + "|" + (W.stars ? starsSig : "");
-  if (!force && key === wLast) return; wLast = key;
-  const png = widgetPng(W).split(",")[1];
-  tn("updateWidget", { png, bgAlpha: W.bg, imgAlpha: W.img, tone: W.tone, big: "", small: "" });
-}
-function paintWidgetPrev(){
-  const W = { bg: +$("wBg").value, img: +$("wImg").value, tone: $("wTone").value, col: $("wCol").value, stars: $("wStars").checked };
-  $("wBgV").textContent = W.bg + " %"; $("wImgV").textContent = W.img + " %";
-  $("wPrevBg").className = W.tone === "sombre" ? "dark" : ""; $("wPrevBg").style.opacity = W.bg / 100;
-  $("wPrevImg").src = widgetPng(W); $("wPrevImg").style.opacity = W.img / 100;
-  return W;
-}
-["wBg", "wImg", "wTone", "wCol", "wStars"].forEach(id => { $(id).oninput = $(id).onchange = () => { CFG.widget = paintWidgetPrev(); saveCfg(); widgetSync(); }; });
 function idleHint(){
   const open = S.items.filter(i => !i.done && !isMemo(i)), now = open.filter(i => bucket(i) === "now").length;
   const n = STARS.length;
@@ -3211,8 +3149,6 @@ const openSettings = () => {
   $("vSay").value = ["auto", "1", "0"].includes(CFG.vSay) ? CFG.vSay : "auto"; $("vAuto").checked = !!CFG.vAuto;
   paintVox(); if (CFG.mkey) voxSync().then(paintVox);
   paintInbox(); paintApp(); $("sMsg").value = CFG.msgScope || "connus"; $("sChat").value = CFG.chatWho || ""; paintColisSet(); paintApps();
-  $("wBox").style.display = NATIVE ? "" : "none";
-  if (NATIVE) { const W = wCfg(); $("wBg").value = W.bg; $("wImg").value = W.img; $("wTone").value = W.tone; $("wCol").value = W.col; $("wStars").checked = W.stars; paintWidgetPrev(); }
   try { paintFond(); } catch (e) {}
 };
 $("vMode").onchange = paintVox;
@@ -7664,7 +7600,7 @@ async function jvFcLance(){
 /* ---------- lot 29 · le fond d'écran animé (appli Android ≥ 18) ----------
    Une boucle de 12 s hébergée avec l'appli (dossier fonds/), rangée dans le téléphone, jouée par le fond d'écran « Nestor » d'Android.
    La place du widget reste libre ; en pause dès que l'écran d'accueil n'est plus visible. */
-const FD_BASE = PWA_URL + "fonds/";
+const FD_BASE = PWA_URL + "fonds/", FD_V2 = PWA_URL + "fonds/v2/";
 const FD_LISTE = [{ id: "voie-lactee", nom: "Voie lactée" }, { id: "reseau-neuronal", nom: "Réseau neuronal" }, { id: "nuit", nom: "Nuit de Nestor" }, { id: "art-deco", nom: "Art déco" }];
 let FD_SEL = null, FD_OCC = false;
 async function paintFond(){
@@ -7673,11 +7609,11 @@ async function paintFond(){
   const nv = await jvNative(); let st = null;
   if (nv >= 18) st = await tn("fondEtat");
   if (!FD_SEL) FD_SEL = (st && st.nom) || CFG.fondNom || "voie-lactee";
-  $("fdList").innerHTML = FD_LISTE.map(f => `<div><button data-fd="${f.id}" class="${f.id === FD_SEL ? "on" : ""}" style="background-image:url('${FD_BASE}${f.id}.jpg')" aria-label="${esc(f.nom)}"></button><span>${esc(f.nom)}</span></div>`).join("");
+  $("fdList").innerHTML = FD_LISTE.map(f => `<div><button data-fd="${f.id}" class="${f.id === FD_SEL ? "on" : ""}" style="background-image:url('${FD_V2}${f.id}-apercu.jpg')" aria-label="${esc(f.nom)}"></button><span>${esc(f.nom)}</span></div>`).join("");
   $("fdList").querySelectorAll("[data-fd]").forEach(b => b.onclick = () => { FD_SEL = b.dataset.fd; paintFond(); });
   const enPlace = st && st.actif && st.fichier ? FD_LISTE.find(f => f.id === st.nom) : null;
   if (!FD_OCC) $("fdSt").textContent = nv < 18 ? "Il faut la nouvelle appli Android (0.5.0) : elle se propose à l'ouverture, ou « mettre à jour » ci-dessus."
-    : enPlace ? `En place : ${enPlace.nom}. Choisissez-en un autre pour le remplacer.` : "Une boucle de 12 secondes, en pause dès que l'écran d'accueil n'est plus visible. La place du widget reste libre.";
+    : enPlace ? `En place : ${enPlace.nom}. Choisissez-en un autre pour le remplacer.` : nv >= 19 ? "Il vit et réagit à Nestor : une étoile d'or par chose réglée aujourd'hui, une lueur avant un rappel, des influx pour les messages en attente. En pause dès que l'écran d'accueil n'est plus visible." : "Une boucle de 12 secondes, en pause dès que l'écran d'accueil n'est plus visible.";
   $("fdGo").disabled = nv < 18 || FD_OCC;
   $("fdGo").textContent = enPlace && enPlace.id === FD_SEL ? "remettre ce fond" : "mettre en fond d'écran";
 }
@@ -7686,7 +7622,9 @@ async function fondPoser(){
   if ((await jvNative()) < 18) return paintFond();
   FD_OCC = true; $("fdGo").disabled = true; $("fdSt").textContent = `Je télécharge « ${f.nom} »…`;
   try {
-    const r = TN && TN.fondInstaller ? await TN.fondInstaller({ url: FD_BASE + f.id + ".mp4", nom: f.id }) : null;   // directement : tn() avalerait l'erreur
+    const v2 = (await jvNative()) >= 19;   // lot 30 : le fond qui se dessine en direct ; avant, la boucle vidéo
+    const r = !TN ? null : v2 ? await TN.fondScene({ decor: FD_V2 + f.id + ".jpg", scene: FD_V2 + f.id + ".json", nom: f.id }) : await TN.fondInstaller({ url: FD_BASE + f.id + ".mp4", nom: f.id });   // directement : tn() avalerait l'erreur
+    if (v2) fondSync(true);
     if (!r || !r.ok) throw new Error("le téléchargement n'a pas abouti");
     CFG.fondNom = f.id; saveCfg();
     const st = await tn("fondEtat");
@@ -7697,6 +7635,33 @@ async function fondPoser(){
   FD_OCC = false; $("fdGo").disabled = false;
 }
 $("fdGo").onclick = fondPoser;
+/* lot 30 : ce que le fond montre de Nestor. Les dates des choses réglées (le fond compte celles du jour, même après minuit)
+   et les rappels du moment (passés depuis moins de 6 h ou à venir dans les 48 h) ; le fond calcule seul « proche » et « en retard ». */
+var FD_SIG = "";   // var : render() peut l'appeler avant que cette ligne soit lue
+function fondSync(force){
+  if (!NATIVE) return;
+  const now = Date.now(), or = [], rap = [];
+  for (const sp of ["pro", "perso"]) for (const i of spaceState(sp).items || []) {
+    if (isList(i) || isMemo(i)) continue;
+    if (i.done) { if (i.doneAt && now - i.doneAt < 36 * 3600e3) or.push(i.doneAt); continue; }
+    if (i.due && i.time) { const t = new Date(i.due + "T" + i.time).getTime(); if (t && t > now - 6 * 3600e3 && t < now + 48 * 3600e3) rap.push(t); }
+  }
+  or.sort(); rap.sort();
+  const sig = or.join(",") + "|" + rap.join(",");
+  if (!force && sig === FD_SIG) return; FD_SIG = sig;
+  tn("fondNestor", { or: or.slice(-60), rappels: rap.slice(0, 40) });
+}
+/* l'appli 0.6 arrive alors qu'une boucle vidéo est en place : le fond passe tout seul en version vivante, même décor */
+async function fondMonte(){
+  try {
+    if (!NATIVE || (await jvNative()) < 19) return;
+    const st = await tn("fondEtat"); if (!st || st.scene || !st.fichier) return;
+    const id = st.nom || CFG.fondNom || "voie-lactee";
+    await TN.fondScene({ decor: FD_V2 + id + ".jpg", scene: FD_V2 + id + ".json", nom: id });
+    fondSync(true);
+  } catch (e) {}
+}
+setTimeout(fondMonte, 6000);
 /* ---------- lot 23 · le halo : Nestor répond sans ouvrir la conversation ----------
    La constellation s'ouvre en anneau ; la réponse y défile comme un générique, au rythme de la voix.
    Dessous : ce qu'il a fait ou propose (avec son bouton), puis deux symboles : ouvrir en grand, répondre.
