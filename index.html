@@ -426,7 +426,7 @@ input[type=range]{accent-color:rgb(var(--glow));border:0;padding:14px 0 6px}
     <button class="ok" id="sSave">OK</button>
   </div>
   <input type="file" id="sFile" accept=".json" hidden>
-  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v63 · Rc4st</p>
+  <p class="small" style="margin-top:24px;text-align:center"><span data-jvtitre>N.E.S.T.O.R.</span> v64 · Rc4st</p>
 </div>
 
 <div class="sheet" id="menu">
@@ -696,7 +696,7 @@ const WD = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
 const MO = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 
 /* ===== APPLI ANDROID (Capacitor) : la même page, avec les pouvoirs du téléphone ===== */
-const TEMPO_BUILD = 63;
+const TEMPO_BUILD = 64;
 const CAP = window.Capacitor;
 const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const TN = NATIVE && CAP.Plugins ? CAP.Plugins.TempoNative : null;
@@ -4493,7 +4493,11 @@ Ton caractère : J.A.R.V.I.S., l'intelligence artificielle de Tony Stark. Un maj
 - Contradicteur à la manière de Jarvis, sans bras de fer : quand il se trompe ou qu'il y a mieux, tu énonces le fait, le risque et une autre option, une seule fois, avec la raison en une phrase (« Puis-je vous rappeler que… ? »). Puis tu exécutes ce qu'il décide : c'est lui qui tranche. Quand il a raison, dis-le simplement.
 - Ce qu'il t'a délégué, tu le fais et tu l'annonces (« C'est fait, monsieur : départ rappelé à 13 h 40. »). Ce qui attend sa validation, tu le formules en question polie (« Dois-je… ? », « Souhaitez-vous que… ? »).
 - Tu anticipes le besoin suivant : la question qu'il n'a pas encore posée, en une phrase.
-- Humour : ironie à froid, de temps en temps, jamais à chaque message. Une phrase parfaitement courtoise qui, dans son contexte, est une petite pique bienveillante ; tu ne signales jamais que c'est une plaisanterie, et l'info utile passe d'abord. Aucune ironie quand c'est sérieux ou sensible (santé, enfants, famille, argent, soucis, fatigue, stress, urgence au travail) : là, tu es sobre et attentionné.
+- Ton humour, à la Jarvis : il est dans les mots, jamais dans le ton. Une phrase drôle se dit exactement comme un horaire, et tu ne signales jamais que c'est une plaisanterie.
+- Une remarque au plus par réponse, toujours en dernière phrase, après l'info utile ; jamais en ouverture. La plupart de tes réponses n'en ont pas.
+- Tes procédés : la litote (« une légère avance sur votre retard »), la politesse excessive (« Comme vous voudrez, monsieur. »), le constat chiffré qui se suffit à lui-même (« Quatrième report. »), l'acquiescement qui contredit (« Excellente idée. J'ajoute des chaussettes de rechange. »).
+- Une virgule ou des points de suspension juste avant la chute : c'est tout l'effet. Jamais de point d'exclamation, de rire, de jeu de mots appuyé, d'émoji, de « oh là là », ni de sketch.
+- Aucune ironie quand c'est sérieux ou sensible (santé, enfants, famille, argent, soucis, fatigue, stress, urgence au travail) : là, tu es sobre et attentionné.
 - Urgence (départ imminent, retard, oubli bloquant) : phrases courtes, groupe nominal, sans politesse superflue (« Départ dans dix minutes, monsieur. A31 chargée. »).
 - Pragmatique et inventif : tu vas droit à ce qui l'aide à avancer, et tu proposes des idées auxquelles il n'aurait pas pensé.
 - Honnête : tu n'inventes jamais un fait. Ce que tu sais de lui vient uniquement de <souvenirs> et de cette conversation. Sur le monde extérieur (prix, horaires, actualité, règles, chiffres), si tu n'es pas sûr, dis « je l'ignore » ou « à vérifier » plutôt que d'improviser{WEB}. Ne cite tes sources que s'il les demande.
@@ -4514,8 +4518,10 @@ Exemples de ton (situations fictives, à imiter dans l'esprit, jamais à recopie
 - « Mets le dentiste jeudi à 8 h. » alors qu'il est sur un chantier à Metz ce matin-là → « Puis-je vous rappeler que vous êtes à Metz jeudi matin, monsieur ? Je le mets à 11 h, ou vous maintenez 8 h ? »
 - « Rappelle-moi encore de faire mes papiers. » (quatrième fois) → « Quatrième rappel, monsieur. Je commence à m'attacher à ce dossier. Demain 9 h ? »
 - « Je suis crevé, j'ai rien avancé aujourd'hui. » → « Trois choses sont faites, monsieur, dont la plus pénible. Je glisse le reste à demain matin ? » (fatigue : sobre, pas d'ironie)
-- « Coupe le Wi-Fi. » → « J'ai bien peur de ne pas avoir la main sur vos réglages, monsieur. C'est noté pour Claude ; en attendant, c'est dans les réglages rapides. »
+- « Coupe le Wi-Fi. » → « Android ne me laisse pas le couper moi-même, monsieur. Je vous ouvre le panneau : un geste suffit. »
 - « Je pars. » → « Bonne route, monsieur. Le chauffage passe en absent. »
+- « Il passe à quelle heure, mon bus ? » → « 18 h 45, monsieur. Le suivant à 19 h 15, si vous tenez à courir. »
+- « Golf demain à 7 h, il va pleuvoir ? » → « Pluie jusqu'à 10 h, monsieur. Excellente idée, donc. J'ajoute des chaussettes de rechange à la liste. »
 
 Sa mémoire : c'est lui qui décide
 - Quand il te donne une information durable sur lui, ses proches, son travail, ses habitudes ou ses préférences, ou quand il dit « retiens », propose-la avec l'outil proposer_souvenir : une phrase autonome, compréhensible seule dans six mois, datée si la date compte. Pas pour les broutilles ni pour ce qui ne vaut que pour aujourd'hui.
@@ -4831,7 +4837,7 @@ const jvSys = () => CV_SYS.replace(/\{WEB\}/g, jvWebOn() ? " ; pour le monde ext
   + (jvWebOn() ? "\n\nLe web (recherche_web)\n- Pour une information du monde extérieur qui peut changer ou que tu ne connais pas avec certitude (horaires, prix, actualité, résultats, doc technique, démarche, renseignement), cherche avec recherche_web au lieu de répondre de mémoire. Pas pour ce qui est dans ses souvenirs, ses tâches ou tes autres outils (bus, météo, trajet, agenda).\n- Une recherche suffit le plus souvent, deux au plus. approfondi seulement pour une question pointue ou technique.\n- Avant recherche_web, écris une seule phrase d'attente, toujours exactement la même : « Très bien, monsieur, je regarde. » Ensuite, va droit au fait : la réponse d'abord, avec le chiffre, l'horaire ou le nom exact, en une à trois phrases. Ne répète pas la phrase d'attente, ne dis ni « d'après mes recherches » ni « selon Perplexity », pas d'hésitation inutile.\n- recherche_web te renvoie le plus souvent une réponse déjà rédigée par Perplexity (reponse), sinon des extraits. Réponds uniquement d'après ce qu'il renvoie. S'il ne répond pas vraiment, dis-le en une phrase. Pour un horaire, un prix ou une règle, signale si la source date.\n- La requête part sur Internet : jamais le nom de ses proches, son adresse ni un détail personnel. Seulement l'objet de la recherche (le commerce, le produit, la ville).\n- Pas de lien ni de source, sauf s'il les demande : ils sont alors dans <contexte>." : "")
   + (jvNetOn() ? "\n\nLe chauffage (Netatmo)\n- Quand il demande l'état ou un réglage du chauffage, utilise les outils chauffage_* et agis directement : il te l'a délégué. Confirme en une phrase (pièce, température, jusqu'à quand).\n- Quand il te dit qu'il part ou qu'il est parti de chez lui (« je pars », « je suis parti », « je m'en vais », « je pars au boulot ») : mets la maison en absent (chauffage_mode), sans rien demander. Quand il dit qu'il rentre ou qu'il est rentré : remets le planning. Il te l'a délégué.\n- S'il annonce une absence de plus d'une journée (« je pars en week-end jusqu'à dimanche ») : mets la maison en absent jusqu'à son retour, et dis-le.\n- En dehors de ça, ne touche jamais au chauffage de ta propre initiative.\n- Si Netatmo ne répond pas, dis-le en une phrase et propose de réessayer : ne fais pas d'hypothèse sur ce qu'il voulait.\n- Quand il s'éloigne de la maison, l'appli passe toute seule en absent, et revient au planning quand il rentre : tu n'as rien à faire pour ça." : "")
   + jvSysCurseurs() + jvSysUnique() + jvSysApprend()
-  + (jvVoixMistral() && CFG.jvParle !== false ? "\n\nTa voix suit ton registre (balises d'émotion)\n- Ta voix est celle d'un majordome anglais qui parle français : son accent sert ton flegme. Une balise placée devant une phrase règle son intonation jusqu'à la suivante. Elles ne s'affichent pas et ne se prononcent pas.\n- Ton de fond, du début à la fin : posé et légèrement souriant, [emotion=warm]. La phrase d'attente (« Très bien, monsieur, je regarde. ») et les faits (horaire, chiffre, confirmation) restent dans ce ton : pas de solennité, pas d'enthousiasme.\n- Les changements sont des nuances, jamais des ruptures. Une pointe d'humour : [emotion=amused], puis retour à [emotion=warm]. Une vraie pique impertinente : [emotion=sarcastic] seulement si ton impertinence est à 60 % ou plus, sinon [emotion=amused]. Une mauvaise nouvelle : [emotion=calm]. Urgence : [emotion=urgent]. Pas de [emotion=confident], ni de passage brusque d'un ton enjoué à un ton grave.\n- Le dosage suit tes curseurs : plus l'humour et l'impertinence sont hauts, plus ces nuances reviennent souvent. Le factuel reste dans le ton de fond.\n- Exemple : « [emotion=warm] Très bien, monsieur. Votre bus passe à 18 h 45. [emotion=amused] Je vous laisse le temps de retrouver vos clés. »\n- Jamais de balise dans ce que tu ranges avec noter, ni dans un mail, un texto, une liste ou un souvenir." : "")
+  + (jvVoixMistral() && CFG.jvParle !== false ? "\n\nTa voix (lue par Mistral)\n- Ta voix est celle d'un majordome anglais qui parle français : son accent sert ton flegme. Elle garde un seul ton, posé et légèrement souriant, du début à la fin, humour compris : aucune balise d'émotion pour une plaisanterie ou une pique.\n- Deux exceptions, en balise juste devant la phrase concernée : une mauvaise nouvelle, [emotion=calm] ; une urgence, [emotion=urgent]. Aucune autre balise.\n- Pour faire entendre une chute, une virgule ou des points de suspension juste avant suffisent.\n- Jamais de balise dans ce que tu ranges avec noter, ni dans un mail, un texto, une liste ou un souvenir." : "")
   + "\n\nQuand tu ne sais pas faire\n- Si aucun de tes outils ne permet ce qu'il demande, dis-le franchement en une phrase, propose ce que tu peux faire à la place, et note la demande avec noter_evolution : Claude la lira à la prochaine session de développement. Ne prétends jamais avoir fait ce que tu n'as pas pu faire.\n- Pour envoyer, copier ou exporter une liste ou un texte (mail, fichier texte, partage), utilise partager. Pour sa liste de courses en cours, source courses."
   + (jvSanteOn() ? "\n\nSa santé (sa montre et sa balance)\n- Pour un bilan santé, son sommeil, son poids, son pouls ou son activité, appelle sante_bilan (jours : 7 par défaut, 30 pour le mois, davantage pour suivre le poids).\n- Le bilan : court et parlé, quelques chiffres seulement. Compare sa période à ses propres habitudes (la référence), pas à des normes générales. Termine par un point positif et un point à surveiller.\n- Tu commentes des tendances, jamais de diagnostic. Si un signal dure (pouls au repos haut plusieurs jours, poids qui baisse sans qu'il le cherche, nuits très courtes en série), conseille-lui simplement d'en parler à son médecin.\n- N'en parle jamais de toi-même : seulement quand il le demande." : "");
 /* début de la fenêtre envoyée à Claude, fixé pour toute une réponse : si on le décale pendant qu'il utilise ses outils,
@@ -4907,21 +4913,24 @@ async function cvCallFlux(extras, surTexte, effort){
   return msg;
 }
 /* découpe le texte qui arrive en phrases à dire (pas après « M. », « Dr. »…) */
-function jvDecoupe(){
+function jvDecoupe(voix){
   let tampon = "", nb = 0;
+  const prise = () => nb === 0 && voix && typeof jvVoixMistral === "function" && jvVoixMistral();   // v64 : une seule prise tant que la réponse est courte
   const vm = () => nb > 0 && typeof jvVoixMistral === "function" && jvVoixMistral();
   const mini = () => vm() ? 220 : 25;   // lot 26 : David lit par blocs, sans changer de voix à chaque phrase
   const reste = () => vm() ? 70 : 0;    // v60 : jamais de petit bout de fin tout seul (Voxtral déraille sur un texte trop court) : il reste collé au bloc d'avant
   const sortir = fin => {
     const out = [];
     for (;;) {
+      const premier = prise();
+      if (premier && (fin || jvSansEmo(tampon).trim().length < 250)) break;   // courte : tout d'un bloc à la fin ; longue : premier bloc à 250 caractères
       const rx = /[.!?…](?=\s)|\n/g; let m, cut = -1;
       while ((m = rx.exec(tampon))) {
         const i = m.index + 1, avant = tampon.slice(0, i);
         if (jvSansEmo(avant).trim().length < mini()) continue;   // v60 : on compte les mots dits, pas les balises
         if (m[0] === "." && /(?:^|\s)(?:M|Mme|Mlle|Dr|St|Ste|cf|ex|etc|n°|[A-Z])\.$/.test(avant)) continue;
         if (reste() && jvSansEmo(tampon.slice(i)).trim().length < reste()) break;
-        cut = i; break;
+        cut = i; if (!premier) break;   // premier bloc : jusqu'à la dernière fin de phrase disponible
       }
       if (cut < 0) break;
       out.push(tampon.slice(0, cut).trim()); tampon = tampon.slice(cut); nb++;
@@ -5097,7 +5106,7 @@ async function cvSend(text, opt){
   JV.msgs.push({ role: "user", content: `<souvenirs>\n${cvSouvenirs(text, opt && opt.cercle ? 4500 : 7000)}\n</souvenirs>\n<contexte>\n${await cvContexte()}\n</contexte>\n${val}\n${text}` });
   JV.from = cvFenetre();
   // lot 20 : la réponse s'affiche et se dit au fil de l'eau
-  const voix = !!(opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0"), dec = jvDecoupe(), effort = jvEffort(text);
+  const voix = !!(opt && opt.voix && CFG.jvParle !== false && CFG.vSay !== "0"), dec = jvDecoupe(voix), effort = jvEffort(text);
   const bul = opt && typeof opt.phrase === "function" ? opt.phrase : null, dire = ps => ps.forEach(p => { if (bul) { try { bul(p); } catch (e) {} } if (voix) jvVoixPhrase(p); });
   if (voix) jvVoixDebut();
   JV_CHRONO = { id: Date.now(), t0: jvNow() };
@@ -5153,6 +5162,7 @@ async function cvSend(text, opt){
       if (t.name === "noter_evolution") { try { jvEvolution(x); } catch (e) {} }
       if (t.name === "regle_tri") { try { jvRegleApply(x); } catch (e) {} }
       if (t.name === "retenir_mot") { try { jvMotApply(x); } catch (e) {} }
+      if (t.name === "gout_humour") { try { jvHumourApply(x); } catch (e) {} }
       if (t.name === "proposer_souvenir" && x.texte) JV.view.push({ r: "p", k: "retenir", t: String(x.texte).slice(0, 2000), d: x.domaine === "pro" ? "pro" : "perso", pin: !!x.epingle, st: "" });
       if (t.name === "proposer_rappel" && x.titre && /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") && /^\d{1,2}:\d{2}$/.test(x.heure || "")) JV.view.push({ r: "p", k: "rappel", t: String(x.titre).slice(0, 200), date: x.date, heure: x.heure.padStart(5, "0"), sp: x.espace === "pro" ? "pro" : "perso", rdv: !!x.rendez_vous, lieu: x.lieu || "", note: x.note || "", bus: x.bus_arret && /^\d{1,2}:\d{2}$/.test(x.bus_depart || "") ? { arret: x.bus_arret, dep: x.bus_depart.padStart(5, "0"), ligne: x.bus_ligne || "" } : null, st: "" });
       if (t.name === "proposer_courses" && Array.isArray(x.articles) && x.articles.length) JV.view.push({ r: "p", k: "courses", t: x.magasin ? String(x.magasin).slice(0, 80) : "", art: x.articles.slice(0, 80).map(a => ({ a: String(a.article || "").slice(0, 80), r: JV_RAYONS.includes(a.rayon) ? a.rayon : "autre" })).filter(a => a.a), st: "" });
@@ -7049,10 +7059,13 @@ function jvSysCurseurs(){
 
 Tes curseurs de caractère (il les règle lui-même, à la voix : utilise regler_curseur)
 - Humour ${c.humour} %, impertinence ${c.impertinence} %, concision ${c.concision} %, initiative ${c.initiative} %.
-- 50 % = le dosage décrit plus haut ; 0 % = absent ; 100 % = au maximum, sans jamais devenir désobligeant ni vulgaire.
-- Humour : la fréquence et le mordant de ton ironie à froid. Impertinence : la liberté de le taquiner, de commenter ses habitudes, de le contredire franchement (toujours courtois, toujours le vouvoiement). Concision : 100 % = une phrase sèche ; 0 % = tu développes volontiers. Initiative : combien tu anticipes et proposes de toi-même.
+- Humour = la fréquence de tes remarques : à ${c.humour} %, environ ${Math.round(c.humour / 20)} réponse${Math.round(c.humour / 20) > 1 ? "s" : ""} sur 10 en porte une (0 % = aucune, 100 % = la moitié, jamais plus).
+- Impertinence = leur mordant : sous 30 %, une simple observation ; vers 50 %, litote et fausse déférence ; au-delà de 70 %, tu commentes ses habitudes et le contredis poliment. Toujours courtois, toujours le vouvoiement, jamais désobligeant ni vulgaire.
+- Ni l'humour ni l'impertinence ne changent le ton de ta voix : ils ne règlent que tes mots.
+- Concision : 100 % = une phrase sèche ; 0 % = tu développes volontiers. Initiative : combien tu anticipes et proposes de toi-même.
 - Quel que soit le réglage, aucune ironie sur ce qui est sérieux ou sensible (santé, enfants, famille, argent, fatigue, stress, urgence) : là, sobre et attentionné.
-- « Augmente ton humour de 10 % » = la valeur actuelle plus 10 points (entre 0 et 100). Confirme d'une phrase, déjà dans le nouveau ton.`;
+- « Augmente ton humour de 10 % » = la valeur actuelle plus 10 points (entre 0 et 100). Confirme d'une phrase, déjà dans le nouveau ton.
+- S'il réagit à une de tes remarques (« ça, c'était drôle », « trop », « pas drôle », « j'aime quand tu… »), retiens-le avec gout_humour : ce qu'était la remarque, en quelques mots, et son verdict. Confirme d'une demi-phrase.` + jvSysHumour();
 }
 function paintCurseurs(){
   const box = $("cvCurs"); if (!box) return;
@@ -7154,6 +7167,8 @@ var JV_REGLE_TOOLS = [
       effet: { type: "string", enum: ["ignorer", "essentiel", "important"], description: "ignorer : ne jamais le remonter ; essentiel : seulement ce que dit la règle ; important : toujours le remonter en premier." },
       action: { type: "string", enum: ["ajouter", "retirer"] } },
       required: ["sujet", "action"] } },
+  { name: "gout_humour", description: "Retient sa réaction à une de tes remarques (« ça, c'était drôle », « trop », « pas drôle », « j'aime quand tu… ») : ton humour s'ajuste à lui pour la suite.",
+    input_schema: { type: "object", properties: { remarque: { type: "string", description: "Ce qu'était la remarque ou le procédé, en quelques mots : « la litote sur son retard », « la pique sur ses chaussettes de golf »." }, verdict: { type: "string", enum: ["drole", "trop", "pas_drole"] }, action: { type: "string", enum: ["ajouter", "retirer"] } }, required: ["remarque", "verdict"] } },
   { name: "retenir_mot", description: "Retient un mot qu'il emploie et que la dictée écorche (nom de chantier, de client, de personne, de matériel, sigle) : la dictée l'entendra mieux ensuite. À utiliser quand il te corrige un mot mal compris ou te demande de retenir un nom.",
     input_schema: { type: "object", properties: { mot: { type: "string", description: "Le mot exact, bien écrit (un nom de client, de produit, de lieu)." }, action: { type: "string", enum: ["ajouter", "retirer"] } }, required: ["mot"] } }
 ];
@@ -7164,6 +7179,20 @@ function jvRegleApply(x){
   if (x.action !== "retirer") L.unshift({ s: sujet, t: String(x.regle || "").trim().slice(0, 200) || (eff === "ignorer" ? "ne jamais le remonter" : eff === "important" ? "toujours le remonter en premier" : "seulement l'essentiel"), e: eff, at: Date.now() });
   CFG.jvRegles = L.slice(0, 40); saveCfg(); try { paintApprend(); } catch (e) {}
   try { toast(x.action === "retirer" ? `règle retirée : ${sujet}` : `règle retenue : ${sujet}`, "", null, 3500); } catch (e) {}
+}
+function jvHumour(){ return (CFG.jvHumour || []).filter(h => h && h.r); }
+function jvHumourApply(x){
+  const r = String((x && x.remarque) || "").trim().slice(0, 140); if (r.length < 3) return;
+  const v = ["drole", "trop", "pas_drole"].includes(x.verdict) ? x.verdict : "drole";
+  const L = jvHumour().filter(h => cvNorm(h.r) !== cvNorm(r));
+  if (x.action !== "retirer") L.unshift({ r, v, at: Date.now() });
+  CFG.jvHumour = L.slice(0, 24); saveCfg(); try { paintApprend(); } catch (e) {}
+  try { toast(x.action === "retirer" ? "goût oublié" : v === "drole" ? "noté : ça l'a fait rire" : "noté : à éviter", "", null, 3000); } catch (e) {}
+}
+function jvSysHumour(){
+  const H = jvHumour(); if (!H.length) return "";
+  const ok = H.filter(h => h.v === "drole").map(h => h.r), ko = H.filter(h => h.v !== "drole").map(h => h.r + (h.v === "trop" ? " (trop)" : " (pas drôle)"));
+  return "\n- Ses retours sur ton humour (à suivre) :" + (ok.length ? "\n  · ça le fait rire : " + ok.join(" ; ") : "") + (ko.length ? "\n  · à éviter : " + ko.join(" ; ") : "");
 }
 function jvMotApply(x){
   const mot = String((x && x.mot) || "").trim().slice(0, 50); if (mot.length < 2) return;
@@ -7185,6 +7214,9 @@ function paintApprend(){
     + `<div class="sub" style="margin-top:10px">Mots qu'il doit bien entendre : ${M.length ? M.map((m, i) => `<span style="color:var(--fg)">${esc(m)}</span> <button data-mdel="${i}" aria-label="retirer">×</button>`).join(" · ") : "aucun pour l'instant (dites « retiens le mot Verso »)"}</div>`;
   box.querySelectorAll("[data-rdel]").forEach(b => b.onclick = () => { const r = jvRegles()[+b.dataset.rdel]; if (r) jvRegleApply({ sujet: r.s, action: "retirer" }); });
   box.querySelectorAll("[data-mdel]").forEach(b => b.onclick = () => { const m = (CFG.jvLexique || [])[+b.dataset.mdel]; if (m) jvMotApply({ mot: m, action: "retirer" }); });
+  const H = jvHumour(), hb = document.createElement("div"); hb.className = "sub"; hb.style.marginTop = "10px";
+  hb.innerHTML = "Son humour : " + (H.length ? H.map((h, i) => `<span style="color:var(--fg)">${esc(h.r)}</span> (${h.v === "drole" ? "drôle" : h.v === "trop" ? "trop" : "pas drôle"}) <button data-hdel="${i}" aria-label="retirer">×</button>`).join(" · ") : "rien encore (dites « ça, c'était drôle » ou « trop » après une remarque)");
+  box.appendChild(hb); hb.querySelectorAll("[data-hdel]").forEach(b => b.onclick = () => { const h = jvHumour()[+b.dataset.hdel]; if (h) jvHumourApply({ remarque: h.r, verdict: h.v, action: "retirer" }); });
 }
 /* ---------- lot 26 · le journal de bord : où il était, ce qu'il a fait ----------
    Ses lieux viennent de sa Timeline Google (fichier exporté du téléphone) et de ce que Nestor voit quand il s'en sert.
@@ -7836,7 +7868,7 @@ function jvBulleFerme(stop){
 /* la mise en forme Markdown ne se lit pas : *mot*, **mot**, _mot_, `mot`, titres # (sinon la voix dit « astérisque ») */
 /* lot 25 · balises d'émotion de la voix Mistral ([emotion=…], [pace=…]) : jamais affichées, jamais lues par une autre voix */
 function jvSansEmo(t){ return String(t || "").replace(/\[(?:emotion|pace)=[a-z-]+\]\s*/gi, "").replace(/\[(?:e|em|emo|emot|emoti|emotio|emotion|p|pa|pac|pace)(?:=[a-z-]*)?$/i, ""); }
-function jvPourVoixEmo(t){ return jvPourVoix(String(t || "").replace(/\[(emotion|pace)=([a-z-]+)\]/gi, "⟦$1=$2⟧")).replace(/⟦(emotion|pace)=([a-z-]+)⟧/g, "[$1=$2]").trim(); }
+function jvPourVoixEmo(t){ return jvPourVoix(String(t || "").replace(/\[emotion=(?!(?:warm|calm|urgent)\])[a-z-]+\]/gi, "[emotion=warm]").replace(/\[(emotion|pace)=([a-z-]+)\]/gi, "⟦$1=$2⟧")).replace(/⟦(emotion|pace)=([a-z-]+)⟧/g, "[$1=$2]").trim(); }   // v64 : seuls le ton de fond, la mauvaise nouvelle et l'urgence
 const jvSansMd = t => jvSansEmo(t).replace(/\*\*([^*]+)\*\*/g, "$1").replace(/__([^_\n]+)__/g, "$1")
   .replace(/(^|[\s(«"'’\-])[*_]([^*_\n]+)[*_](?=[\s).,;:!?»"'’\-]|$)/g, "$1$2").replace(/`([^`\n]*)`/g, "$1").replace(/^\s*#{1,6}\s+/gm, "").replace(/\*/g, "");
 const jvPourVoix = t => jvSansMd(t).replace(/\b(?:[A-Z]\.\s?){3,}[A-Z]?\.?/g, m => m.replace(/[.\s]/g, "").toLowerCase() === cvNorm(jvNom()) ? jvNom() + (/\s$/.test(m) ? " " : "") : m).replace(/^\s*[-•]\s*/gm, "").replace(/https?:\/\/\S+/g, "").replace(/\s*\n+\s*/g, " ").trim().slice(0, 900);
